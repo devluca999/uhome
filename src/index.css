@@ -1,0 +1,95 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Design Tokens - Custom Colors */
+  --color-warm-white: #fafaf9;
+  --color-warm-white-pure: #ffffff;
+  --color-surface: #f5f5f4;
+  --color-border-custom: #e7e5e4;
+  --color-text-secondary: #78716c;
+  --color-text-primary: #292524;
+  --color-accent-sage: #84a98c;
+  --color-accent-slate: #64748b;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-default: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-elevated: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-floating: 0 20px 25px rgba(0, 0, 0, 0.1);
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-default: 200ms;
+  --duration-gentle: 250ms;
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 24 9.8% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 24 9.8% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 24 9.8% 10%;
+  --primary: 142 20.2% 58.8%;
+  --primary-foreground: 355.7 100% 97.3%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 24 3.8% 46.1%;
+  --accent: 60 4.8% 95.9%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --ring: 142 20.2% 58.8%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 24 9.8% 10%;
+  --foreground: 0 0% 98%;
+  --card: 24 9.8% 10%;
+  --card-foreground: 0 0% 98%;
+  --popover: 24 9.8% 10%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 142 20.2% 58.8%;
+  --primary-foreground: 355.7 100% 97.3%;
+  --secondary: 24 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 24 3.7% 15.9%;
+  --muted-foreground: 24 5.4% 63.9%;
+  --accent: 24 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 24 3.7% 15.9%;
+  --input: 24 3.7% 15.9%;
+  --ring: 142 20.2% 58.8%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Glassmorphic utilities */
+.glass-card {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    var(--shadow-elevated),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+}
