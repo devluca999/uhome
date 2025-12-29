@@ -1,6 +1,7 @@
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useDocuments } from '@/hooks/use-documents'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Download, File } from 'lucide-react'
 
@@ -38,15 +39,11 @@ export function TenantDocuments() {
       </div>
 
       {documents.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <File className="mx-auto h-12 w-12 text-stone-400 mb-4" />
-            <p className="text-stone-600">No documents available</p>
-            <p className="text-sm text-stone-500 mt-2">
-              Documents will appear here when your landlord uploads them
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<File className="h-8 w-8" />}
+          title="No documents available"
+          description="Documents will appear here when your landlord uploads them for your property."
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {documents.map(document => (
@@ -83,6 +80,7 @@ export function TenantDocuments() {
                     size="sm"
                     className="w-full"
                     onClick={() => window.open(document.file_url, '_blank')}
+                    aria-label={`Download ${document.file_name}`}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download

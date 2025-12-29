@@ -92,7 +92,7 @@ export function TenantForm({ onSubmit, onCancel, loading }: TenantFormProps) {
   }
 
   return (
-    <Card>
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle>Add Tenant</CardTitle>
         <CardDescription>Assign a tenant to a property</CardDescription>

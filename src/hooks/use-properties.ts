@@ -10,7 +10,11 @@ export function useProperties() {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    fetchProperties()
+    // Wait a bit for auth to initialize
+    const timer = setTimeout(() => {
+      fetchProperties()
+    }, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   async function fetchProperties() {

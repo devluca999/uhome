@@ -6,10 +6,10 @@ This folder contains the database schema for haume.
 
 1. Open your Supabase project dashboard
 2. Go to **SQL Editor**
-3. Open the `schema.sql` file from this folder
-4. Copy the entire contents
-5. Paste into the SQL Editor
-6. Click **Run** (or press Ctrl+Enter)
+3. Run `schema.sql` first (creates tables and initial policies)
+4. Run `fix_rls_policies.sql` (fixes user signup issues)
+5. Run `fix_rls_recursion.sql` (fixes circular RLS policy issues that cause 500 errors)
+6. Click **Run** (or press Ctrl+Enter) for each file
 
 ## What This Creates
 

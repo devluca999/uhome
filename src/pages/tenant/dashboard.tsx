@@ -1,9 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useRentRecords } from '@/hooks/use-rent-records'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { Home } from 'lucide-react'
 
 export function TenantDashboard() {
   const { data: tenantData, loading: tenantLoading } = useTenantData()
@@ -32,14 +34,11 @@ export function TenantDashboard() {
           <h1 className="text-3xl font-semibold text-stone-900">Dashboard</h1>
           <p className="text-stone-600 mt-1">Welcome back</p>
         </div>
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-stone-600 mb-4">No property assigned yet</p>
-            <p className="text-sm text-stone-500">
-              Contact your landlord to be assigned to a property
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Home className="h-8 w-8" />}
+          title="No property assigned yet"
+          description="Contact your landlord to be assigned to a property and start managing your rental information."
+        />
       </div>
     )
   }
@@ -92,7 +91,7 @@ export function TenantDashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Rent Status</CardTitle>
             <CardDescription>Current rent information</CardDescription>
@@ -132,7 +131,7 @@ export function TenantDashboard() {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Maintenance</CardTitle>
             <CardDescription>Your maintenance requests</CardDescription>
@@ -156,7 +155,7 @@ export function TenantDashboard() {
       </div>
 
       {tenantData.property.rules && (
-        <Card className="mt-6">
+        <Card className="glass-card mt-6">
           <CardHeader>
             <CardTitle>House Rules / Considerations</CardTitle>
           </CardHeader>

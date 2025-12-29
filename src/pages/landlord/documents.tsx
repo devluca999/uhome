@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useProperties } from '@/hooks/use-properties'
 import { useDocuments } from '@/hooks/use-documents'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Upload, File, X } from 'lucide-react'
@@ -73,7 +74,7 @@ export function LandlordDocuments() {
       {selectedPropertyId && (
         <>
           <div className="mb-6">
-            <Card>
+            <Card className="glass-card">
               <CardHeader>
                 <CardTitle>Upload Document</CardTitle>
                 <CardDescription>Upload a document for tenants to access</CardDescription>
@@ -103,15 +104,11 @@ export function LandlordDocuments() {
               <p className="text-stone-600">Loading documents...</p>
             </div>
           ) : documents.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <File className="mx-auto h-12 w-12 text-stone-400 mb-4" />
-                <p className="text-stone-600">No documents yet</p>
-                <p className="text-sm text-stone-500 mt-2">
-                  Upload documents to share with tenants
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={<File className="h-8 w-8" />}
+              title="No documents yet"
+              description="Upload documents such as leases, contracts, or guides to share with tenants."
+            />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {documents.map(document => (
@@ -143,6 +140,7 @@ export function LandlordDocuments() {
                       size="sm"
                       className="w-full"
                       onClick={() => window.open(document.file_url, '_blank')}
+                      aria-label={`View or download ${document.file_name}`}
                     >
                       <Upload className="mr-2 h-4 w-4" />
                       View/Download
@@ -156,7 +154,7 @@ export function LandlordDocuments() {
       )}
 
       {!selectedPropertyId && (
-        <Card>
+        <Card className="glass-card">
           <CardContent className="py-12 text-center">
             <p className="text-stone-600">Select a property to manage documents</p>
           </CardContent>

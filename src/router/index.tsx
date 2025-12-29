@@ -16,27 +16,33 @@ import { TenantDashboard } from '@/pages/tenant/dashboard'
 import { TenantMaintenance } from '@/pages/tenant/maintenance'
 import { TenantDocuments } from '@/pages/tenant/documents'
 import { DevBypass } from '@/pages/dev/bypass'
+import { ErrorPage } from '@/components/error-page'
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <HomePage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/login',
     element: <LoginPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/signup',
     element: <SignupPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/auth/callback',
     element: <AuthCallback />,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/dev/bypass',
     element: <DevBypass />,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/landlord',
@@ -45,30 +51,37 @@ export const router = createBrowserRouter([
         <LandlordLayout />
       </ProtectedRoute>
     ),
+    errorElement: <ErrorPage />,
     children: [
       {
         path: 'dashboard',
         element: <LandlordDashboard />,
+        errorElement: <ErrorPage />,
       },
       {
         path: 'properties',
         element: <LandlordProperties />,
+        errorElement: <ErrorPage />,
       },
       {
         path: 'properties/:id',
         element: <PropertyDetail />,
+        errorElement: <ErrorPage />,
       },
       {
         path: 'tenants',
         element: <LandlordTenants />,
+        errorElement: <ErrorPage />,
       },
       {
         path: 'maintenance',
         element: <LandlordMaintenance />,
+        errorElement: <ErrorPage />,
       },
       {
         path: 'documents',
         element: <LandlordDocuments />,
+        errorElement: <ErrorPage />,
       },
     ],
   },
@@ -79,19 +92,27 @@ export const router = createBrowserRouter([
         <TenantLayout />
       </ProtectedRoute>
     ),
+    errorElement: <ErrorPage />,
     children: [
       {
         path: 'dashboard',
         element: <TenantDashboard />,
+        errorElement: <ErrorPage />,
       },
       {
         path: 'maintenance',
         element: <TenantMaintenance />,
+        errorElement: <ErrorPage />,
       },
       {
         path: 'documents',
         element: <TenantDocuments />,
+        errorElement: <ErrorPage />,
       },
     ],
+  },
+  {
+    path: '*',
+    element: <ErrorPage />,
   },
 ])

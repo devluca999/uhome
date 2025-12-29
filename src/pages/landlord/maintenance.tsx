@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Wrench } from 'lucide-react'
 
 type MaintenanceRequest = {
   id: string
@@ -53,11 +55,11 @@ export function LandlordMaintenance() {
 
   function RequestCard({ request }: { request: MaintenanceRequest }) {
     return (
-      <Card>
+      <Card className="glass-card">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-lg">
+              <CardTitle className="text-lg" id={`request-${request.id}-title`}>
                 {request.property?.name || 'Unknown Property'}
               </CardTitle>
               <CardDescription className="mt-1">
@@ -93,6 +95,7 @@ export function LandlordMaintenance() {
                     onClick={() => handleStatusUpdate(request.id, 'in_progress')}
                     disabled={updating === request.id}
                     className="flex-1"
+                    aria-label={`Mark maintenance request as in progress`}
                   >
                     Mark In Progress
                   </Button>
@@ -101,6 +104,7 @@ export function LandlordMaintenance() {
                     onClick={() => handleStatusUpdate(request.id, 'completed')}
                     disabled={updating === request.id}
                     className="flex-1"
+                    aria-label={`Mark maintenance request as completed`}
                   >
                     Complete
                   </Button>
@@ -112,6 +116,7 @@ export function LandlordMaintenance() {
                   onClick={() => handleStatusUpdate(request.id, 'completed')}
                   disabled={updating === request.id}
                   className="w-full"
+                  aria-label={`Mark maintenance request as completed`}
                 >
                   Mark Complete
                 </Button>
@@ -135,9 +140,11 @@ export function LandlordMaintenance() {
           <p className="text-stone-600">Loading requests...</p>
         </div>
       ) : requests.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-stone-600">No maintenance requests yet</p>
-        </div>
+        <EmptyState
+          icon={<Wrench className="h-8 w-8" />}
+          title="No maintenance requests"
+          description="Maintenance requests from tenants will appear here once submitted."
+        />
       ) : (
         <div className="space-y-8">
           {pendingRequests.length > 0 && (

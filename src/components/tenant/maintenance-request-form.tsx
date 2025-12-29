@@ -52,7 +52,7 @@ export function MaintenanceRequestForm({
   }
 
   return (
-    <Card>
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle>Submit Maintenance Request</CardTitle>
         <CardDescription>Report an issue or request maintenance</CardDescription>

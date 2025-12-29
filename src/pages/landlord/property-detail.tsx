@@ -125,7 +125,7 @@ export function PropertyDetail() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Rent Information</CardTitle>
           </CardHeader>
@@ -155,7 +155,7 @@ export function PropertyDetail() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Property Details</CardTitle>
           </CardHeader>
@@ -179,7 +179,7 @@ export function PropertyDetail() {
       </div>
 
       {property.rules && (
-        <Card className="mt-6">
+        <Card className="glass-card mt-6">
           <CardHeader>
             <CardTitle>House Rules / Considerations</CardTitle>
             <CardDescription>Visible to tenants</CardDescription>

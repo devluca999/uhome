@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { supabase } from '@/lib/supabase/client'
 
 export function DevBypass() {
   const navigate = useNavigate()
@@ -8,23 +9,48 @@ export function DevBypass() {
 
   useEffect(() => {
     // Only allow in development
-    if (import.meta.env.DEV) {
-      const redirectPath = role === 'tenant' ? '/tenant/dashboard' : '/landlord/dashboard'
-
-      // Store dev bypass flag in sessionStorage
-      sessionStorage.setItem('dev_bypass', 'true')
-      sessionStorage.setItem('dev_role', role)
-
-      navigate(redirectPath, { replace: true })
-    } else {
-      // In production, redirect to login
+    if (!import.meta.env.DEV) {
       navigate('/login', { replace: true })
+      return
     }
+
+    async function setupDevBypass() {
+      try {
+        // Actually sign in as the test user for dev bypass
+        // This ensures RLS policies work correctly since they check auth.uid()
+        const email = role === 'tenant' ? 'tenant@example.com' : 'landlord@example.com'
+        const password = 'password123'
+
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (error) {
+          console.warn('Dev bypass: Could not auto-sign in:', error.message)
+          console.warn('Dev bypass: Falling back to session-only bypass (data may not load due to RLS)')
+        } else {
+          console.log('Dev bypass: Successfully authenticated as', email)
+        }
+
+        // Store dev bypass flag in sessionStorage for UI routing
+        sessionStorage.setItem('dev_bypass', 'true')
+        sessionStorage.setItem('dev_role', role)
+
+        const redirectPath = role === 'tenant' ? '/tenant/dashboard' : '/landlord/dashboard'
+        navigate(redirectPath, { replace: true })
+      } catch (err) {
+        console.error('Dev bypass error:', err)
+        navigate('/login')
+      }
+    }
+
+    setupDevBypass()
   }, [navigate, role])
 
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-      <div className="text-stone-600">Redirecting...</div>
+      <div className="text-stone-600">Setting up dev mode...</div>
     </div>
   )
 }

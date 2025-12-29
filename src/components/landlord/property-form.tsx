@@ -62,7 +62,7 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
   }
 
   return (
-    <Card>
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle>{property ? 'Edit Property' : 'Add New Property'}</CardTitle>
         <CardDescription>

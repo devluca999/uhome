@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useTenants } from '@/hooks/use-tenants'
 import { TenantCard } from '@/components/landlord/tenant-card'
 import { TenantForm } from '@/components/landlord/tenant-form'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
 
 export function LandlordTenants() {
   const { tenants, loading, createTenant, deleteTenant } = useTenants()
@@ -60,13 +61,15 @@ export function LandlordTenants() {
           <p className="text-stone-600">Loading tenants...</p>
         </div>
       ) : tenants.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-stone-600 mb-4">No tenants yet</p>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Your First Tenant
-          </Button>
-        </div>
+        <EmptyState
+          icon={<Users className="h-8 w-8" />}
+          title="No tenants yet"
+          description="Assign tenants to your properties to start managing leases and rent."
+          action={{
+            label: 'Add Your First Tenant',
+            onClick: () => setShowForm(true),
+          }}
+        />
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {tenants.map(tenant => (

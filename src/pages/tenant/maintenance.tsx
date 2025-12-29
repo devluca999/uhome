@@ -3,9 +3,10 @@ import { useTenantData } from '@/hooks/use-tenant-data'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { MaintenanceRequestForm } from '@/components/tenant/maintenance-request-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus } from 'lucide-react'
+import { Plus, Wrench } from 'lucide-react'
 
 export function TenantMaintenance() {
   const { data: tenantData, loading: tenantLoading } = useTenantData()
@@ -79,13 +80,15 @@ export function TenantMaintenance() {
       </div>
 
       {requests.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-stone-600 mb-4">No maintenance requests yet</p>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Submit Your First Request
-          </Button>
-        </div>
+        <EmptyState
+          icon={<Wrench className="h-8 w-8" />}
+          title="No maintenance requests"
+          description="Submit a maintenance request if you need repairs or have any issues with your property."
+          action={{
+            label: 'Submit Your First Request',
+            onClick: () => setShowForm(true),
+          }}
+        />
       ) : (
         <div className="space-y-4">
           {requests.map(request => (
@@ -93,7 +96,7 @@ export function TenantMaintenance() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-lg" id={`tenant-request-${request.id}-title`}>
                       {request.category || 'Maintenance Request'}
                     </CardTitle>
                     <CardDescription className="mt-1">

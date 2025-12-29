@@ -20,11 +20,6 @@ type MaintenanceRequest = {
   }
 }
 
-type SupabaseQueryResult = {
-  data: MaintenanceRequest[] | null
-  error: Error | null
-}
-
 export function useMaintenanceRequests(propertyId?: string) {
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,27 +32,55 @@ export function useMaintenanceRequests(propertyId?: string) {
   async function fetchRequests() {
     try {
       setLoading(true)
+      
+      // Try nested query first, fallback to separate queries if it fails
       let query = supabase
         .from('maintenance_requests')
-        .select(
-          `
-          *,
-          property:properties(name),
-          tenant:tenants(user:users(email))
-        `
-        )
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (propertyId) {
         query = query.eq('property_id', propertyId)
       }
 
-      const { data, error } = (await query) as SupabaseQueryResult
+      const { data, error } = await query
 
       if (error) throw error
-      setRequests(data || [])
+
+      // Fetch related data separately to avoid nested FK issues
+      const requestsWithRelations = await Promise.all(
+        (data || []).map(async (request: any) => {
+          const [propertyData, tenantData] = await Promise.all([
+            supabase.from('properties').select('name').eq('id', request.property_id).single(),
+            supabase.from('tenants').select('user_id').eq('id', request.tenant_id).single(),
+          ])
+
+          let userEmail = null
+          if (tenantData.data?.user_id) {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('email')
+              .eq('id', tenantData.data.user_id)
+              .single()
+            userEmail = userData?.email
+          }
+
+          return {
+            ...request,
+            property: propertyData.data || undefined,
+            tenant: tenantData.data
+              ? {
+                  user: userEmail ? { email: userEmail } : undefined,
+                }
+              : undefined,
+          }
+        })
+      )
+
+      setRequests(requestsWithRelations)
     } catch (err) {
       setError(err as Error)
+      console.error('Error fetching maintenance requests:', err)
     } finally {
       setLoading(false)
     }
@@ -68,18 +91,39 @@ export function useMaintenanceRequests(propertyId?: string) {
       .from('maintenance_requests')
       .update({ status })
       .eq('id', id)
-      .select(
-        `
-        *,
-        property:properties(name),
-        tenant:tenants(user:users(email))
-      `
-      )
+      .select('*')
       .single()
 
     if (error) throw error
-    setRequests(requests.map(r => (r.id === id ? (data as MaintenanceRequest) : r)))
-    return data
+
+    // Fetch related data
+    const [propertyData, tenantData] = await Promise.all([
+      supabase.from('properties').select('name').eq('id', data.property_id).single(),
+      supabase.from('tenants').select('user_id').eq('id', data.tenant_id).single(),
+    ])
+
+    let userEmail = null
+    if (tenantData.data?.user_id) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', tenantData.data.user_id)
+        .single()
+      userEmail = userData?.email
+    }
+
+    const updatedRequest: MaintenanceRequest = {
+      ...data,
+      property: propertyData.data || undefined,
+      tenant: tenantData.data
+        ? {
+            user: userEmail ? { email: userEmail } : undefined,
+          }
+        : undefined,
+    }
+
+    setRequests(requests.map(r => (r.id === id ? updatedRequest : r)))
+    return updatedRequest
   }
 
   return {

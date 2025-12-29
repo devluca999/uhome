@@ -43,9 +43,9 @@ haume uses GitHub Actions for continuous integration and deployment. The setup i
 - Only `NEXT_PUBLIC_*` variables in workflow (safe for public)
 
 **Required Secrets:**
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (for server-side operations if needed)
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (optional, for server-side operations if needed)
 
 ## Local Development
 

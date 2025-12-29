@@ -35,7 +35,7 @@ export function TenantCard({ tenant, onDelete }: TenantCardProps) {
     : 'No end date'
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle>{tenant.user?.email || 'Tenant'}</CardTitle>
         {tenant.property && <CardDescription>{tenant.property.name}</CardDescription>}

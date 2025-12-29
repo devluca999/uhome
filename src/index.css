@@ -87,9 +87,32 @@
 /* Glassmorphic utilities */
 .glass-card {
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    var(--shadow-default),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  transition: all var(--duration-default) ease-out;
+}
+
+.glass-card:hover {
   box-shadow:
     var(--shadow-elevated),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.glass-surface {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(231, 229, 228, 0.5);
+}
+
+.glass-nav {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(231, 229, 228, 0.6);
 }
