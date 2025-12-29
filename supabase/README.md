@@ -1,6 +1,6 @@
 # Supabase Schema Setup
 
-This folder contains the database schema for haume.
+This folder contains the database schema for uhome.
 
 ## Quick Setup
 

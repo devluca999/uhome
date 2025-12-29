@@ -1,8 +1,8 @@
-# PWA Setup — haume
+# PWA Setup — uhome
 
 ## Overview
 
-haume is built as a Progressive Web App (PWA) from the start. This document explains what PWA features are enabled and how they work.
+uhome is built as a Progressive Web App (PWA) from the start. This document explains what PWA features are enabled and how they work.
 
 ## PWA Features (MVP)
 

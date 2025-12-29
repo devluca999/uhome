@@ -1,4 +1,4 @@
-# Deployment Guide — haume
+# Deployment Guide — uhome
 
 ## Pre-Deployment Checklist
 

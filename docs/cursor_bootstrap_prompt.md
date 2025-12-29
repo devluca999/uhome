@@ -2,7 +2,7 @@
 
 You are acting as a senior full-stack engineer.
 
-This project is haume — a minimalist property management web app with landlord and tenant roles.
+This project is uhome — a minimalist property management web app with landlord and tenant roles.
 
 Use the Lovable UI reference at:
 https://github.com/devluca999/haume-lvbl-UI.git

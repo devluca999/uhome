@@ -18,8 +18,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.svg'],
       manifest: {
-        name: 'haume',
-        short_name: 'haume',
+        name: 'uhome',
+        short_name: 'uhome',
         description: 'Property management for independent landlords and tenants',
         theme_color: '#84A98C',
         background_color: '#FAFAF9',

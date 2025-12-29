@@ -1,4 +1,4 @@
-# UI Conventions — haume
+# UI Conventions — uhome
 
 ## Component System
 
@@ -107,5 +107,5 @@ Page components (src/pages/)
 
 1. Run: `npx shadcn@latest add [component-name]`
 2. Component is added to `src/components/ui/`
-3. Customize as needed for haume's design system
+3. Customize as needed for uhome's design system
 

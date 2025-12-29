@@ -1,4 +1,4 @@
-# Environment Setup — haume
+# Environment Setup — uhome
 
 ## Quick Start
 

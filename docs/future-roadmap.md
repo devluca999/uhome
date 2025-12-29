@@ -1,4 +1,4 @@
-# Future Roadmap — haume
+# Future Roadmap — uhome
 
 ## Post-MVP Priorities
 

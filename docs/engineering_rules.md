@@ -1,4 +1,4 @@
-# Engineering Rules — haume
+# Engineering Rules — uhome
 
 ## General Rules
 - Favor clarity over cleverness

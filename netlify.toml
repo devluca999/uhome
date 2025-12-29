@@ -1,4 +1,4 @@
-# Netlify configuration for haume
+# Netlify configuration for uhome
 # This ensures SPA routing works correctly
 
 [[redirects]]

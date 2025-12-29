@@ -1,4 +1,4 @@
-# Pre-Launch Checklist — haume
+# Pre-Launch Checklist — uhome
 
 ## Code Quality ✅
 

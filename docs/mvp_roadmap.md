@@ -1,5 +1,5 @@
 
-# MVP Roadmap & Checklist — haume
+# MVP Roadmap & Checklist — uhome
 
 ## Phase 0 — Foundation & Technical Stack
 

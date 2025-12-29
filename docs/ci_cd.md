@@ -1,8 +1,8 @@
-# CI/CD Setup — haume
+# CI/CD Setup — uhome
 
 ## Overview
 
-haume uses GitHub Actions for continuous integration and deployment. The setup is minimal and focused on quality checks.
+uhome uses GitHub Actions for continuous integration and deployment. The setup is minimal and focused on quality checks.
 
 ## Workflows
 

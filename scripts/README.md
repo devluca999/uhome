@@ -1,4 +1,4 @@
-# Seed Scripts — haume
+# Seed Scripts — uhome
 
 ## Mock Data Seeding
 

@@ -31,7 +31,7 @@ export function LandlordLayout() {
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
               <Link to="/landlord/dashboard" className="text-xl font-semibold text-stone-900">
-                haume
+                uhome
               </Link>
               <nav className="flex gap-1" aria-label="Main navigation">
                 {navItems.map(item => (

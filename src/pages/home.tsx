@@ -33,7 +33,7 @@ export function HomePage() {
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
       <div className="text-center max-w-md">
-        <h1 className="text-4xl font-semibold text-stone-900 mb-2">haume</h1>
+        <h1 className="text-4xl font-semibold text-stone-900 mb-2">uhome</h1>
         <p className="text-stone-600 mb-8">
           Property management for independent landlords and tenants
         </p>

@@ -1,8 +1,8 @@
-# Framework Decision — haume
+# Framework Decision — uhome
 
 ## Decision: Vite + React
 
-After evaluating Vite + React vs Next.js for haume's requirements, **Vite + React** was chosen as the framework.
+After evaluating Vite + React vs Next.js for uhome's requirements, **Vite + React** was chosen as the framework.
 
 ## Rationale
 

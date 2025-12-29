@@ -1,4 +1,4 @@
-// Mock Data Seeding Script for haume
+// Mock Data Seeding Script for uhome
 // Run with: npm run seed:mock
 
 import { createClient } from '@supabase/supabase-js'

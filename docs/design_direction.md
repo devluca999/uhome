@@ -1,4 +1,4 @@
-# Design Direction — haume
+# Design Direction — uhome
 
 Design principles:
 - Calm

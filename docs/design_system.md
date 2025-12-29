@@ -1,4 +1,4 @@
-# Design System — haume
+# Design System — uhome
 
 ## Design Tokens
 

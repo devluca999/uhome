@@ -1,4 +1,4 @@
-# Monetization — haume
+# Monetization — uhome
 
 ## Initial Model
 - Subscription-based SaaS

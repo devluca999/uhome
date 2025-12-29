@@ -1,4 +1,4 @@
-# haume
+# uhome
 
 A minimalist property management SaaS application for independent landlords and their tenants.
 
@@ -105,7 +105,7 @@ See [scripts/README.md](scripts/README.md) for details.
 ## Project Structure
 
 ```
-haume/
+uhome/
 ├── src/
 │   ├── components/     # Reusable UI components
 │   ├── pages/          # Route pages

@@ -1,17 +1,17 @@
-# Project Context — haume
+# Project Context — uhome
 
-haume is a web-first PWA property management application designed for independent landlords, small developers, and their tenants.
+uhome is a web-first PWA property management application designed for independent landlords, small developers, and their tenants.
 
 The product emphasizes calm, trust, clarity, and neutrality between tenants and landlords. It intentionally avoids the heavy, corporate feel of traditional property management software.
 
-haume supports two primary user roles:
+uhome supports two primary user roles:
 - Landlord (property owner / manager)
 - Tenant
 
 The UI should feel minimalist yet expressive, with subtle glassmorphic surfaces, ambient hue-based state indicators, and gentle microinteractions inspired by iOS, Notion, and Linear.
 
 A Lovable-generated UI exists at the following repository and should be used strictly as a **visual and interaction reference**, not as a codebase:
-https://github.com/devluca999/haume-lvbl-UI.git
+https://github.com/devluca999/uhome-lvbl-UI.git
 
 This repository is the source of truth. Cursor should:
 - Preserve the visual intent shown in the Lovable UI

@@ -1,4 +1,4 @@
-# Stripe Integration Plan — haume
+# Stripe Integration Plan — uhome
 
 ## Overview
 

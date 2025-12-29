@@ -1,4 +1,4 @@
-# Supabase Schema — haume (Draft)
+# Supabase Schema — uhome (Draft)
 
 ## users
 - id (uuid, primary key)

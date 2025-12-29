@@ -1,4 +1,4 @@
-# Smoke Tests — haume
+# Smoke Tests — uhome
 
 Post-deployment verification checklist. Run these tests after deploying to production.
 

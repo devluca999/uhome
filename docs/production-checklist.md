@@ -1,4 +1,4 @@
-# Production Deployment Checklist — haume
+# Production Deployment Checklist — uhome
 
 Use this checklist when deploying to production for the first time.
 

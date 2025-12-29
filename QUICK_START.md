@@ -9,7 +9,7 @@
 5. Paste into Supabase SQL Editor
 6. Click **Run** (or press Ctrl+Enter)
 
-This creates all tables, RLS policies, indexes, and triggers needed for haume.
+This creates all tables, RLS policies, indexes, and triggers needed for uhome.
 
 ## 2. Start the App
 

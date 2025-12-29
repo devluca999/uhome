@@ -1,4 +1,4 @@
--- haume Database Schema
+-- uhome Database Schema
 -- Run this in Supabase SQL Editor
 -- IMPORTANT: Run this entire script in one go
 

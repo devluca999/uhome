@@ -52,7 +52,7 @@ export function LoginPage() {
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-stone-900 mb-2">haume</h1>
+          <h1 className="text-3xl font-semibold text-stone-900 mb-2">uhome</h1>
           <p className="text-stone-600">Sign in to your account</p>
         </div>
         <Card>
