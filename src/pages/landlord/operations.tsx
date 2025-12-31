@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
-import { useTasks, type TaskInsert } from '@/hooks/use-tasks'
+import { useTasks, type TaskInsert, type TaskUpdate } from '@/hooks/use-tasks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
@@ -12,11 +12,13 @@ import { TaskCard } from '@/components/ui/task-card'
 import { TaskForm } from '@/components/landlord/task-form'
 import { NotesPanel } from '@/components/landlord/notes-panel'
 import { WorkOrderExpensePrompt } from '@/components/landlord/work-order-expense-prompt'
-import { Wrench, Plus, CheckCircle2, Paperclip } from 'lucide-react'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { Wrench, Plus } from 'lucide-react'
+import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import type { Database } from '@/types/database'
 
-type MaintenanceRequest = {
+// Use the type from the hook, but convert to database type when needed
+type MaintenanceRequestFromHook = {
   id: string
   property_id: string
   tenant_id: string
@@ -35,17 +37,19 @@ type MaintenanceRequest = {
   }
 }
 
+type MaintenanceRequestForPrompt = Database['public']['Tables']['maintenance_requests']['Row'] & {
+  property?: { id: string; name: string } | null
+}
+
 export function LandlordOperations() {
   const { requests, loading, updateRequestStatus } = useMaintenanceRequests()
-  const { tasks, createTask, updateTask, toggleTaskStatus, updateChecklistItem } =
-    useTasks('work_order')
+  const { tasks, createTask, toggleTaskStatus, updateChecklistItem } = useTasks('work_order')
   const [updating, setUpdating] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null)
   const [showTaskForm, setShowTaskForm] = useState(false)
-  const [expensePromptWorkOrder, setExpensePromptWorkOrder] = useState<MaintenanceRequest | null>(
+  const [expensePromptWorkOrder, setExpensePromptWorkOrder] = useState<MaintenanceRequestForPrompt | null>(
     null
   )
-  const cardSpring = createSpring('card')
 
   const pendingRequests = requests.filter(r => r.status === 'pending')
   const inProgressRequests = requests.filter(r => r.status === 'in_progress')
@@ -60,7 +64,12 @@ export function LandlordOperations() {
       if (status === 'completed') {
         const workOrder = requests.find(r => r.id === id)
         if (workOrder) {
-          setExpensePromptWorkOrder(workOrder)
+          // Convert hook type to prompt type
+          setExpensePromptWorkOrder({
+            ...workOrder,
+            category: workOrder.category ?? null,
+            property: workOrder.property ? { id: workOrder.property_id, name: workOrder.property.name } : null,
+          })
         }
       }
     } catch (error) {
@@ -70,12 +79,17 @@ export function LandlordOperations() {
     }
   }
 
-  async function handleCreateTask(data: TaskInsert) {
-    const result = await createTask(data)
-    if (!result.error) {
-      setShowTaskForm(false)
+  async function handleCreateTask(data: TaskInsert | TaskUpdate) {
+    // TaskForm can pass either TaskInsert or TaskUpdate, but we only create new tasks here
+    if ('assigned_to_type' in data && 'assigned_to_id' in data && 'linked_context_type' in data && 'linked_context_id' in data) {
+      const result = await createTask(data as TaskInsert)
+      if (!result.error) {
+        setShowTaskForm(false)
+      }
+      return result
     }
-    return result
+    // If it's TaskUpdate, we shouldn't be here for creating new tasks
+    return { data: null, error: new Error('Invalid task data for creation') }
   }
 
   function getStatusBadge(status: string) {
@@ -93,7 +107,7 @@ export function LandlordOperations() {
     )
   }
 
-  function WorkOrderCard({ request }: { request: MaintenanceRequest }) {
+  function WorkOrderCard({ request }: { request: MaintenanceRequestFromHook }) {
     const requestTasks = tasks.filter(t => t.linked_context_id === request.id)
     const isExpanded = selectedRequest === request.id
 
