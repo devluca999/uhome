@@ -36,6 +36,8 @@ export type Database = {
           rent_amount: number
           rent_due_date: number | null
           rules: string | null
+          property_type: string | null
+          rules_visible_to_tenants: boolean
           created_at: string
           updated_at: string
         }
@@ -47,6 +49,8 @@ export type Database = {
           rent_amount: number
           rent_due_date?: number | null
           rules?: string | null
+          property_type?: string | null
+          rules_visible_to_tenants?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -58,8 +62,67 @@ export type Database = {
           rent_amount?: number
           rent_due_date?: number | null
           rules?: string | null
+          property_type?: string | null
+          rules_visible_to_tenants?: boolean
           created_at?: string
           updated_at?: string
+        }
+      }
+      user_property_types: {
+        Row: {
+          id: string
+          user_id: string
+          type_name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type_name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type_name?: string
+          created_at?: string
+        }
+      }
+      property_groups: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          type: 'city' | 'ownership' | 'custom'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          type?: 'city' | 'ownership' | 'custom'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          type?: 'city' | 'ownership' | 'custom'
+          created_at?: string
+        }
+      }
+      property_group_assignments: {
+        Row: {
+          property_id: string
+          group_id: string
+        }
+        Insert: {
+          property_id: string
+          group_id: string
+        }
+        Update: {
+          property_id?: string
+          group_id?: string
         }
       }
       tenants: {
@@ -69,6 +132,8 @@ export type Database = {
           property_id: string
           move_in_date: string
           lease_end_date: string | null
+          phone: string | null
+          notes: string | null
           created_at: string
           updated_at: string
         }
@@ -78,6 +143,8 @@ export type Database = {
           property_id: string
           move_in_date: string
           lease_end_date?: string | null
+          phone?: string | null
+          notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -87,6 +154,8 @@ export type Database = {
           property_id?: string
           move_in_date?: string
           lease_end_date?: string | null
+          phone?: string | null
+          notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -119,6 +188,290 @@ export type Database = {
           status?: 'pending' | 'in_progress' | 'completed'
           category?: string | null
           description?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      rent_records: {
+        Row: {
+          id: string
+          property_id: string
+          tenant_id: string
+          amount: number
+          due_date: string
+          status: 'pending' | 'paid' | 'overdue'
+          paid_date: string | null
+          payment_method: 'manual' | 'external' | null
+          notes: string | null
+          receipt_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          tenant_id: string
+          amount: number
+          due_date: string
+          status?: 'pending' | 'paid' | 'overdue'
+          paid_date?: string | null
+          payment_method?: 'manual' | 'external' | null
+          notes?: string | null
+          receipt_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          tenant_id?: string
+          amount?: number
+          due_date?: string
+          status?: 'pending' | 'paid' | 'overdue'
+          paid_date?: string | null
+          payment_method?: 'manual' | 'external' | null
+          notes?: string | null
+          receipt_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      expenses: {
+        Row: {
+          id: string
+          property_id: string
+          name: string
+          amount: number
+          date: string
+          category: 'maintenance' | 'utilities' | 'repairs' | null
+          is_recurring: boolean
+          recurring_frequency: 'monthly' | 'quarterly' | 'yearly' | null
+          recurring_start_date: string | null
+          recurring_end_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          name: string
+          amount: number
+          date: string
+          category?: 'maintenance' | 'utilities' | 'repairs' | null
+          is_recurring?: boolean
+          recurring_frequency?: 'monthly' | 'quarterly' | 'yearly' | null
+          recurring_start_date?: string | null
+          recurring_end_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          name?: string
+          amount?: number
+          date?: string
+          category?: 'maintenance' | 'utilities' | 'repairs' | null
+          is_recurring?: boolean
+          recurring_frequency?: 'monthly' | 'quarterly' | 'yearly' | null
+          recurring_start_date?: string | null
+          recurring_end_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      leases: {
+        Row: {
+          id: string
+          property_id: string
+          tenant_id: string
+          lease_start_date: string
+          lease_end_date: string | null
+          lease_type: 'short-term' | 'long-term'
+          rent_amount: number
+          rent_frequency: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
+          security_deposit: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          tenant_id: string
+          lease_start_date: string
+          lease_end_date?: string | null
+          lease_type?: 'short-term' | 'long-term'
+          rent_amount: number
+          rent_frequency?: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
+          security_deposit?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          tenant_id?: string
+          lease_start_date?: string
+          lease_end_date?: string | null
+          lease_type?: 'short-term' | 'long-term'
+          rent_amount?: number
+          rent_frequency?: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
+          security_deposit?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      receipt_settings: {
+        Row: {
+          id: string
+          user_id: string
+          header_text: string | null
+          logo_url: string | null
+          footer_note: string | null
+          currency: string
+          date_format: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          header_text?: string | null
+          logo_url?: string | null
+          footer_note?: string | null
+          currency?: string
+          date_format?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          header_text?: string | null
+          logo_url?: string | null
+          footer_note?: string | null
+          currency?: string
+          date_format?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      units: {
+        Row: {
+          id: string
+          property_id: string
+          unit_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          unit_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          unit_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      notes: {
+        Row: {
+          id: string
+          user_id: string
+          entity_type:
+            | 'property'
+            | 'unit'
+            | 'tenant'
+            | 'rent_record'
+            | 'expense'
+            | 'work_order'
+            | 'document'
+          entity_id: string
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          entity_type:
+            | 'property'
+            | 'unit'
+            | 'tenant'
+            | 'rent_record'
+            | 'expense'
+            | 'work_order'
+            | 'document'
+          entity_id: string
+          content: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          entity_type?:
+            | 'property'
+            | 'unit'
+            | 'tenant'
+            | 'rent_record'
+            | 'expense'
+            | 'work_order'
+            | 'document'
+          entity_id?: string
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      tasks: {
+        Row: {
+          id: string
+          title: string
+          assigned_to_type: 'tenant' | 'household' | 'unit'
+          assigned_to_id: string
+          status: 'pending' | 'completed'
+          deadline: string | null
+          linked_context_type: 'work_order' | 'move_in' | 'property' | 'rent_record'
+          linked_context_id: string
+          checklist_items: Array<{ id: string; text: string; completed: boolean }>
+          image_urls: string[]
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          assigned_to_type: 'tenant' | 'household' | 'unit'
+          assigned_to_id: string
+          status?: 'pending' | 'completed'
+          deadline?: string | null
+          linked_context_type: 'work_order' | 'move_in' | 'property' | 'rent_record'
+          linked_context_id: string
+          checklist_items?: Array<{ id: string; text: string; completed: boolean }>
+          image_urls?: string[]
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          assigned_to_type?: 'tenant' | 'household' | 'unit'
+          assigned_to_id?: string
+          status?: 'pending' | 'completed'
+          deadline?: string | null
+          linked_context_type?: 'work_order' | 'move_in' | 'property' | 'rent_record'
+          linked_context_id?: string
+          checklist_items?: Array<{ id: string; text: string; completed: boolean }>
+          image_urls?: string[]
+          created_by?: string
           created_at?: string
           updated_at?: string
         }

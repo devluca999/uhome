@@ -36,4 +36,3 @@ export function ErrorAlert({ error, onDismiss, className = '' }: ErrorAlertProps
     </div>
   )
 }
-

@@ -1,20 +1,66 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useAuth } from '@/contexts/auth-context'
+import { useSettings } from '@/contexts/settings-context'
+import { SidebarLayout } from './sidebar-layout'
+
+const ALL_NAV_ITEMS = [
+  { path: '/landlord/dashboard', label: 'Dashboard', required: true },
+  { path: '/landlord/finances', label: 'Finances', required: false },
+  { path: '/landlord/properties', label: 'Properties', required: false },
+  { path: '/landlord/tenants', label: 'Tenants', required: false },
+  { path: '/landlord/operations', label: 'Operations', required: false },
+  { path: '/landlord/documents', label: 'Documents', required: false },
+  { path: '/landlord/settings', label: 'Settings', required: false },
+]
 
 export function LandlordLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut, user } = useAuth()
+  const { settings } = useSettings()
+  const [isMobile, setIsMobile] = useState(false)
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
 
-  const navItems = [
-    { path: '/landlord/dashboard', label: 'Dashboard' },
-    { path: '/landlord/properties', label: 'Properties' },
-    { path: '/landlord/tenants', label: 'Tenants' },
-    { path: '/landlord/maintenance', label: 'Maintenance' },
-    { path: '/landlord/documents', label: 'Documents' },
-  ]
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Determine layout: mobile defaults to sidebar, desktop defaults to header, user override persists
+  const effectiveLayout = useMemo(() => {
+    // If user has explicitly set a preference, use it
+    if (settings.navLayout === 'sidebar' || settings.navLayout === 'header') {
+      return settings.navLayout
+    }
+    // Otherwise, use defaults: mobile = sidebar, desktop = header
+    return isMobile ? 'sidebar' : 'header'
+  }, [settings.navLayout, isMobile])
+
+  // Filter and order nav items based on settings
+  const visibleNavItems = useMemo(() => {
+    let items = ALL_NAV_ITEMS.filter(
+      item => !settings.hiddenNavItems.includes(item.path) || item.required
+    )
+
+    // Apply custom order if available
+    if (settings.navItemOrder.length > 0) {
+      const ordered = settings.navItemOrder
+        .map(path => items.find(item => item.path === path))
+        .filter((item): item is (typeof ALL_NAV_ITEMS)[0] => item !== undefined)
+      const unordered = items.filter(item => !settings.navItemOrder.includes(item.path))
+      items = [...ordered, ...unordered]
+    }
+
+    return items
+  }, [settings.hiddenNavItems, settings.navItemOrder])
 
   async function handleSignOut() {
     // Clear dev bypass if active
@@ -24,17 +70,23 @@ export function LandlordLayout() {
     navigate('/login')
   }
 
+  // Render sidebar layout
+  if (effectiveLayout === 'sidebar') {
+    return <SidebarLayout navItems={visibleNavItems} basePath="/landlord" role="landlord" />
+  }
+
+  // Render header layout (default)
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-background">
       <nav className="glass-nav sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
-              <Link to="/landlord/dashboard" className="text-xl font-semibold text-stone-900">
+              <Link to="/landlord/dashboard" className="text-xl font-semibold text-foreground">
                 uhome
               </Link>
               <nav className="flex gap-1" aria-label="Main navigation">
-                {navItems.map(item => (
+                {visibleNavItems.map(item => (
                   <Button
                     key={item.path}
                     variant={location.pathname === item.path ? 'default' : 'ghost'}
@@ -47,7 +99,10 @@ export function LandlordLayout() {
               </nav>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-stone-600">{devBypass ? 'Dev Mode' : user?.email}</span>
+              <span className="text-sm text-muted-foreground">
+                {devBypass ? 'Dev Mode' : user?.email}
+              </span>
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 Sign out
               </Button>
@@ -55,7 +110,13 @@ export function LandlordLayout() {
           </div>
         </div>
       </nav>
-      <main>
+      <main
+        className="overscroll-contain"
+        style={{
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         <Outlet />
       </main>
     </div>

@@ -1,15 +1,19 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Design Tokens - Custom Colors */
-  --color-warm-white: #fafaf9;
-  --color-warm-white-pure: #ffffff;
-  --color-surface: #f5f5f4;
-  --color-border-custom: #e7e5e4;
-  --color-text-secondary: #78716c;
-  --color-text-primary: #292524;
+  /* Design Tokens - Dark Mode Colors (Primary) */
+  --color-charcoal: #111318;
+  --color-soft-white: #f5f6f8;
+  --color-muted-slate: #2a2d34;
+  --color-blue-gray: #7a869a;
+  --color-accent-amber: #d4a574;
   --color-accent-sage: #84a98c;
-  --color-accent-slate: #64748b;
+
+  /* Design Tokens - Light Mode Colors */
+  --color-off-white: #f5f5f5;
+  --color-charcoal-text: #111318;
+  --color-slate-secondary: #2a2d34;
+  --color-soft-border: #e7e5e4;
 
   /* Border Radius */
   --radius-sm: 6px;
@@ -23,55 +27,95 @@
   --shadow-elevated: 0 10px 15px rgba(0, 0, 0, 0.1);
   --shadow-floating: 0 20px 25px rgba(0, 0, 0, 0.1);
 
-  /* Motion */
-  --duration-fast: 150ms;
-  --duration-default: 200ms;
-  --duration-gentle: 250ms;
+  /* Motion - Timing Tokens */
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+  --duration-ambient: 1200ms;
+
+  /* Motion - Easing (CSS format) */
+  --easing-motion: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Motion - Opacity Tokens */
+  --opacity-hidden: 0;
+  --opacity-subtle: 0.6;
+  --opacity-visible: 1;
+
+  /* Motion - Blur & Material Tokens */
+  --blur-background: 16px;
+  --blur-modal: 24px;
+  --glass-opacity: 0.72;
+
+  /* Motion - Shadow Tokens */
+  --shadow-card: 0px 12px 30px rgba(0, 0, 0, 0.18);
+  --shadow-hover: 0px 20px 50px rgba(0, 0, 0, 0.22);
+  --shadow-modal: 0px 40px 80px rgba(0, 0, 0, 0.28);
+
+  /* Grain texture opacity */
+  --grain-opacity-dark: 0.04;
+  --grain-opacity-light: 0.025;
+
+  /* Matte layer opacity */
+  --matte-opacity-subtle-dark: 0.02;
+  --matte-opacity-subtle-light: 0.02;
+  --matte-opacity-medium-dark: 0.035;
+  --matte-opacity-medium-light: 0.03;
+  --matte-opacity-strong-dark: 0.05;
+  --matte-opacity-strong-light: 0.04;
+
+  /* Reflective gradient opacity */
+  --reflective-opacity-subtle-dark: 0.05;
+  --reflective-opacity-subtle-light: 0.1;
+  --reflective-opacity-medium-dark: 0.08;
+  --reflective-opacity-medium-light: 0.15;
 }
 
+/* Dark Mode (Default) */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 24 9.8% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 24 9.8% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 24 9.8% 10%;
-  --primary: 142 20.2% 58.8%;
-  --primary-foreground: 355.7 100% 97.3%;
-  --secondary: 60 4.8% 95.9%;
-  --secondary-foreground: 24 9.8% 10%;
-  --muted: 60 4.8% 95.9%;
-  --muted-foreground: 24 3.8% 46.1%;
-  --accent: 60 4.8% 95.9%;
-  --accent-foreground: 24 9.8% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 20 5.9% 90%;
-  --input: 20 5.9% 90%;
-  --ring: 142 20.2% 58.8%;
+  --background: 17 8% 7%; /* #111318 */
+  --foreground: 220 13% 96%; /* #F5F6F8 */
+  --card: 220 10% 15%; /* #2A2D34 */
+  --card-foreground: 220 13% 96%;
+  --popover: 220 10% 15%;
+  --popover-foreground: 220 13% 96%;
+  --primary: 142 20% 58%; /* Sage green */
+  --primary-foreground: 220 13% 96%;
+  --secondary: 220 10% 20%;
+  --secondary-foreground: 220 13% 96%;
+  --muted: 220 10% 20%;
+  --muted-foreground: 220 8% 50%; /* #7A869A */
+  --accent: 220 10% 20%;
+  --accent-foreground: 220 13% 96%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 220 13% 96%;
+  --border: 220 10% 25%;
+  --input: 220 10% 25%;
+  --ring: 142 20% 58%;
   --radius: 0.75rem;
 }
 
-.dark {
-  --background: 24 9.8% 10%;
-  --foreground: 0 0% 98%;
-  --card: 24 9.8% 10%;
-  --card-foreground: 0 0% 98%;
-  --popover: 24 9.8% 10%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 142 20.2% 58.8%;
-  --primary-foreground: 355.7 100% 97.3%;
-  --secondary: 24 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 24 3.7% 15.9%;
-  --muted-foreground: 24 5.4% 63.9%;
-  --accent: 24 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 24 3.7% 15.9%;
-  --input: 24 3.7% 15.9%;
-  --ring: 142 20.2% 58.8%;
+/* Light Mode */
+.light {
+  --background: 0 0% 96%; /* #F5F5F5 */
+  --foreground: 17 8% 7%; /* #111318 */
+  --card: 0 0% 100%;
+  --card-foreground: 17 8% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 17 8% 7%;
+  --primary: 142 20% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 10% 95%;
+  --secondary-foreground: 17 8% 7%;
+  --muted: 220 10% 95%;
+  --muted-foreground: 220 8% 40%; /* #2A2D34 */
+  --accent: 220 10% 95%;
+  --accent-foreground: 17 8% 7%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 20 5% 90%; /* #E7E5E4 */
+  --input: 20 5% 90%;
+  --ring: 142 20% 58%;
 }
 
 @layer base {
@@ -81,38 +125,213 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    /* Default to dark mode */
+    color-scheme: dark;
+    /* Disable overscroll glow */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ensure dark mode is default */
+  html {
+    color-scheme: dark;
+    /* Disable overscroll glow */
+    overscroll-behavior: contain;
+  }
+
+  /* Light mode override */
+  html.light {
+    color-scheme: light;
+  }
+
+  /* Rubber-band scroll at boundaries */
+  body,
+  html {
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: contain;
+  }
+
+  /* Disable overscroll glow on web */
+  * {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Glassmorphic utilities */
+/* Glassmorphic utilities - Dark Mode (Default) */
 .glass-card {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(42, 45, 52, 0.72); /* #2A2D34 with glass opacity */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
-    var(--shadow-default),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
-  transition: all var(--duration-default) ease-out;
+    var(--shadow-card),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  transition: all var(--duration-base) var(--easing-motion);
+  position: relative;
+  overflow: hidden;
 }
 
 .glass-card:hover {
   box-shadow:
-    var(--shadow-elevated),
+    var(--shadow-hover),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Light Mode Glass Card */
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow:
+    var(--shadow-card),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
+}
+
+.light .glass-card:hover {
+  box-shadow:
+    var(--shadow-hover),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Shadow utility classes for hover states */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* Will-change utilities for performance */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-transform-opacity {
+  will-change: transform, opacity;
+}
+
+/* Grain texture - static base64 encoded texture */
+.grain-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity-dark);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+
+.light .grain-texture::before {
+  opacity: var(--grain-opacity-light);
+}
+
+/* Matte layer gradients - using CSS variables */
+.matte-subtle {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, var(--matte-opacity-subtle-dark)) 0%,
+    transparent 100%
+  );
+}
+
+.light .matte-subtle {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, var(--matte-opacity-subtle-light)) 0%,
+    transparent 100%
+  );
+}
+
+.matte-medium {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, var(--matte-opacity-medium-dark)) 0%,
+    transparent 100%
+  );
+}
+
+.light .matte-medium {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, var(--matte-opacity-medium-light)) 0%,
+    transparent 100%
+  );
+}
+
+.matte-strong {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, var(--matte-opacity-strong-dark)) 0%,
+    transparent 100%
+  );
+}
+
+.light .matte-strong {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, var(--matte-opacity-strong-light)) 0%,
+    transparent 100%
+  );
+}
+
+/* Reflective gradient overlays - using CSS variables */
+.reflective-subtle {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, var(--reflective-opacity-subtle-dark)) 0%,
+    transparent 100%
+  );
+}
+
+.light .reflective-subtle {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, var(--reflective-opacity-subtle-light)) 0%,
+    transparent 100%
+  );
+}
+
+.reflective-medium {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, var(--reflective-opacity-medium-dark)) 0%,
+    transparent 100%
+  );
+}
+
+.light .reflective-medium {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, var(--reflective-opacity-medium-light)) 0%,
+    transparent 100%
+  );
 }
 
 .glass-surface {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  background: rgba(42, 45, 52, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .glass-surface {
   background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(231, 229, 228, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .glass-nav {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  background: rgba(17, 19, 24, 0.8); /* Charcoal with transparency */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .glass-nav {
   background: rgba(255, 255, 255, 0.8);
-  border-bottom: 1px solid rgba(231, 229, 228, 0.6);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }

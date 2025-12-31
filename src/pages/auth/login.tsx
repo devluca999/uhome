@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { GrainOverlay } from '@/components/ui/grain-overlay'
+import { MatteLayer } from '@/components/ui/matte-layer'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -49,13 +51,15 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      <GrainOverlay />
+      <MatteLayer intensity="subtle" />
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-stone-900 mb-2">uhome</h1>
-          <p className="text-stone-600">Sign in to your account</p>
+          <h1 className="text-4xl font-semibold text-foreground mb-2">uhome</h1>
+          <p className="text-muted-foreground">Sign in to your account</p>
         </div>
-        <Card>
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
             <CardDescription>Enter your email and password to continue</CardDescription>
@@ -63,12 +67,12 @@ export function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+                <div className="p-3 text-sm text-destructive bg-destructive/20 rounded-md border border-destructive/30">
                   {error}
                 </div>
               )}
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-stone-700">
+                <label htmlFor="email" className="text-sm font-medium text-foreground">
                   Email
                 </label>
                 <Input
@@ -82,7 +86,7 @@ export function LoginPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-stone-700">
+                <label htmlFor="password" className="text-sm font-medium text-foreground">
                   Password
                 </label>
                 <div className="relative">
@@ -100,7 +104,7 @@ export function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={loading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-700 focus:outline-none disabled:opacity-50"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none disabled:opacity-50"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -112,8 +116,8 @@ export function LoginPage() {
               </Button>
             </form>
             {import.meta.env.DEV && (
-              <div className="mt-4 pt-4 border-t border-stone-200">
-                <p className="text-xs text-stone-500 mb-2 text-center">Dev Quick Access</p>
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2 text-center">Dev Quick Access</p>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -139,10 +143,10 @@ export function LoginPage() {
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-stone-200" />
+                  <span className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-stone-500">Or continue with</span>
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
               <Button

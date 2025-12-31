@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    port: 5174,
+    port: 3000,
     strictPort: false,
   },
   plugins: [
@@ -43,7 +43,8 @@ export default defineConfig({
         runtimeCaching: []
       },
       devOptions: {
-        enabled: false
+        enabled: false,
+        type: 'module'
       }
     })
   ],

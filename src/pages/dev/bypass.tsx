@@ -28,7 +28,9 @@ export function DevBypass() {
 
         if (error) {
           console.warn('Dev bypass: Could not auto-sign in:', error.message)
-          console.warn('Dev bypass: Falling back to session-only bypass (data may not load due to RLS)')
+          console.warn(
+            'Dev bypass: Falling back to session-only bypass (data may not load due to RLS)'
+          )
         } else {
           console.log('Dev bypass: Successfully authenticated as', email)
         }

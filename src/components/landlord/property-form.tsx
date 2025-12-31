@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PropertyTypeSelect } from './property-type-select'
+import { PropertyGroupSelect } from './property-group-select'
+import { usePropertyGroupAssignments } from '@/hooks/use-property-groups'
 import type { Database } from '@/types/database'
 
 type Property = Database['public']['Tables']['properties']['Row']
@@ -14,6 +17,8 @@ interface PropertyFormProps {
     rent_amount: number
     rent_due_date?: number
     rules?: string
+    property_type?: string | null
+    group_ids?: string[]
   }) => Promise<void>
   onCancel: () => void
   loading?: boolean
@@ -25,7 +30,16 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
   const [rentAmount, setRentAmount] = useState(property?.rent_amount?.toString() || '')
   const [rentDueDate, setRentDueDate] = useState(property?.rent_due_date?.toString() || '')
   const [rules, setRules] = useState(property?.rules || '')
+  const [propertyType, setPropertyType] = useState(property?.property_type || null)
+  const [groupIds, setGroupIds] = useState<string[]>([])
+  const { assignments } = usePropertyGroupAssignments(property?.id)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (property?.id && assignments.length > 0) {
+      setGroupIds(assignments)
+    }
+  }, [property?.id, assignments])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,6 +69,8 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
         rent_amount: rentAmountNum,
         rent_due_date: rentDueDateNum,
         rules: rules.trim() || undefined,
+        property_type: propertyType || undefined,
+        group_ids: groupIds,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save property')
@@ -72,12 +88,12 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md border border-destructive/30">
               {error}
             </div>
           )}
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium text-stone-700">
+            <label htmlFor="name" className="text-sm font-medium text-foreground">
               Property Name *
             </label>
             <Input
@@ -90,7 +106,7 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="address" className="text-sm font-medium text-stone-700">
+            <label htmlFor="address" className="text-sm font-medium text-foreground">
               Address
             </label>
             <Input
@@ -101,9 +117,16 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
               disabled={loading}
             />
           </div>
+          <PropertyTypeSelect value={propertyType} onChange={setPropertyType} disabled={loading} />
+          <PropertyGroupSelect
+            propertyId={property?.id}
+            value={groupIds}
+            onChange={setGroupIds}
+            disabled={loading}
+          />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label htmlFor="rent_amount" className="text-sm font-medium text-stone-700">
+              <label htmlFor="rent_amount" className="text-sm font-medium text-foreground">
                 Monthly Rent *
               </label>
               <Input
@@ -119,7 +142,7 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="rent_due_date" className="text-sm font-medium text-stone-700">
+              <label htmlFor="rent_due_date" className="text-sm font-medium text-foreground">
                 Rent Due Date
               </label>
               <Input
@@ -135,7 +158,7 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
             </div>
           </div>
           <div className="space-y-2">
-            <label htmlFor="rules" className="text-sm font-medium text-stone-700">
+            <label htmlFor="rules" className="text-sm font-medium text-foreground">
               House Rules / Considerations
             </label>
             <textarea

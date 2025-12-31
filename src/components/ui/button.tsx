@@ -1,23 +1,24 @@
 import * as React from 'react'
+import { motion } from 'framer-motion'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
+import { motion as motionTokens, createSpring, useReducedMotion } from '@/lib/motion'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default:
-          'bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:shadow-md active:scale-[0.98]',
+        default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:shadow-md',
         destructive:
-          'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-md active:scale-[0.98]',
+          'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-md',
         outline:
-          'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground hover:shadow-md active:scale-[0.98]',
+          'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground hover:shadow-md',
         secondary:
-          'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-md active:scale-[0.98]',
-        ghost: 'hover:bg-accent hover:text-accent-foreground active:scale-[0.98]',
+          'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-md',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
@@ -41,9 +42,48 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button'
+    const buttonSpring = createSpring('button')
+    const prefersReducedMotion = useReducedMotion()
+
+    // Link variant doesn't need motion
+    if (variant === 'link' || asChild) {
+      const Comp = asChild ? Slot : 'button'
+      return (
+        <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      )
+    }
+
+    const { onDrag, onDragStart, onDragEnd, ...motionProps } = props
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <motion.button
+        ref={ref}
+        className={cn('will-change-transform', buttonVariants({ variant, size, className }))}
+        whileHover={
+          prefersReducedMotion
+            ? {}
+            : {
+                scale: motionTokens.scale.hover,
+              }
+        }
+        whileTap={
+          prefersReducedMotion
+            ? {}
+            : {
+                scale: motionTokens.scale.press,
+              }
+        }
+        transition={
+          prefersReducedMotion
+            ? { duration: 0 }
+            : {
+                type: 'spring',
+                ...buttonSpring,
+              }
+        }
+        layout={false}
+        {...(motionProps as any)}
+      />
     )
   }
 )

@@ -40,35 +40,86 @@ export function useProperties() {
     rent_amount: number
     rent_due_date?: number
     rules?: string
+    property_type?: string | null
+    group_ids?: string[]
   }) {
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
+    const { property_type, group_ids, ...propertyData } = property
+
     const { data, error } = await supabase
       .from('properties')
       .insert({
-        ...property,
+        ...propertyData,
+        property_type: property_type || null,
         owner_id: user.id,
       })
       .select()
       .single()
 
     if (error) throw error
+
+    // Handle group assignments if provided
+    if (group_ids && group_ids.length > 0) {
+      const { error: assignmentError } = await supabase.from('property_group_assignments').insert(
+        group_ids.map(groupId => ({
+          property_id: data.id,
+          group_id: groupId,
+        }))
+      )
+
+      if (assignmentError) {
+        console.error('Error assigning groups:', assignmentError)
+        // Continue anyway - property was created
+      }
+    }
+
     setProperties([data, ...properties])
     return data
   }
 
-  async function updateProperty(id: string, updates: Partial<Property>) {
+  async function updateProperty(id: string, updates: Partial<Property & { group_ids?: string[] }>) {
+    const { group_ids, ...propertyUpdates } = updates
+
     const { data, error } = await supabase
       .from('properties')
-      .update(updates)
+      .update(propertyUpdates)
       .eq('id', id)
       .select()
       .single()
 
     if (error) throw error
+
+    // Handle group assignments if provided
+    if (group_ids !== undefined) {
+      // Delete existing assignments
+      const { error: deleteError } = await supabase
+        .from('property_group_assignments')
+        .delete()
+        .eq('property_id', id)
+
+      if (deleteError) {
+        console.error('Error deleting group assignments:', deleteError)
+      }
+
+      // Insert new assignments
+      if (group_ids.length > 0) {
+        const { error: insertError } = await supabase.from('property_group_assignments').insert(
+          group_ids.map(groupId => ({
+            property_id: id,
+            group_id: groupId,
+          }))
+        )
+
+        if (insertError) {
+          console.error('Error inserting group assignments:', insertError)
+        }
+      }
+    }
+
     setProperties(properties.map(p => (p.id === id ? data : p)))
     return data
   }

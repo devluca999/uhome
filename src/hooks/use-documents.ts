@@ -20,19 +20,13 @@ export function useDocuments(propertyId?: string) {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    if (propertyId) {
-      fetchDocuments()
-    } else {
-      setLoading(false)
-    }
+    fetchDocuments()
   }, [propertyId])
 
   async function fetchDocuments() {
-    if (!propertyId) return
-
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      let query = supabase
         .from('documents')
         .select(
           `
@@ -40,8 +34,14 @@ export function useDocuments(propertyId?: string) {
           uploaded_by_user:users(email)
         `
         )
-        .eq('property_id', propertyId)
         .order('created_at', { ascending: false })
+
+      // If propertyId is provided, filter by it; otherwise fetch all
+      if (propertyId) {
+        query = query.eq('property_id', propertyId)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
       setDocuments(data || [])

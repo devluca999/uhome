@@ -1,0 +1,277 @@
+import { useMemo } from 'react'
+import type { RentRecordWithRelations } from './use-landlord-rent-records'
+import type { Database } from '@/types/database'
+
+type Expense = Database['public']['Tables']['expenses']['Row']
+
+export type FinancialMetrics = {
+  rentCollected: number
+  rentOutstanding: number
+  upcomingRent: number
+  totalExpenses: number
+  netProfit: number
+  projectedNet: number // Next 30 days
+  marginPercentage: number
+  monthlyRentCollected: Array<{
+    month: string
+    amount: number
+  }>
+  monthlyExpenses: Array<{
+    month: string
+    amount: number
+  }>
+  monthlyNet: Array<{
+    month: string
+    income: number
+    expenses: number
+    net: number
+  }>
+  expenseAveragesByCategory: Array<{
+    category: string
+    monthlyAverage: number
+    trend: 'up' | 'down' | 'neutral'
+    trendPercentage?: number
+  }>
+}
+
+export function useFinancialMetrics(
+  rentRecords: RentRecordWithRelations[],
+  expenses: Expense[],
+  months: number = 6,
+  propertyId?: string
+): FinancialMetrics {
+  return useMemo(() => {
+    const now = new Date()
+
+    // Filter by property if specified
+    const filteredRentRecords = propertyId
+      ? rentRecords.filter(r => r.property_id === propertyId)
+      : rentRecords
+
+    const filteredExpenses = propertyId
+      ? expenses.filter(e => e.property_id === propertyId)
+      : expenses
+
+    // Calculate rent metrics
+    const rentCollected = filteredRentRecords
+      .filter(r => r.status === 'paid')
+      .reduce((sum, r) => sum + Number(r.amount), 0)
+
+    const rentOutstanding = filteredRentRecords
+      .filter(r => r.status === 'overdue')
+      .reduce((sum, r) => sum + Number(r.amount), 0)
+
+    const upcomingRent = filteredRentRecords
+      .filter(r => r.status === 'pending')
+      .reduce((sum, r) => sum + Number(r.amount), 0)
+
+    // Calculate expenses (including recurring projections)
+    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+
+    // Calculate projected expenses from recurring expenses (next 30 days)
+    const projectedExpenses = calculateProjectedExpenses(filteredExpenses, 30)
+
+    // Calculate projected income (next 30 days - pending rent)
+    const projectedIncome = upcomingRent
+
+    // Calculate projected net (next 30 days)
+    const projectedNet = projectedIncome - projectedExpenses
+
+    // Calculate net profit
+    const netProfit = rentCollected - totalExpenses
+
+    // Calculate margin percentage
+    const marginPercentage =
+      rentCollected > 0 ? ((rentCollected - totalExpenses) / rentCollected) * 100 : 0
+
+    // Calculate monthly rent collected for chart
+    const monthlyRentCollected: Array<{ month: string; amount: number }> = []
+    const monthlyExpenses: Array<{ month: string; amount: number }> = []
+    const monthlyNet: Array<{ month: string; income: number; expenses: number; net: number }> = []
+
+    for (let i = months - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+
+      const monthRent = filteredRentRecords
+        .filter(r => {
+          if (r.status !== 'paid' || !r.paid_date) return false
+          const paidDate = new Date(r.paid_date)
+          return paidDate >= monthStart && paidDate <= monthEnd
+        })
+        .reduce((sum, r) => sum + Number(r.amount), 0)
+
+      const monthExpenses = filteredExpenses
+        .filter(e => {
+          const expenseDate = new Date(e.date)
+          return expenseDate >= monthStart && expenseDate <= monthEnd
+        })
+        .reduce((sum, e) => sum + Number(e.amount), 0)
+
+      monthlyRentCollected.push({ month: monthKey, amount: monthRent })
+      monthlyExpenses.push({ month: monthKey, amount: monthExpenses })
+      monthlyNet.push({
+        month: monthKey,
+        income: monthRent,
+        expenses: monthExpenses,
+        net: monthRent - monthExpenses,
+      })
+    }
+
+    // Calculate expense averages by category with trends
+    const expenseAveragesByCategory = calculateExpenseAveragesByCategory(filteredExpenses, months)
+
+    return {
+      rentCollected,
+      rentOutstanding,
+      upcomingRent,
+      totalExpenses,
+      netProfit,
+      projectedNet,
+      marginPercentage,
+      monthlyRentCollected,
+      monthlyExpenses,
+      monthlyNet,
+      expenseAveragesByCategory,
+    }
+  }, [rentRecords, expenses, months, propertyId])
+}
+
+/**
+ * Calculate projected expenses from recurring expenses for the next N days
+ */
+function calculateProjectedExpenses(expenses: Expense[], days: number): number {
+  const now = new Date()
+  const endDate = new Date(now)
+  endDate.setDate(endDate.getDate() + days)
+
+  let projected = 0
+
+  for (const expense of expenses) {
+    if (!expense.is_recurring || !expense.recurring_frequency || !expense.recurring_start_date) {
+      continue
+    }
+
+    const startDate = new Date(expense.recurring_start_date)
+    const endRecurringDate = expense.recurring_end_date
+      ? new Date(expense.recurring_end_date)
+      : null
+
+    // Check if recurring period is active
+    if (startDate > endDate) continue
+    if (endRecurringDate && endRecurringDate < now) continue
+
+    // Calculate how many occurrences in the projection period
+    const periodStart = startDate > now ? startDate : now
+    const periodEnd = endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
+
+    let occurrences = 0
+    const current = new Date(periodStart)
+
+    while (current <= periodEnd) {
+      occurrences++
+
+      switch (expense.recurring_frequency) {
+        case 'monthly':
+          current.setMonth(current.getMonth() + 1)
+          break
+        case 'quarterly':
+          current.setMonth(current.getMonth() + 3)
+          break
+        case 'yearly':
+          current.setFullYear(current.getFullYear() + 1)
+          break
+      }
+    }
+
+    projected += Number(expense.amount) * occurrences
+  }
+
+  return projected
+}
+
+/**
+ * Calculate monthly averages by category with trend analysis
+ */
+function calculateExpenseAveragesByCategory(
+  expenses: Expense[],
+  months: number = 6
+): Array<{
+  category: string
+  monthlyAverage: number
+  trend: 'up' | 'down' | 'neutral'
+  trendPercentage?: number
+}> {
+  const now = new Date()
+  const categories = ['maintenance', 'utilities', 'repairs'] as const
+  const result: Array<{
+    category: string
+    monthlyAverage: number
+    trend: 'up' | 'down' | 'neutral'
+    trendPercentage?: number
+  }> = []
+
+  for (const category of categories) {
+    const categoryExpenses = expenses.filter(e => e.category === category)
+
+    if (categoryExpenses.length === 0) continue
+
+    // Calculate last 3 months vs previous 3 months for trend
+    const last3MonthsStart = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+    const last3MonthsEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+    const prev3MonthsStart = new Date(now.getFullYear(), now.getMonth() - 6, 1)
+    const prev3MonthsEnd = new Date(now.getFullYear(), now.getMonth() - 3, 0)
+
+    const last3MonthsTotal = categoryExpenses
+      .filter(e => {
+        const expenseDate = new Date(e.date)
+        return expenseDate >= last3MonthsStart && expenseDate <= last3MonthsEnd
+      })
+      .reduce((sum, e) => sum + Number(e.amount), 0)
+
+    const prev3MonthsTotal = categoryExpenses
+      .filter(e => {
+        const expenseDate = new Date(e.date)
+        return expenseDate >= prev3MonthsStart && expenseDate <= prev3MonthsEnd
+      })
+      .reduce((sum, e) => sum + Number(e.amount), 0)
+
+    const last3MonthsAverage = last3MonthsTotal / 3
+    const prev3MonthsAverage = prev3MonthsTotal / 3
+
+    let trend: 'up' | 'down' | 'neutral' = 'neutral'
+    let trendPercentage: number | undefined
+
+    if (prev3MonthsAverage > 0) {
+      const change = ((last3MonthsAverage - prev3MonthsAverage) / prev3MonthsAverage) * 100
+      trendPercentage = Math.abs(change)
+      trend = change > 5 ? 'up' : change < -5 ? 'down' : 'neutral'
+    } else if (last3MonthsAverage > 0) {
+      trend = 'up'
+      trendPercentage = 100
+    }
+
+    result.push({
+      category,
+      monthlyAverage: last3MonthsAverage,
+      trend,
+      trendPercentage,
+    })
+  }
+
+  // Add one-time expenses category
+  const oneTimeExpenses = expenses.filter(e => !e.is_recurring)
+  const oneTimeTotal = oneTimeExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+  const oneTimeAverage = oneTimeTotal / Math.max(1, months)
+
+  result.push({
+    category: 'one-time',
+    monthlyAverage: oneTimeAverage,
+    trend: 'neutral',
+  })
+
+  return result
+}

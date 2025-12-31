@@ -32,7 +32,7 @@ export function useMaintenanceRequests(propertyId?: string) {
   async function fetchRequests() {
     try {
       setLoading(true)
-      
+
       // Try nested query first, fallback to separate queries if it fails
       let query = supabase
         .from('maintenance_requests')

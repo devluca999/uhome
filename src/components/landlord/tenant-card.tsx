@@ -1,12 +1,17 @@
+import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
 
 type Tenant = {
   id: string
   user_id: string
   property_id: string
   move_in_date: string
-  lease_end_date?: string
+  lease_end_date?: string | null
+  phone?: string | null
+  notes?: string | null
   user?: {
     email: string
     role: string
@@ -35,35 +40,59 @@ export function TenantCard({ tenant, onDelete }: TenantCardProps) {
     : 'No end date'
 
   return (
-    <Card className="glass-card">
-      <CardHeader>
-        <CardTitle>{tenant.user?.email || 'Tenant'}</CardTitle>
-        {tenant.property && <CardDescription>{tenant.property.name}</CardDescription>}
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-stone-600">Move-in Date</span>
-            <span className="text-sm font-medium">{moveInDate}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-stone-600">Lease End</span>
-            <span className="text-sm font-medium">{leaseEndDate}</span>
-          </div>
-          {onDelete && (
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDelete}
-                className="w-full text-red-600 hover:text-red-700"
-              >
-                Remove Tenant
-              </Button>
+    <motion.div
+      initial={{ opacity: motionTokens.opacity.hidden, y: 4 }}
+      animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+      exit={{ opacity: motionTokens.opacity.hidden, y: -4 }}
+      transition={{
+        duration: durationToSeconds(motionTokens.duration.base),
+        ease: motionTokens.ease.standard,
+      }}
+    >
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle>{tenant.user?.email || 'Tenant'}</CardTitle>
+          {tenant.property && <CardDescription>{tenant.property.name}</CardDescription>}
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Move-in Date</span>
+              <span className="text-sm font-medium text-foreground">{moveInDate}</span>
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Lease End</span>
+              <span className="text-sm font-medium">{leaseEndDate}</span>
+            </div>
+            {tenant.phone && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Phone</span>
+                <span className="text-sm font-medium text-foreground">{tenant.phone}</span>
+              </div>
+            )}
+            {tenant.notes && (
+              <div className="space-y-1">
+                <span className="text-sm text-muted-foreground">Notes</span>
+                <div className="bg-muted/50 p-2 rounded-md">
+                  <MarkdownRenderer content={tenant.notes} />
+                </div>
+              </div>
+            )}
+            {onDelete && (
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDelete}
+                  className="w-full text-destructive hover:text-destructive/90"
+                >
+                  Remove Tenant
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }

@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { GrainOverlay } from '@/components/ui/grain-overlay'
+import { MatteLayer } from '@/components/ui/matte-layer'
 
 export function SignupPage() {
   const [email, setEmail] = useState('')
@@ -40,13 +42,15 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      <GrainOverlay />
+      <MatteLayer intensity="subtle" />
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-stone-900 mb-2">uhome</h1>
-          <p className="text-stone-600">Create your account</p>
+          <h1 className="text-4xl font-semibold text-foreground mb-2">uhome</h1>
+          <p className="text-muted-foreground">Create your account</p>
         </div>
-        <Card>
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
             <CardDescription>Create an account to get started</CardDescription>
@@ -54,12 +58,12 @@ export function SignupPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+                <div className="p-3 text-sm text-destructive bg-destructive/20 rounded-md border border-destructive/30">
                   {error}
                 </div>
               )}
               <div className="space-y-2">
-                <label htmlFor="role" className="text-sm font-medium text-stone-700">
+                <label htmlFor="role" className="text-sm font-medium text-foreground">
                   I am a
                 </label>
                 <div className="flex gap-2">
@@ -84,7 +88,7 @@ export function SignupPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-stone-700">
+                <label htmlFor="email" className="text-sm font-medium text-foreground">
                   Email
                 </label>
                 <Input
@@ -98,7 +102,7 @@ export function SignupPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-stone-700">
+                <label htmlFor="password" className="text-sm font-medium text-foreground">
                   Password
                 </label>
                 <div className="relative">
@@ -117,13 +121,13 @@ export function SignupPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={loading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-700 focus:outline-none disabled:opacity-50"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none disabled:opacity-50"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-stone-500">Must be at least 6 characters</p>
+                <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Creating account...' : 'Create Account'}

@@ -6,7 +6,9 @@ type Tenant = {
   user_id: string
   property_id: string
   move_in_date: string
-  lease_end_date?: string
+  lease_end_date?: string | null
+  phone?: string | null
+  notes?: string | null
   created_at: string
   updated_at: string
   user?: {
@@ -57,7 +59,11 @@ export function useTenants() {
           (simpleData || []).map(async tenant => {
             const [userData, propertyData] = await Promise.all([
               supabase.from('users').select('email, role').eq('id', tenant.user_id).single(),
-              supabase.from('properties').select('name, address').eq('id', tenant.property_id).single(),
+              supabase
+                .from('properties')
+                .select('name, address')
+                .eq('id', tenant.property_id)
+                .single(),
             ])
 
             return {
@@ -93,12 +99,10 @@ export function useTenants() {
     property_id: string
     move_in_date: string
     lease_end_date?: string
+    phone?: string
+    notes?: string
   }) {
-    const { data, error } = await supabase
-      .from('tenants')
-      .insert(tenant)
-      .select('*')
-      .single()
+    const { data, error } = await supabase.from('tenants').insert(tenant).select('*').single()
 
     if (error) throw error
 

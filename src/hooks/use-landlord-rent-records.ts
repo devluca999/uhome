@@ -1,0 +1,129 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
+
+export type RentRecordWithRelations = {
+  id: string
+  property_id: string
+  tenant_id: string
+  amount: number
+  due_date: string
+  status: 'pending' | 'paid' | 'overdue'
+  paid_date?: string | null
+  payment_method?: 'manual' | 'external' | null
+  notes?: string | null
+  receipt_url?: string | null
+  created_at: string
+  updated_at: string
+  property?: {
+    id: string
+    name: string
+    address?: string | null
+  }
+  tenant?: {
+    id: string
+    user?: {
+      email: string
+    }
+  }
+}
+
+export type RentRecordFilter = {
+  propertyId?: string
+  status?: 'pending' | 'paid' | 'overdue'
+  dateRange?: {
+    start: Date
+    end: Date
+  }
+}
+
+export function useLandlordRentRecords(filter?: RentRecordFilter) {
+  const { user } = useAuth()
+  const [records, setRecords] = useState<RentRecordWithRelations[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    if (user) {
+      fetchRecords()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    user,
+    filter?.propertyId,
+    filter?.status,
+    filter?.dateRange?.start?.toISOString(),
+    filter?.dateRange?.end?.toISOString(),
+  ])
+
+  async function fetchRecords() {
+    if (!user) return
+
+    try {
+      setLoading(true)
+
+      // First, get all properties owned by the landlord
+      const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('owner_id', user.id)
+
+      if (propertiesError) throw propertiesError
+      if (!properties || properties.length === 0) {
+        setRecords([])
+        setLoading(false)
+        return
+      }
+
+      const propertyIds = properties.map(p => p.id)
+
+      // Build query
+      let query = supabase
+        .from('rent_records')
+        .select(
+          `
+          *,
+          property:properties(id, name, address),
+          tenant:tenants(
+            id,
+            user:users(email)
+          )
+        `
+        )
+        .in('property_id', propertyIds)
+
+      // Apply filters
+      if (filter?.propertyId) {
+        query = query.eq('property_id', filter.propertyId)
+      }
+
+      if (filter?.status) {
+        query = query.eq('status', filter.status)
+      }
+
+      if (filter?.dateRange) {
+        query = query
+          .gte('due_date', filter.dateRange.start.toISOString().split('T')[0])
+          .lte('due_date', filter.dateRange.end.toISOString().split('T')[0])
+      }
+
+      query = query.order('due_date', { ascending: false })
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setRecords(data || [])
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return {
+    records,
+    loading,
+    error,
+    refetch: fetchRecords,
+  }
+}

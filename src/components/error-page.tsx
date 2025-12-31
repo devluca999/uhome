@@ -24,24 +24,27 @@ export function ErrorPage() {
         break
       case 500:
         errorTitle = 'Server Error'
-        errorDescription = 'Something went wrong on our end. We\'re working to fix it.'
+        errorDescription = "Something went wrong on our end. We're working to fix it."
         break
       default:
         errorTitle = `Error ${error.status}`
         errorDescription = error.statusText || errorDescription
     }
   } else if (error instanceof Error) {
-    const isNetworkError = error.message.includes('Failed to fetch') || 
-                           error.message.includes('Network') ||
-                           error.message.includes('500')
+    const isNetworkError =
+      error.message.includes('Failed to fetch') ||
+      error.message.includes('Network') ||
+      error.message.includes('500')
 
-    const isPermissionError = error.message.includes('permission') ||
-                             error.message.includes('unauthorized') ||
-                             error.message.includes('403')
+    const isPermissionError =
+      error.message.includes('permission') ||
+      error.message.includes('unauthorized') ||
+      error.message.includes('403')
 
     if (isNetworkError) {
       errorTitle = 'Connection Issue'
-      errorDescription = 'We couldn\'t connect to the server. Please check your internet connection and try again.'
+      errorDescription =
+        "We couldn't connect to the server. Please check your internet connection and try again."
     } else if (isPermissionError) {
       errorTitle = 'Access Denied'
       errorDescription = "You don't have permission to access this resource."
@@ -95,4 +98,3 @@ export function ErrorPage() {
     </div>
   )
 }
-

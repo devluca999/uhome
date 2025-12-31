@@ -181,41 +181,96 @@ See detailed plans in:
 - **[Stripe Integration Plan](stripe-integration-plan.md)** — Payment processing implementation plan
 - **[Monetization Strategy](monetization.md)** — Pricing and revenue model
 
+## Phase 8: Enhanced Property & Tenant Model
+
+### Property Type System
+- [x] Database migration for property_type field and user_property_types table
+- [x] Property type selection component with "other" option
+- [x] Custom property types (user-specific, saved for future use)
+- [x] Property type display on property cards
+
+### Property Grouping Labels
+- [x] Database migration for property_groups and property_group_assignments tables
+- [x] Multi-select grouping component
+- [x] "Add new group" functionality (city, ownership, custom types)
+- [x] Group badges on property cards
+- [x] Filter properties by group (infrastructure ready)
+
+### Enhanced Tenant Model
+- [x] Database migration for phone and notes fields
+- [x] Tenant form with phone and notes (markdown support)
+- [x] Tenant card displays phone and formatted notes
+
+## Phase 9: Lease Metadata System
+
+- [x] Database migration for leases table
+- [x] Lease form component (create/edit)
+- [x] Lease summary card component
+- [x] Lease history view (multiple leases per property)
+- [x] Lease management on property detail page
+- [x] Lease metadata visible but not editable by tenants
+
+## Phase 10: Rent Receipt Generation
+
+- [x] Database migration for receipt_settings table
+- [x] Receipt settings form (header, logo, footer, currency, date format)
+- [x] Receipt settings hook
+- [x] Supabase Edge Function placeholder for PDF generation
+- [x] Receipt download button on rent ledger rows (for paid records)
+- [ ] PDF generation implementation (requires PDF library installation)
+
+## Phase 11: Notes System
+
+- [x] Database migration for notes table (polymorphic association)
+- [x] Notes hook (CRUD operations)
+- [x] Markdown editor component (with preview toggle)
+- [x] Markdown renderer component
+- [x] Notes panel component (for property and tenant detail pages)
+- [x] Inline notes editor on rent ledger rows
+- [x] Inline notes editor on expense items
+
 ### Immediate Post-MVP Priorities
 
-**Phase 8: Subscription & Billing** (2-3 weeks)
+**Phase 12: Subscription & Billing** (2-3 weeks)
 - Stripe subscription integration
 - Tier enforcement
 - Billing management
 
-**Phase 9: Rent Collection** (3-4 weeks)
+**Phase 13: Rent Collection** (3-4 weeks)
 - Stripe Connect integration
 - Payment processing
 - Receipts and history
 
-**Phase 10: Notifications** (2 weeks)
+**Phase 14: Notifications** (2 weeks)
 - Email notifications
 - In-app notification center
 - Push notifications (PWA)
 
 ---
 
-## Current Progress: 95% MVP Complete
+## Current Progress: MVP Feature Complete
 
 **What's Done:**
 - ✅ Full authentication system
 - ✅ Complete landlord management features
 - ✅ Complete tenant features
-- ✅ Property management (CRUD)
-- ✅ Tenant management
+- ✅ Property management (CRUD) with types and grouping
+- ✅ Tenant management with phone and notes
 - ✅ Maintenance request system
 - ✅ Document management
-- ✅ Rent tracking (manual)
+- ✅ Rent tracking (manual) with interactive ledger
+- ✅ Lease metadata system
+- ✅ Receipt generation infrastructure (PDF generation pending library)
+- ✅ Notes system (polymorphic, markdown support)
+- ✅ Expense tracking
+- ✅ Financial summaries and charts
 - ✅ UI polish and accessibility
+- ✅ Design philosophy and standards documentation
 - ✅ Deployment documentation
 
 **What's Left:**
 - 🎯 Actual production deployment
+- 📄 PDF receipt generation (requires PDF library in Edge Function)
 - 📧 Notifications (post-MVP)
 - 📊 CSV exports (post-MVP)
 - 💳 Payment processing (post-MVP)
