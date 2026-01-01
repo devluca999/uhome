@@ -47,9 +47,8 @@ export function LandlordOperations() {
   const [updating, setUpdating] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null)
   const [showTaskForm, setShowTaskForm] = useState(false)
-  const [expensePromptWorkOrder, setExpensePromptWorkOrder] = useState<MaintenanceRequestForPrompt | null>(
-    null
-  )
+  const [expensePromptWorkOrder, setExpensePromptWorkOrder] =
+    useState<MaintenanceRequestForPrompt | null>(null)
 
   const pendingRequests = requests.filter(r => r.status === 'pending')
   const inProgressRequests = requests.filter(r => r.status === 'in_progress')
@@ -68,7 +67,9 @@ export function LandlordOperations() {
           setExpensePromptWorkOrder({
             ...workOrder,
             category: workOrder.category ?? null,
-            property: workOrder.property ? { id: workOrder.property_id, name: workOrder.property.name } : null,
+            property: workOrder.property
+              ? { id: workOrder.property_id, name: workOrder.property.name }
+              : null,
           })
         }
       }
@@ -81,7 +82,12 @@ export function LandlordOperations() {
 
   async function handleCreateTask(data: TaskInsert | TaskUpdate) {
     // TaskForm can pass either TaskInsert or TaskUpdate, but we only create new tasks here
-    if ('assigned_to_type' in data && 'assigned_to_id' in data && 'linked_context_type' in data && 'linked_context_id' in data) {
+    if (
+      'assigned_to_type' in data &&
+      'assigned_to_id' in data &&
+      'linked_context_type' in data &&
+      'linked_context_id' in data
+    ) {
       const result = await createTask(data as TaskInsert)
       if (!result.error) {
         setShowTaskForm(false)
