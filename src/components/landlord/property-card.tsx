@@ -11,8 +11,11 @@ import { useProperties } from '@/hooks/use-properties'
 import { NotesPanel } from '@/components/landlord/notes-panel'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { TenantListModal } from '@/components/landlord/tenant-list-modal'
+import { WorkOrderListModal } from '@/components/landlord/work-order-list-modal'
+import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import type { Database } from '@/types/database'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useMemo, useState, useEffect } from 'react'
 import {
   Users,
@@ -24,6 +27,7 @@ import {
   Plus,
   Trash2,
   Edit2,
+  Wrench,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -40,13 +44,15 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
   const { tenants } = useTenants()
   const { units } = useUnits(property.id)
   const { updateProperty } = useProperties()
+  const { requests: workOrders } = useMaintenanceRequests(property.id)
   const [expanded, setExpanded] = useState(false)
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null)
   const [updatingRules, setUpdatingRules] = useState(false)
   const [editingRules, setEditingRules] = useState(false)
   const [rulesContent, setRulesContent] = useState(property.rules || '')
   const [savingRules, setSavingRules] = useState(false)
-  const cardSpring = createSpring('card')
+  const [tenantModalOpen, setTenantModalOpen] = useState(false)
+  const [workOrderModalOpen, setWorkOrderModalOpen] = useState(false)
 
   // Update rulesContent when property.rules changes
   useEffect(() => {
@@ -62,6 +68,9 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
   const propertyTenants = tenants.filter(t => t.property_id === property.id)
   const occupancyCount = propertyTenants.length
   const isOccupied = occupancyCount > 0
+
+  // Calculate work order count
+  const workOrderCount = workOrders.length
 
   // Memoize property groups to avoid infinite loops
   // Use stringified arrays for comparison since assignments is recreated each render
@@ -193,7 +202,8 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
             )}
             {/* Occupancy Indicator */}
             <motion.div
-              className="flex items-center justify-between"
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => occupancyCount > 0 && setTenantModalOpen(true)}
               animate={isOccupied ? { scale: [1, 1.05, 1] } : {}}
               transition={{
                 duration: motionTokens.duration.fast,
@@ -204,8 +214,38 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
                 <Users className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Occupancy</span>
               </div>
-              <Badge variant={isOccupied ? 'default' : 'outline'} className="text-xs">
+              <Badge
+                variant={isOccupied ? 'default' : 'outline'}
+                className={cn(
+                  'text-xs',
+                  occupancyCount > 0 && 'hover:opacity-80 transition-opacity'
+                )}
+              >
                 {occupancyCount} tenant{occupancyCount !== 1 ? 's' : ''}
+              </Badge>
+            </motion.div>
+            {/* Work Orders Indicator */}
+            <motion.div
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => workOrderCount > 0 && setWorkOrderModalOpen(true)}
+              animate={workOrderCount > 0 ? { scale: [1, 1.05, 1] } : {}}
+              transition={{
+                duration: motionTokens.duration.fast,
+                ease: motionTokens.easing.standard,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Wrench className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Work Orders</span>
+              </div>
+              <Badge
+                variant={workOrderCount > 0 ? 'default' : 'outline'}
+                className={cn(
+                  'text-xs',
+                  workOrderCount > 0 && 'hover:opacity-80 transition-opacity'
+                )}
+              >
+                {workOrderCount} {workOrderCount === 1 ? 'order' : 'orders'}
               </Badge>
             </motion.div>
             {/* House Rules Toggle */}
@@ -218,14 +258,15 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
                     size="sm"
                     onClick={handleToggleRulesVisibility}
                     disabled={updatingRules}
-                    className="h-auto p-1"
-                    aria-label={rulesVisible ? 'Hide rules from tenants' : 'Show rules to tenants'}
-                  >
-                    {rulesVisible ? (
-                      <Eye className="w-4 h-4 text-primary" />
-                    ) : (
-                      <EyeOff className="w-4 h-4 text-muted-foreground" />
+                    className={cn(
+                      'h-auto p-1',
+                      rulesVisible && 'bg-primary/10 text-primary',
+                      !rulesVisible && 'text-muted-foreground'
                     )}
+                    aria-label={rulesVisible ? 'Hide rules from tenants' : 'Show rules to tenants'}
+                    aria-pressed={rulesVisible}
+                  >
+                    {rulesVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                   </Button>
                 )}
                 {!editingRules && (
@@ -412,6 +453,20 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tenant List Modal */}
+      <TenantListModal
+        isOpen={tenantModalOpen}
+        onClose={() => setTenantModalOpen(false)}
+        propertyId={property.id}
+      />
+
+      {/* Work Order List Modal */}
+      <WorkOrderListModal
+        isOpen={workOrderModalOpen}
+        onClose={() => setWorkOrderModalOpen(false)}
+        propertyId={property.id}
+      />
     </motion.div>
   )
 }

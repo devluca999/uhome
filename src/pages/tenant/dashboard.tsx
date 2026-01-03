@@ -242,6 +242,7 @@ export function TenantDashboard() {
               if (!task) return null
               return (
                 <TaskReminderToast
+                  key={task.id}
                   task={task}
                   onDismiss={() => setShowTaskReminder(null)}
                   onComplete={() => {

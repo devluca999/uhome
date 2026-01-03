@@ -7,7 +7,11 @@ import { X, DollarSign, Link as LinkIcon, SkipForward } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { Database } from '@/types/database'
 
-type MaintenanceRequest = Database['public']['Tables']['maintenance_requests']['Row'] & {
+type MaintenanceRequest = Omit<
+  Database['public']['Tables']['maintenance_requests']['Row'],
+  'tenant_id'
+> & {
+  tenant_id: string | null
   property?: { id: string; name: string } | null
 }
 

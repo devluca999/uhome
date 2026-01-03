@@ -48,10 +48,11 @@ export function LineChart({
   const expensesColor = '#ef4444' // Red
   const netColor = theme === 'dark' ? '#94a3b8' : '#64748b' // Neutral gray
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg z-50">
+          <p className="text-sm font-semibold text-foreground mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
               {entry.name}: ${Number(entry.value).toLocaleString()}
@@ -63,8 +64,14 @@ export function LineChart({
     return null
   }
 
+  // Create a key based on data to trigger re-animation when data changes
+  const dataKey = JSON.stringify(
+    data.map(d => ({ month: d.month, income: d.income, expenses: d.expenses, net: d.net }))
+  )
+
   return (
     <motion.div
+      key={dataKey}
       className={className}
       initial={{ opacity: motionTokens.opacity.hidden }}
       animate={{ opacity: motionTokens.opacity.visible }}

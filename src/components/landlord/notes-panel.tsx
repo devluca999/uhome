@@ -32,8 +32,11 @@ export function NotesPanel({ entityType, entityId, className }: NotesPanelProps)
     setSaving(false)
 
     if (!result.error) {
+      // Note is already added to state by useNotes hook
+      // Clear form and hide editor
       setNewNoteContent('')
       setShowNewNote(false)
+      // Note persists automatically via useNotes hook state management
     }
   }
 

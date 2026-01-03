@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
 import { SettingsSection } from '@/components/settings/settings-section'
 import { ThemePreview } from '@/components/settings/theme-preview'
 import { NavItemReorder } from '@/components/settings/nav-item-reorder'
@@ -13,7 +14,9 @@ import { useTheme, type ThemePreference } from '@/contexts/theme-context'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { Settings as SettingsIcon } from 'lucide-react'
+import { Settings as SettingsIcon, LogOut, Trash2, Key, Check } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase/client'
 
 // Navigation items for landlord
 const LANDLORD_NAV_ITEMS = [
@@ -33,11 +36,14 @@ const TENANT_NAV_ITEMS = [
 ]
 
 export function SettingsPage() {
-  const { user, role } = useAuth()
+  const { user, role, signOut } = useAuth()
+  const navigate = useNavigate()
   const { settings, updateSettings } = useSettings()
   const { themePreference, setThemePreference } = useTheme()
   const [userName, setUserName] = useState(settings.userName || '')
   const [organizationName, setOrganizationName] = useState(settings.organizationName || '')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const navItems = role === 'landlord' ? LANDLORD_NAV_ITEMS : TENANT_NAV_ITEMS
 
@@ -72,6 +78,41 @@ export function SettingsPage() {
     updateSettings({ navItemOrder: newOrder })
   }
 
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/login')
+  }
+
+  const handleChangePassword = () => {
+    // Redirect to password reset flow
+    window.location.href = '/reset-password'
+  }
+
+  const handleDeleteAccount = async () => {
+    if (
+      !confirm(
+        'Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.'
+      )
+    ) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      // Delete user account (this will cascade delete related data via RLS)
+      const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
+      if (error) throw error
+
+      await signOut()
+      navigate('/login')
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('Failed to delete account. Please contact support.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 relative min-h-screen">
       <GrainOverlay />
@@ -97,6 +138,24 @@ export function SettingsPage() {
         {/* Section A: Account */}
         <SettingsSection title="Account" description="Your account information">
           <div className="space-y-4">
+            {/* Profile Picture - Placeholder for now */}
+            <div className="space-y-2">
+              <Label>Profile Picture</Label>
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-2xl font-semibold text-foreground">
+                  {userName.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Profile picture upload coming soon
+                  </p>
+                  <Button variant="outline" size="sm" disabled>
+                    Upload Picture
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="user-name">Name</Label>
               <Input
@@ -229,14 +288,19 @@ export function SettingsPage() {
                   type="button"
                   onClick={() => handleNavLayoutChange('header')}
                   className={`
-                    flex-1 p-4 rounded-md border-2 transition-all text-left
+                    relative flex-1 p-4 rounded-md border-2 transition-all text-left
                     ${
                       settings.navLayout === 'header'
-                        ? 'border-primary bg-primary/10'
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
                         : 'border-border hover:border-primary/50'
                     }
                   `}
                 >
+                  {settings.navLayout === 'header' && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
                   <div className="font-medium text-sm text-foreground mb-1">Header</div>
                   <p className="text-xs text-muted-foreground">Navigation at the top</p>
                 </button>
@@ -244,14 +308,19 @@ export function SettingsPage() {
                   type="button"
                   onClick={() => handleNavLayoutChange('sidebar')}
                   className={`
-                    flex-1 p-4 rounded-md border-2 transition-all text-left
+                    relative flex-1 p-4 rounded-md border-2 transition-all text-left
                     ${
                       settings.navLayout === 'sidebar'
-                        ? 'border-primary bg-primary/10'
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
                         : 'border-border hover:border-primary/50'
                     }
                   `}
                 >
+                  {settings.navLayout === 'sidebar' && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
                   <div className="font-medium text-sm text-foreground mb-1">Sidebar</div>
                   <p className="text-xs text-muted-foreground">Navigation on the side</p>
                 </button>
@@ -329,6 +398,64 @@ export function SettingsPage() {
                 onCheckedChange={checked => updateSettings({ toastReminders: checked })}
                 aria-label="Toast reminders"
               />
+            </div>
+          </div>
+        </SettingsSection>
+
+        {/* Section F: Danger Zone */}
+        <SettingsSection
+          title="Danger Zone"
+          description="Irreversible and destructive actions"
+          className="border-destructive/50"
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-md border-2 border-destructive/50 bg-destructive/5">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold text-foreground">Log Out</Label>
+                    <p className="text-xs text-muted-foreground mt-1">Sign out of your account</p>
+                  </div>
+                  <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log Out
+                  </Button>
+                </div>
+
+                <div className="pt-3 border-t border-destructive/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-foreground">
+                        Change Password
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Update your account password
+                      </p>
+                    </div>
+                    <Button variant="outline" onClick={handleChangePassword}>
+                      <Key className="w-4 h-4 mr-2" />
+                      Change Password
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-destructive/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-destructive">
+                        Delete Account
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Permanently delete your account and all data. This cannot be undone.
+                      </p>
+                    </div>
+                    <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {deleting ? 'Deleting...' : 'Delete Account'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </SettingsSection>

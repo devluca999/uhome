@@ -30,3 +30,9 @@ dist-ssr
 .env.test.local
 .env.production.local
 .env*.local
+.env.test
+
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/

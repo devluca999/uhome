@@ -27,7 +27,9 @@ interface FinancialGraphSwitcherProps {
   pieData?: Array<{ name: string; value: number; color: string }>
   properties?: Array<{ id: string; name: string }>
   selectedPropertyId?: string
+  timeRange?: TimeRange
   onPropertyChange?: (propertyId: string | 'all') => void
+  onTimeRangeChange?: (timeRange: TimeRange) => void
   className?: string
 }
 
@@ -38,11 +40,24 @@ export function FinancialGraphSwitcher({
   pieData = [],
   properties = [],
   selectedPropertyId = 'all',
+  timeRange: externalTimeRange,
   onPropertyChange,
+  onTimeRangeChange,
   className,
 }: FinancialGraphSwitcherProps) {
   const [viewType, setViewType] = useState<GraphViewType>('line')
-  const [timeRange, setTimeRange] = useState<TimeRange>('month')
+  const [internalTimeRange, setInternalTimeRange] = useState<TimeRange>('month')
+
+  // Use external timeRange if provided, otherwise use internal state
+  const timeRange = externalTimeRange ?? internalTimeRange
+
+  const handleTimeRangeChange = (newTimeRange: TimeRange) => {
+    if (onTimeRangeChange) {
+      onTimeRangeChange(newTimeRange)
+    } else {
+      setInternalTimeRange(newTimeRange)
+    }
+  }
 
   const viewOptions: Array<{ value: GraphViewType; label: string; icon: React.ReactNode }> = [
     { value: 'line', label: 'Line', icon: <LineChartIcon className="w-4 h-4" /> },
@@ -130,7 +145,7 @@ export function FinancialGraphSwitcher({
                   key={option.value}
                   variant={timeRange === option.value ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setTimeRange(option.value)}
+                  onClick={() => handleTimeRangeChange(option.value)}
                   className="h-8 px-3"
                 >
                   {option.label}
@@ -161,12 +176,12 @@ export function FinancialGraphSwitcher({
       <CardContent>
         <AnimatePresence mode="wait">
           <motion.div
-            key={viewType}
-            initial={{ opacity: motionTokens.opacity.hidden }}
-            animate={{ opacity: motionTokens.opacity.visible }}
-            exit={{ opacity: motionTokens.opacity.hidden }}
+            key={`${viewType}-${timeRange}`}
+            initial={{ opacity: motionTokens.opacity.hidden, y: 4 }}
+            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+            exit={{ opacity: motionTokens.opacity.hidden, y: -4 }}
             transition={{
-              duration: motionTokens.duration.fast,
+              duration: durationToSeconds(motionTokens.duration.base),
               ease: motionTokens.easing.standard,
             }}
           >

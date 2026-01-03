@@ -26,6 +26,155 @@ import type { Database } from '@/types/database'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
 type DateRangePreset = 'thisMonth' | 'lastMonth' | 'custom' | 'all'
+type RentRecordWithRelations = import('@/hooks/use-landlord-rent-records').RentRecordWithRelations
+
+// Generate fallback mock rent records for demo purposes (power-user simulation)
+function generateFallbackRentRecords(): RentRecordWithRelations[] {
+  const today = new Date()
+  const records: RentRecordWithRelations[] = []
+  const amounts = [2400, 2800, 3200]
+  const paymentMethods = ['Zelle', 'Cash', 'Check', 'Venmo', 'Bank Transfer']
+
+  // Generate 12 months of data (enhanced for realistic power-user simulation)
+  for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
+    const dueDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, 1)
+    const isPastMonth = monthOffset > 0
+    const isCurrentMonth = monthOffset === 0
+
+    for (let i = 0; i < 3; i++) {
+      const amount = amounts[i]
+      let status: 'paid' | 'pending' | 'overdue' = 'pending'
+      let paidDate: string | null = null
+      let paymentMethodType: 'manual' | 'external' | null = null
+      let paymentMethodLabel: string | null = null
+
+      if (isPastMonth) {
+        status = 'paid'
+        paymentMethodType = 'external'
+        paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+
+        // Vary payment dates: 70% on time or early, 30% late (realistic distribution)
+        const paymentVariation = Math.random()
+        if (paymentVariation < 0.3) {
+          // Late payment (1-5 days after due date)
+          const daysLate = Math.floor(Math.random() * 5) + 1
+          paidDate = new Date(dueDate.getTime() + daysLate * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0]
+        } else if (paymentVariation < 0.7) {
+          // On time (due date)
+          paidDate = dueDate.toISOString().split('T')[0]
+        } else {
+          // Early payment (1-2 days before)
+          const daysEarly = Math.floor(Math.random() * 2) + 1
+          paidDate = new Date(dueDate.getTime() - daysEarly * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0]
+        }
+      } else if (isCurrentMonth && Math.random() > 0.3) {
+        // 70% chance current month is paid
+        status = 'paid'
+        paymentMethodType = 'external'
+        paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+        const daysAgo = Math.floor(Math.random() * 5) // Paid 0-5 days ago
+        paidDate = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0]
+      } else if (isCurrentMonth) {
+        // 30% chance current month is still pending
+        status = 'pending'
+      }
+
+      records.push({
+        id: `fallback-${monthOffset}-${i}`,
+        property_id: `fallback-property-${i}`,
+        tenant_id: `fallback-tenant-${i}`,
+        amount: amount.toString(),
+        due_date: dueDate.toISOString().split('T')[0],
+        status,
+        paid_date: paidDate,
+        payment_method_type: paymentMethodType,
+        payment_method_label: paymentMethodLabel,
+        notes: null,
+        receipt_url: null,
+        created_at: dueDate.toISOString(),
+        updated_at: dueDate.toISOString(),
+        property: {
+          id: `fallback-property-${i}`,
+          name: `Property ${i + 1}`,
+          address: `123 Demo St, Unit ${i + 1}`,
+        },
+        tenant: {
+          id: `fallback-tenant-${i}`,
+          user: {
+            id: `fallback-user-${i}`,
+            email: `tenant${i + 1}@example.com`,
+          },
+        },
+      } as RentRecordWithRelations)
+    }
+  }
+
+  return records
+}
+
+// Generate fallback mock expenses for demo purposes
+function generateFallbackExpenses(): Expense[] {
+  const today = new Date()
+  const expenses: Expense[] = []
+  const categories = ['maintenance', 'utilities', 'repairs', 'insurance', 'taxes']
+  const descriptions = {
+    maintenance: ['HVAC service', 'Gutter cleaning', 'Lawn mowing'],
+    utilities: ['Water bill', 'Electricity bill', 'Gas bill'],
+    repairs: ['Plumbing repair', 'Electrical repair', 'Roof repair'],
+    insurance: ['Property insurance', 'Liability insurance'],
+    taxes: ['Property tax', 'Quarterly tax'],
+  }
+
+  // Generate 12 months of expenses (enhanced for realistic simulation)
+  for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
+    const expenseDate = new Date(
+      today.getFullYear(),
+      today.getMonth() - monthOffset,
+      Math.floor(Math.random() * 28) + 1
+    )
+    const numExpenses = Math.random() > 0.5 ? 2 : 1
+
+    for (let e = 0; e < numExpenses; e++) {
+      const category = categories[Math.floor(Math.random() * categories.length)]
+      const categoryDescriptions = descriptions[category as keyof typeof descriptions]
+      const description =
+        categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)]
+
+      let amount: number
+      if (category === 'insurance' || category === 'taxes') {
+        amount = Math.floor(Math.random() * 500) + 200
+      } else if (category === 'repairs') {
+        amount = Math.floor(Math.random() * 400) + 100
+      } else {
+        amount = Math.floor(Math.random() * 200) + 50
+      }
+
+      expenses.push({
+        id: `fallback-expense-${monthOffset}-${e}`,
+        property_id: `fallback-property-${Math.floor(Math.random() * 3)}`,
+        user_id: 'fallback-user',
+        category,
+        description,
+        amount: amount.toString(),
+        date: expenseDate.toISOString().split('T')[0],
+        is_recurring: category === 'utilities' && Math.random() > 0.5,
+        recurring_frequency: null,
+        recurring_start_date: null,
+        recurring_end_date: null,
+        created_at: expenseDate.toISOString(),
+        updated_at: expenseDate.toISOString(),
+      } as Expense)
+    }
+  }
+
+  return expenses
+}
 
 export function LandlordFinances() {
   const { properties } = useProperties()
@@ -83,7 +232,8 @@ export function LandlordFinances() {
 
   const filter: RentRecordFilter = useMemo(() => {
     const filter: RentRecordFilter = {}
-    if (selectedPropertyId) {
+    // Only filter by property if a specific property is selected (not empty or 'all')
+    if (selectedPropertyId && selectedPropertyId !== 'all') {
       filter.propertyId = selectedPropertyId
     }
     if (dateRange) {
@@ -92,12 +242,41 @@ export function LandlordFinances() {
     return filter
   }, [selectedPropertyId, dateRange])
 
-  const { records, loading } = useLandlordRentRecords(filter)
-  const metrics = useFinancialMetrics(records, expenses, 6, selectedPropertyId || undefined)
+  const { records: realRecords, loading, refetch } = useLandlordRentRecords(filter)
+  const [graphTimeRange, setGraphTimeRange] = useState<'month' | 'quarter' | 'year'>('month')
+
+  // Use fallback data if no real data exists (for mock mode / power-user simulation)
+  const records = useMemo(() => {
+    if (realRecords.length === 0 && !loading) {
+      return generateFallbackRentRecords()
+    }
+    return realRecords
+  }, [realRecords, loading])
+
+  // Use fallback expenses if no real expenses exist
+  const expensesWithFallback = useMemo(() => {
+    if (expenses.length === 0) {
+      return generateFallbackExpenses()
+    }
+    return expenses
+  }, [expenses])
+
+  // Property filter: empty string or 'all' means all properties
+  const propertyFilter =
+    selectedPropertyId && selectedPropertyId !== 'all' ? selectedPropertyId : undefined
+
+  // Use 12 months for better data visualization
+  const metrics = useFinancialMetrics(
+    records,
+    expensesWithFallback,
+    12,
+    propertyFilter,
+    graphTimeRange
+  )
 
   // Filter expenses by category if selected
   const filteredExpenses = useMemo(() => {
-    let filtered = expenses
+    let filtered = expensesWithFallback
     if (selectedCategory) {
       filtered = filtered.filter(e => e.category === selectedCategory)
     }
@@ -111,7 +290,7 @@ export function LandlordFinances() {
       })
     }
     return filtered
-  }, [expenses, selectedCategory, selectedPropertyId, dateRange])
+  }, [expensesWithFallback, selectedCategory, selectedPropertyId, dateRange])
 
   // Calculate KPI change subtexts
   const kpiChanges = useMemo(() => {
@@ -170,23 +349,42 @@ export function LandlordFinances() {
   }, [metrics])
 
   const pieChartData = useMemo(() => {
-    const categories = ['maintenance', 'utilities', 'repairs'] as const
-    return categories
+    const categories = [
+      'maintenance',
+      'utilities',
+      'repairs',
+      'insurance',
+      'taxes',
+      'landscaping',
+      'cleaning',
+    ] as const
+    const categoryData = categories
       .map(category => {
         const categoryExpenses = filteredExpenses.filter(e => e.category === category)
         const total = categoryExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
         return {
-          name: category,
+          name: category.charAt(0).toUpperCase() + category.slice(1),
           value: total,
           color:
             category === 'maintenance'
               ? '#84A98C'
               : category === 'utilities'
                 ? '#3b82f6'
-                : '#ef4444',
+                : category === 'repairs'
+                  ? '#ef4444'
+                  : category === 'insurance'
+                    ? '#8b5cf6'
+                    : category === 'taxes'
+                      ? '#f59e0b'
+                      : category === 'landscaping'
+                        ? '#10b981'
+                        : '#6b7280',
         }
       })
       .filter(item => item.value > 0)
+
+    // If no data, return empty array (chart will show empty state)
+    return categoryData
   }, [filteredExpenses])
 
   // Prepare stream data
@@ -381,9 +579,11 @@ export function LandlordFinances() {
             pieData={pieChartData}
             properties={properties}
             selectedPropertyId={selectedPropertyId || 'all'}
+            timeRange={graphTimeRange}
             onPropertyChange={propertyId =>
               setSelectedPropertyId(propertyId === 'all' ? '' : propertyId)
             }
+            onTimeRangeChange={setGraphTimeRange}
           />
         </motion.div>
 
@@ -630,7 +830,7 @@ export function LandlordFinances() {
                       }}
                       layout={false}
                     >
-                      <RentLedgerRow record={record} />
+                      <RentLedgerRow record={record} onReceiptGenerated={refetch} />
                     </motion.div>
                   ))}
 

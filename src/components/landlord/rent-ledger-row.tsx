@@ -12,18 +12,20 @@ import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Button } from '@/components/ui/button'
 import { useNotes } from '@/hooks/use-notes'
+import { useReceiptGeneration } from '@/hooks/use-receipt-generation'
 import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
 
 interface RentLedgerRowProps {
   record: RentRecordWithRelations
+  onReceiptGenerated?: () => void
 }
 
-export function RentLedgerRow({ record }: RentLedgerRowProps) {
+export function RentLedgerRow({ record, onReceiptGenerated }: RentLedgerRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [showNotesEditor, setShowNotesEditor] = useState(false)
   const [editingNoteContent, setEditingNoteContent] = useState('')
-  const [generatingReceipt, setGeneratingReceipt] = useState(false)
   const { notes, createNote, updateNote } = useNotes('rent_record', record.id)
+  const { generateReceipt, generating: generatingReceipt } = useReceiptGeneration()
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
 
@@ -163,10 +165,19 @@ export function RentLedgerRow({ record }: RentLedgerRowProps) {
                   </p>
                 </div>
               )}
-              {record.payment_method && (
+              {(record.payment_method_type || record.payment_method) && (
                 <div>
                   <span className="text-xs text-muted-foreground">Payment Method:</span>
-                  <p className="text-sm text-foreground capitalize">{record.payment_method}</p>
+                  <p className="text-sm text-foreground">
+                    {record.payment_method_type === 'external' && record.payment_method_label
+                      ? record.payment_method_label
+                      : record.payment_method_type === 'manual'
+                        ? 'Manual'
+                        : record.payment_method
+                          ? record.payment_method.charAt(0).toUpperCase() +
+                            record.payment_method.slice(1)
+                          : 'Manual'}
+                  </p>
                 </div>
               )}
               {record.notes && (
@@ -204,11 +215,17 @@ export function RentLedgerRow({ record }: RentLedgerRowProps) {
                         variant="outline"
                         size="sm"
                         onClick={async () => {
-                          setGeneratingReceipt(true)
-                          // TODO: Call receipt generation edge function
-                          // For now, just show a message
-                          alert('Receipt generation will be implemented with the Edge Function')
-                          setGeneratingReceipt(false)
+                          const result = await generateReceipt(record.id)
+                          if (result.error) {
+                            alert(`Failed to generate receipt: ${result.error.message}`)
+                          } else if (result.receipt_url) {
+                            // Receipt generated successfully, refresh data
+                            if (onReceiptGenerated) {
+                              onReceiptGenerated()
+                            } else {
+                              window.location.reload()
+                            }
+                          }
                         }}
                         disabled={generatingReceipt}
                       >

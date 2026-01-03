@@ -2,7 +2,11 @@ import { AlertTriangle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface ErrorAlertProps {
-  error: string | Error | null
+  error:
+    | string
+    | Error
+    | { message?: string; code?: string; details?: string; hint?: string }
+    | null
   onDismiss?: () => void
   className?: string
 }
@@ -10,7 +14,18 @@ interface ErrorAlertProps {
 export function ErrorAlert({ error, onDismiss, className = '' }: ErrorAlertProps) {
   if (!error) return null
 
-  const errorMessage = error instanceof Error ? error.message : error
+  // Handle different error types
+  let errorMessage: string
+  if (error instanceof Error) {
+    errorMessage = error.message
+  } else if (typeof error === 'string') {
+    errorMessage = error
+  } else if (error && typeof error === 'object' && 'message' in error) {
+    // Handle Supabase error objects {code, details, hint, message}
+    errorMessage = error.message || error.hint || error.details || 'An error occurred'
+  } else {
+    errorMessage = 'An error occurred'
+  }
 
   return (
     <div

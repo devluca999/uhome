@@ -4,6 +4,7 @@ import { motionTokens, createSpring } from '@/lib/motion'
 import { Button } from '@/components/ui/button'
 import { Calendar, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useSettings } from '@/contexts/settings-context'
 
 interface TaskReminderToastProps {
   task: Task
@@ -13,11 +14,17 @@ interface TaskReminderToastProps {
 }
 
 export function TaskReminderToast({ task, onDismiss, onView, onComplete }: TaskReminderToastProps) {
+  const { settings } = useSettings()
   const spring = createSpring('soft')
   const hasDeadline = task.deadline !== null
   const deadlineDate = hasDeadline ? new Date(task.deadline) : null
   const isOverdue =
     hasDeadline && deadlineDate && deadlineDate < new Date() && task.status === 'pending'
+
+  // Don't show toast if toast reminders are disabled
+  if (!settings.toastReminders) {
+    return null
+  }
 
   return (
     <AnimatePresence>

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useTasks, type TaskInsert, type TaskUpdate } from '@/hooks/use-tasks'
+import { useUrlParams } from '@/lib/url-params'
+import { useProperties } from '@/hooks/use-properties'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
@@ -12,7 +14,8 @@ import { TaskCard } from '@/components/ui/task-card'
 import { TaskForm } from '@/components/landlord/task-form'
 import { NotesPanel } from '@/components/landlord/notes-panel'
 import { WorkOrderExpensePrompt } from '@/components/landlord/work-order-expense-prompt'
-import { Wrench, Plus } from 'lucide-react'
+import { WorkOrderForm } from '@/components/landlord/work-order-form'
+import { Wrench, Plus, X } from 'lucide-react'
 import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
@@ -21,12 +24,13 @@ import type { Database } from '@/types/database'
 type MaintenanceRequestFromHook = {
   id: string
   property_id: string
-  tenant_id: string
+  tenant_id: string | null
   status: 'pending' | 'in_progress' | 'completed'
   category?: string
   description: string
   created_at: string
   updated_at: string
+  created_by?: string
   property?: {
     name: string
   }
@@ -37,18 +41,32 @@ type MaintenanceRequestFromHook = {
   }
 }
 
-type MaintenanceRequestForPrompt = Database['public']['Tables']['maintenance_requests']['Row'] & {
+type MaintenanceRequestForPrompt = Omit<
+  Database['public']['Tables']['maintenance_requests']['Row'],
+  'tenant_id'
+> & {
+  tenant_id: string | null
   property?: { id: string; name: string } | null
 }
 
 export function LandlordOperations() {
-  const { requests, loading, updateRequestStatus } = useMaintenanceRequests()
+  const { getFilterParam, clearFilterParam } = useUrlParams()
+  const { properties } = useProperties()
+  const propertyIdFilter = getFilterParam('propertyId')
+  const { requests, loading, updateRequestStatus, refetch } = useMaintenanceRequests(
+    propertyIdFilter || undefined
+  )
   const { tasks, createTask, toggleTaskStatus, updateChecklistItem } = useTasks('work_order')
   const [updating, setUpdating] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null)
   const [showTaskForm, setShowTaskForm] = useState(false)
+  const [showWorkOrderForm, setShowWorkOrderForm] = useState(false)
   const [expensePromptWorkOrder, setExpensePromptWorkOrder] =
     useState<MaintenanceRequestForPrompt | null>(null)
+
+  const filteredProperty = propertyIdFilter
+    ? properties.find((p: { id: string }) => p.id === propertyIdFilter)
+    : null
 
   const pendingRequests = requests.filter(r => r.status === 'pending')
   const inProgressRequests = requests.filter(r => r.status === 'in_progress')
@@ -101,15 +119,15 @@ export function LandlordOperations() {
   function getStatusBadge(status: string) {
     const variants = {
       pending:
-        'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30 dark:border-yellow-500/20 font-medium',
+        'bg-yellow-500/30 text-yellow-100 dark:text-yellow-50 border-yellow-500/50 dark:border-yellow-500/40 font-semibold',
       in_progress:
-        'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 dark:border-blue-500/20 font-medium',
+        'bg-blue-500/30 text-blue-100 dark:text-blue-50 border-blue-500/50 dark:border-blue-500/40 font-semibold',
       completed:
-        'bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30 dark:border-green-500/20 font-medium',
+        'bg-green-500/30 text-green-100 dark:text-green-50 border-green-500/50 dark:border-green-500/40 font-semibold',
     }
     return (
       variants[status as keyof typeof variants] ||
-      'bg-stone-500/20 text-stone-700 dark:text-stone-300 border-stone-500/30 dark:border-stone-500/20 font-medium'
+      'bg-stone-500/30 text-stone-100 dark:text-stone-50 border-stone-500/50 dark:border-stone-500/40 font-semibold'
     )
   }
 
@@ -135,7 +153,9 @@ export function LandlordOperations() {
                   {request.property?.name || 'Unknown Property'}
                 </CardTitle>
                 <CardDescription className="mt-1">
-                  {request.tenant?.user?.email || 'Unknown Tenant'}
+                  {request.tenant?.user?.email || request.tenant_id
+                    ? 'Unknown Tenant'
+                    : 'No tenant assigned'}
                 </CardDescription>
               </div>
               <Badge className={getStatusBadge(request.status)}>
@@ -299,9 +319,51 @@ export function LandlordOperations() {
           }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-semibold text-foreground mb-2">Operations</h1>
-          <p className="text-muted-foreground">Manage work orders, tasks, and execution</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-semibold text-foreground mb-2">Operations</h1>
+              <p className="text-muted-foreground">
+                {filteredProperty
+                  ? `Work orders for ${filteredProperty.name}`
+                  : 'Manage work orders, tasks, and execution'}
+              </p>
+              {filteredProperty && (
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => clearFilterParam('propertyId')}
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear filter
+                  </Button>
+                </div>
+              )}
+            </div>
+            <Button onClick={() => setShowWorkOrderForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Work Order
+            </Button>
+          </div>
         </motion.div>
+
+        {showWorkOrderForm && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mb-8"
+          >
+            <WorkOrderForm
+              onSubmit={() => {
+                setShowWorkOrderForm(false)
+                refetch()
+              }}
+              onCancel={() => setShowWorkOrderForm(false)}
+              propertyId={propertyIdFilter || undefined}
+            />
+          </motion.div>
+        )}
 
         {loading ? (
           <div className="text-center py-12">

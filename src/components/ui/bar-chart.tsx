@@ -32,11 +32,12 @@ export function BarChart({ data, className }: BarChartProps) {
   const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
   const barColor = theme === 'dark' ? '#84A98C' : '#84A98C'
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const value = payload[0].value
       return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg z-50">
+          <p className="text-sm font-semibold text-foreground mb-1">{label}</p>
           <p className="text-sm font-medium text-foreground">${Number(value).toLocaleString()}</p>
         </div>
       )
@@ -44,8 +45,12 @@ export function BarChart({ data, className }: BarChartProps) {
     return null
   }
 
+  // Create a key based on data to trigger re-animation when data changes
+  const dataKey = JSON.stringify(data.map(d => ({ month: d.month, amount: d.amount })))
+
   return (
     <motion.div
+      key={dataKey}
       className={className}
       initial={{ opacity: motionTokens.opacity.hidden }}
       animate={{ opacity: motionTokens.opacity.visible }}

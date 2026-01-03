@@ -11,7 +11,12 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css}\"",
     "type-check": "tsc --noEmit",
-    "seed:mock": "tsx scripts/seed-mock-data.ts"
+    "seed:mock": "tsx scripts/seed-mock-data.ts",
+    "test:e2e": "playwright test --headed",
+    "test:e2e:headless": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:quick": "playwright test --project=chromium"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
@@ -27,6 +32,7 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

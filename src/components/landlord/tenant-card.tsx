@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
+import { MapPin } from 'lucide-react'
 
 type Tenant = {
   id: string
@@ -52,7 +54,18 @@ export function TenantCard({ tenant, onDelete }: TenantCardProps) {
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>{tenant.user?.email || 'Tenant'}</CardTitle>
-          {tenant.property && <CardDescription>{tenant.property.name}</CardDescription>}
+          {tenant.property && (
+            <CardDescription>
+              <Link
+                to={`/landlord/properties/${tenant.property_id}`}
+                className="flex items-center gap-1 hover:text-foreground transition-colors"
+              >
+                <MapPin className="w-3 h-3" />
+                {tenant.property.name}
+                {tenant.property.address && ` - ${tenant.property.address}`}
+              </Link>
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           <div className="space-y-3">

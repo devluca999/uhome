@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTenants } from '@/hooks/use-tenants'
+import { useProperties } from '@/hooks/use-properties'
 import { TenantCard } from '@/components/landlord/tenant-card'
 import { TenantForm } from '@/components/landlord/tenant-form'
 import { TenantInviteForm } from '@/components/landlord/tenant-invite-form'
@@ -9,14 +10,28 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
-import { Plus, Users, Mail } from 'lucide-react'
+import { useUrlParams } from '@/lib/url-params'
+import { Plus, Users, Mail, X } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 
 export function LandlordTenants() {
   const { tenants, loading, createTenant, deleteTenant } = useTenants()
+  const { properties } = useProperties()
+  const { getFilterParam, clearFilterParam } = useUrlParams()
   const [showForm, setShowForm] = useState(false)
   const [showInviteForm, setShowInviteForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  const propertyIdFilter = getFilterParam('propertyId')
+  const filteredProperty = useMemo(() => {
+    if (!propertyIdFilter) return null
+    return properties.find(p => p.id === propertyIdFilter)
+  }, [properties, propertyIdFilter])
+
+  const filteredTenants = useMemo(() => {
+    if (!propertyIdFilter) return tenants
+    return tenants.filter(t => t.property_id === propertyIdFilter)
+  }, [tenants, propertyIdFilter])
 
   async function handleCreate(data: Parameters<typeof createTenant>[0]) {
     setSubmitting(true)
@@ -87,7 +102,22 @@ export function LandlordTenants() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-4xl font-semibold text-foreground mb-2">Tenants</h1>
-              <p className="text-muted-foreground">Manage your tenants</p>
+              <p className="text-muted-foreground">
+                {filteredProperty ? `Tenants for ${filteredProperty.name}` : 'Manage your tenants'}
+              </p>
+              {filteredProperty && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => clearFilterParam('propertyId')}
+                    className="h-7"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear filter
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowInviteForm(true)}>
@@ -106,20 +136,24 @@ export function LandlordTenants() {
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading tenants...</p>
           </div>
-        ) : tenants.length === 0 ? (
+        ) : filteredTenants.length === 0 ? (
           <EmptyState
             icon={<Users className="h-8 w-8" />}
-            title="No tenants yet"
-            description="Assign tenants to your properties to start managing leases and rent."
+            title={propertyIdFilter ? 'No tenants for this property' : 'No tenants yet'}
+            description={
+              propertyIdFilter
+                ? 'This property has no tenants assigned yet.'
+                : 'Assign tenants to your properties to start managing leases and rent.'
+            }
             action={{
-              label: 'Add Your First Tenant',
+              label: propertyIdFilter ? 'Add Tenant to Property' : 'Add Your First Tenant',
               onClick: () => setShowForm(true),
             }}
           />
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence initial={false}>
-              {tenants.map(tenant => (
+              {filteredTenants.map(tenant => (
                 <TenantCard key={tenant.id} tenant={tenant} onDelete={handleDelete} />
               ))}
             </AnimatePresence>

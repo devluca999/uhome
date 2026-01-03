@@ -4,12 +4,13 @@ import { supabase } from '@/lib/supabase/client'
 type MaintenanceRequest = {
   id: string
   property_id: string
-  tenant_id: string
+  tenant_id: string | null
   status: 'pending' | 'in_progress' | 'completed'
   category?: string
   description: string
   created_at: string
   updated_at: string
+  created_by?: string
   property?: {
     name: string
   }
@@ -52,7 +53,9 @@ export function useMaintenanceRequests(propertyId?: string) {
         (data || []).map(async (request: any) => {
           const [propertyData, tenantData] = await Promise.all([
             supabase.from('properties').select('name').eq('id', request.property_id).single(),
-            supabase.from('tenants').select('user_id').eq('id', request.tenant_id).single(),
+            request.tenant_id
+              ? supabase.from('tenants').select('user_id').eq('id', request.tenant_id).single()
+              : Promise.resolve({ data: null, error: null }),
           ])
 
           let userEmail = null
@@ -99,7 +102,9 @@ export function useMaintenanceRequests(propertyId?: string) {
     // Fetch related data
     const [propertyData, tenantData] = await Promise.all([
       supabase.from('properties').select('name').eq('id', data.property_id).single(),
-      supabase.from('tenants').select('user_id').eq('id', data.tenant_id).single(),
+      data.tenant_id
+        ? supabase.from('tenants').select('user_id').eq('id', data.tenant_id).single()
+        : Promise.resolve({ data: null, error: null }),
     ])
 
     let userEmail = null

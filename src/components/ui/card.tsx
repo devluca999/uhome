@@ -17,10 +17,11 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
       <motion.div
         ref={ref}
         className={cn(
-          'rounded-xl border bg-card text-card-foreground relative overflow-hidden',
+          'rounded-xl border-2 bg-card text-card-foreground relative overflow-hidden',
           'will-change-transform will-change-opacity',
           'shadow-card hover:shadow-hover',
           'transition-shadow duration-[180ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
+          'max-h-[600px]', // Default max height constraint
           className
         )}
         whileHover={

@@ -4,17 +4,20 @@
  */
 
 import { useEffect, useState } from 'react'
+import { useSettings } from '@/contexts/settings-context'
 
 // Reduced Motion Hook
+// Checks both OS preference and user setting
 export function useReducedMotion(): boolean {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const { settings } = useSettings()
+  const [osPrefersReducedMotion, setOsPrefersReducedMotion] = useState(false)
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setPrefersReducedMotion(mediaQuery.matches)
+    setOsPrefersReducedMotion(mediaQuery.matches)
 
     const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches)
+      setOsPrefersReducedMotion(e.matches)
     }
 
     // Modern browsers
@@ -28,7 +31,8 @@ export function useReducedMotion(): boolean {
     }
   }, [])
 
-  return prefersReducedMotion
+  // Return true if either OS preference or user setting is enabled
+  return osPrefersReducedMotion || settings.reduceMotion
 }
 
 // Helper to disable animations when reduced motion is preferred

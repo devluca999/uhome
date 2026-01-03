@@ -2,8 +2,9 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useAuth } from '@/contexts/auth-context'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { useReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 interface SidebarLayoutProps {
@@ -16,6 +17,7 @@ export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) 
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut, user } = useAuth()
+  const prefersReducedMotion = useReducedMotion()
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
 
   async function handleSignOut() {
@@ -97,7 +99,20 @@ export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) 
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{
+              duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.base),
+              ease: motionTokens.ease.standard,
+            }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   )

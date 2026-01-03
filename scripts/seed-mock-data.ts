@@ -225,31 +225,96 @@ async function seedMockData() {
           if (tenantError) throw tenantError
           console.log(`✅ Created ${createdTenants.length} tenant assignments`)
 
-          // Create Rent Records
+          // Create Rent Records - 15 months of historical data (power-user simulation)
           const today = new Date()
           const rentRecords = []
+          const paymentMethods = ['Zelle', 'Cash', 'Check', 'Venmo', 'Bank Transfer']
+          const notes = [
+            'Paid early via Zelle',
+            'Tenant requested receipt',
+            'Late payment - discussed with tenant',
+            'Partial payment - balance due',
+            'Automated payment processed',
+            'Payment received on time',
+            null,
+            null,
+            null,
+          ]
 
-          for (let i = 0; i < createdTenants.length && i < createdProperties.length; i++) {
-            const tenant = createdTenants[i]
-            const property = createdProperties[i]
+          // Distribute rent records across all properties for power user demo
+          // Ensure each property gets rent records even if tenant count varies
+          for (let propIndex = 0; propIndex < createdProperties.length; propIndex++) {
+            const property = createdProperties[propIndex]
+            // Find tenant for this property, or cycle through tenants if none assigned
+            const tenantIndex = propIndex % createdTenants.length
+            const tenant = createdTenants[tenantIndex]
+            if (!tenant) continue // Skip if no tenants exist
             const rentAmount = property.rent_amount
             const dueDate = property.rent_due_date || 1
 
-            // Create records for last 3 months
-            for (let monthOffset = 2; monthOffset >= 0; monthOffset--) {
+            // Create records for last 15 months (enhanced for power-user simulation)
+            for (let monthOffset = 14; monthOffset >= 0; monthOffset--) {
               const dueDateObj = new Date(today.getFullYear(), today.getMonth() - monthOffset, dueDate)
               const isPastMonth = monthOffset > 0
               const isCurrentMonth = monthOffset === 0
+              const isFutureMonth = monthOffset < 0
+
+              // Vary payment dates: some early (1-2 days before), some on time, some late (1-5 days after)
+              let paidDate: string | null = null
+              let status: 'paid' | 'pending' | 'overdue' = 'pending'
+              let paymentMethodType: 'manual' | 'external' | null = null
+              let paymentMethodLabel: string | null = null
+              let recordNotes: string | null = null
+
+              if (isPastMonth) {
+                // Past months are paid
+                status = 'paid'
+                paymentMethodType = 'external'
+                paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+                
+                // Vary paid date: 70% on time or early, 30% late
+                const paymentVariation = Math.random()
+                if (paymentVariation < 0.3) {
+                  // Late payment (1-5 days after due date)
+                  const daysLate = Math.floor(Math.random() * 5) + 1
+                  paidDate = new Date(dueDateObj.getTime() + daysLate * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                  recordNotes = notes[Math.floor(Math.random() * notes.length)]
+                } else if (paymentVariation < 0.7) {
+                  // On time (due date)
+                  paidDate = dueDateObj.toISOString().split('T')[0]
+                } else {
+                  // Early payment (1-2 days before)
+                  const daysEarly = Math.floor(Math.random() * 2) + 1
+                  paidDate = new Date(dueDateObj.getTime() - daysEarly * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                }
+              } else if (isCurrentMonth) {
+                // Current month: mix of paid and pending
+                if (Math.random() > 0.3) {
+                  // 70% chance it's paid
+                  status = 'paid'
+                  paymentMethodType = 'external'
+                  paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+                  const daysAgo = Math.floor(Math.random() * 5) // Paid 0-5 days ago
+                  paidDate = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                } else {
+                  // 30% chance it's still pending
+                  status = 'pending'
+                }
+              } else {
+                // Future months are pending
+                status = 'pending'
+              }
 
               rentRecords.push({
                 property_id: property.id,
                 tenant_id: tenant.id,
                 amount: rentAmount,
                 due_date: dueDateObj.toISOString().split('T')[0],
-                status: isPastMonth ? 'paid' : isCurrentMonth ? 'pending' : 'overdue',
-                paid_date: isPastMonth
-                  ? new Date(dueDateObj.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                  : null,
+                status,
+                paid_date: paidDate,
+                payment_method_type: paymentMethodType,
+                payment_method_label: paymentMethodLabel,
+                notes: recordNotes,
               })
             }
           }
@@ -259,7 +324,7 @@ async function seedMockData() {
           if (rentError) {
             console.warn(`   ⚠️  Rent records error: ${rentError.message}`)
           } else {
-            console.log(`✅ Created ${rentRecords.length} rent records`)
+            console.log(`✅ Created ${rentRecords.length} rent records (15 months per tenant)`)
           }
 
           // Create Maintenance Requests
@@ -345,6 +410,147 @@ async function seedMockData() {
           console.warn(`   ⚠️  Documents error: ${docError.message}`)
         } else {
           console.log(`✅ Created ${documents.length} documents`)
+        }
+
+        // Create Expenses - 15-20 records across multiple months
+        const expenseCategories = ['maintenance', 'utilities', 'repairs', 'insurance', 'taxes', 'landscaping', 'cleaning']
+        const expenseDescriptions = {
+          maintenance: ['Monthly HVAC service', 'Gutter cleaning', 'Lawn mowing service', 'Window cleaning'],
+          utilities: ['Water bill', 'Electricity bill', 'Gas bill', 'Trash collection'],
+          repairs: ['Plumbing repair - kitchen sink', 'Electrical repair - outlet replacement', 'Roof leak repair', 'Door lock replacement'],
+          insurance: ['Property insurance premium', 'Liability insurance'],
+          taxes: ['Property tax payment', 'Quarterly tax payment'],
+          landscaping: ['Tree trimming', 'Garden maintenance', 'Sprinkler system repair'],
+          cleaning: ['Deep cleaning service', 'Carpet cleaning', 'Window washing'],
+        }
+
+        const expenses = []
+        const expenseMonths = 12 // Distribute expenses across 12 months
+
+        for (let monthOffset = expenseMonths - 1; monthOffset >= 0; monthOffset--) {
+          const expenseDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, Math.floor(Math.random() * 28) + 1)
+          
+          // Create 1-2 expenses per month
+          const expensesThisMonth = Math.random() > 0.5 ? 2 : 1
+          
+          for (let e = 0; e < expensesThisMonth; e++) {
+            const category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)]
+            const descriptions = expenseDescriptions[category as keyof typeof expenseDescriptions]
+            const description = descriptions[Math.floor(Math.random() * descriptions.length)]
+            
+            // Realistic amounts based on category
+            let amount: number
+            if (category === 'insurance' || category === 'taxes') {
+              amount = Math.floor(Math.random() * 500) + 200 // $200-$700
+            } else if (category === 'repairs') {
+              amount = Math.floor(Math.random() * 400) + 100 // $100-$500
+            } else if (category === 'utilities') {
+              amount = Math.floor(Math.random() * 200) + 50 // $50-$250
+            } else {
+              amount = Math.floor(Math.random() * 300) + 50 // $50-$350
+            }
+
+            // Distribute across properties more evenly for power user demo
+            // Cycle through properties to ensure all get expenses
+            const propertyIndex = (expenses.length % createdProperties.length)
+            const property = createdProperties[propertyIndex]
+
+            expenses.push({
+              property_id: property.id,
+              user_id: landlordId,
+              category,
+              description,
+              amount,
+              date: expenseDate.toISOString().split('T')[0],
+              is_recurring: category === 'utilities' && Math.random() > 0.5, // Some utilities are recurring
+            })
+          }
+        }
+
+        const { error: expenseError } = await supabase.from('expenses').insert(expenses)
+
+        if (expenseError) {
+          console.warn(`   ⚠️  Expenses error: ${expenseError.message}`)
+        } else {
+          console.log(`✅ Created ${expenses.length} expense records`)
+        }
+      }
+    }
+
+    // Insert notes after rent records and expenses are created
+    // We need to fetch the created records to get their IDs
+    if (isUsingServiceRole) {
+      const { data: existingProperties } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('owner_id', landlordId)
+        .limit(10)
+
+      if (existingProperties && existingProperties.length > 0) {
+        const { data: allRentRecords } = await supabase
+          .from('rent_records')
+          .select('id, property_id, tenant_id, status, payment_method_label')
+          .in('property_id', existingProperties.map(p => p.id))
+          .limit(200)
+
+        const { data: allExpenses } = await supabase
+          .from('expenses')
+          .select('id, description')
+          .eq('user_id', landlordId)
+          .limit(100)
+
+        if (allRentRecords && allExpenses) {
+          const notesToInsert = []
+
+          // Property notes - 2-3 per property
+          for (const property of existingProperties) {
+            notesToInsert.push(
+              {
+                user_id: landlordId,
+                entity_type: 'property',
+                entity_id: property.id,
+                content: `**Property Notes**\n\nThis property has been well-maintained. Tenant is responsive to communication.`,
+              },
+              {
+                user_id: landlordId,
+                entity_type: 'property',
+                entity_id: property.id,
+                content: `**Maintenance Schedule**\n\n- HVAC service: Quarterly\n- Gutter cleaning: Bi-annually\n- Landscaping: Monthly`,
+              }
+            )
+          }
+
+          // Notes on some rent records (about 20% of paid records)
+          const paidRecords = allRentRecords.filter(r => r.status === 'paid').slice(0, Math.floor(allRentRecords.filter(r => r.status === 'paid').length * 0.2))
+          for (const record of paidRecords) {
+            notesToInsert.push({
+              user_id: landlordId,
+              entity_type: 'rent_record',
+              entity_id: record.id,
+              content: `**Payment Note**\n\nReceived payment via ${record.payment_method_label || 'manual entry'}. All good.`,
+            })
+          }
+
+          // Notes on some expenses (about 30% of expenses)
+          const selectedExpenses = allExpenses.slice(0, Math.floor(allExpenses.length * 0.3))
+          for (const expense of selectedExpenses) {
+            notesToInsert.push({
+              user_id: landlordId,
+              entity_type: 'expense',
+              entity_id: expense.id,
+              content: `**Expense Note**\n\n${expense.description} - Vendor invoice on file.`,
+            })
+          }
+
+          if (notesToInsert.length > 0) {
+            const { error: notesError } = await supabase.from('notes').insert(notesToInsert)
+
+            if (notesError) {
+              console.warn(`   ⚠️  Notes error: ${notesError.message}`)
+            } else {
+              console.log(`✅ Created ${notesToInsert.length} notes`)
+            }
+          }
         }
       }
     }

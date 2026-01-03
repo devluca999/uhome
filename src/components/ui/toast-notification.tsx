@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { createSpring } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { X } from 'lucide-react'
+import { useSettings } from '@/contexts/settings-context'
 
 interface ToastNotificationProps {
   message: string
@@ -11,7 +12,13 @@ interface ToastNotificationProps {
 }
 
 export function ToastNotification({ message, onDismiss, duration = 3000 }: ToastNotificationProps) {
+  const { settings } = useSettings()
   const buttonSpring = createSpring('button')
+
+  // Don't show toast if toast reminders are disabled
+  if (!settings.toastReminders) {
+    return null
+  }
 
   useEffect(() => {
     if (duration > 0 && onDismiss) {

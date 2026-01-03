@@ -12,6 +12,11 @@ import { Button } from '@/components/ui/button'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { NumberCounter } from '@/components/ui/number-counter'
+import { RevenueBreakdownModal } from '@/components/landlord/revenue-breakdown-modal'
+import { RecentActivityModal } from '@/components/landlord/recent-activity-modal'
+import { ProfitBreakdownModal } from '@/components/landlord/profit-breakdown-modal'
+import { ExpenseDistributionModal } from '@/components/landlord/expense-distribution-modal'
+import { MetricCard } from '@/components/ui/metric-card'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
@@ -45,6 +50,11 @@ export function LandlordDashboard() {
   const { documents } = useDocuments() // Get all documents for activity feed
   const metrics = useFinancialMetrics(rentRecords, expenses, 6)
   const cardSpring = createSpring('card')
+  const [revenueModalOpen, setRevenueModalOpen] = useState(false)
+  const [revenueViewMode, setRevenueViewMode] = useState<'cash' | 'accrual'>('cash')
+  const [activityModalOpen, setActivityModalOpen] = useState(false)
+  const [profitModalOpen, setProfitModalOpen] = useState(false)
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false)
 
   // Count pending tenant tasks
   const pendingTenantTasks = tasks.filter(
@@ -57,8 +67,9 @@ export function LandlordDashboard() {
   const occupancyRate =
     properties.length > 0 ? Math.round((tenants.length / properties.length) * 100) : 0
 
-  // Calculate total monthly payments (simplified)
-  const totalMonthlyPayments = properties.reduce((sum, prop) => sum + (prop.rent_amount || 0), 0)
+  // Use financial metrics for consistency across app
+  // Total monthly revenue should match what's shown in finances page
+  const totalMonthlyPayments = metrics.rentCollected + metrics.upcomingRent
 
   // Generate comprehensive activity feed
   const recentActivity = useMemo(() => {
@@ -153,12 +164,13 @@ export function LandlordDashboard() {
       ...recentWorkOrders,
       ...recentDocs,
       ...upcomingExpirations,
-    ]
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 10) // Limit to 10 most recent
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
     return allActivities
   }, [tenants, requests, documents, navigate])
+
+  // Dashboard shows only 5 most recent
+  const dashboardActivities = useMemo(() => recentActivity.slice(0, 5), [recentActivity])
 
   // Recent expenses (last 5) - read-only for dashboard
   const recentExpenses = expenses.slice(0, 5)
@@ -297,13 +309,15 @@ export function LandlordDashboard() {
             format={v => `${Math.round(v)}%`}
             index={1}
           />
-          <PortfolioCard
-            title="Monthly Revenue"
-            value={propertiesLoading ? 0 : totalMonthlyPayments}
-            description="Total monthly payments"
-            format={v => `$${Math.round(v).toLocaleString()}`}
-            index={2}
-          />
+          <div onClick={() => setRevenueModalOpen(true)} className="cursor-pointer">
+            <PortfolioCard
+              title="Monthly Revenue"
+              value={totalMonthlyPayments}
+              description="Total collected + upcoming"
+              format={v => `$${Math.round(v).toLocaleString()}`}
+              index={2}
+            />
+          </div>
           <PortfolioCard
             title="Pending Tasks"
             value={pendingTenantTasks}
@@ -369,7 +383,7 @@ export function LandlordDashboard() {
           </div>
         </motion.div>
 
-        {/* Expense Summary Section (Read-only) */}
+        {/* Financial Summary Cards */}
         <motion.div
           initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
           animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
@@ -382,45 +396,31 @@ export function LandlordDashboard() {
           className="mb-8"
         >
           <div className="mb-4">
-            <h2 className="text-2xl font-semibold text-foreground">Expense Summary</h2>
-            <p className="text-sm text-muted-foreground">Total upkeep costs this month</p>
+            <h2 className="text-2xl font-semibold text-foreground">Financial Summary</h2>
+            <p className="text-sm text-muted-foreground">Income, expenses, and profitability</p>
           </div>
 
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            whileHover={{ y: -2 }}
-            transition={{
-              type: 'spring',
-              ...cardSpring,
-              delay: 0.18,
-            }}
-            layout={false}
-          >
-            <Card className="glass-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Receipt className="w-4 h-4" />
-                  Total Expenses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-semibold text-foreground">
-                  <NumberCounter
-                    value={metrics.totalExpenses}
-                    format={v => `$${Math.round(v).toLocaleString()}`}
-                  />
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">This month</p>
-                <Button variant="outline" size="sm" className="mt-4" asChild>
-                  <Link to="/landlord/finances">
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    View Finances
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <MetricCard
+              title="Net Profit"
+              value={`$${Math.round(metrics.netProfit).toLocaleString()}`}
+              description={`${metrics.marginPercentage.toFixed(1)}% margin`}
+              onClick={() => setProfitModalOpen(true)}
+              variant={metrics.netProfit >= 0 ? 'success' : 'danger'}
+            />
+            <MetricCard
+              title="Total Expenses"
+              value={`$${Math.round(metrics.totalExpenses).toLocaleString()}`}
+              description="This month"
+              icon={<Receipt className="w-4 h-4" />}
+              onClick={() => setExpenseModalOpen(true)}
+            />
+            <MetricCard
+              title="Projected Net"
+              value={`$${Math.round(metrics.projectedNet).toLocaleString()}`}
+              description="Next 30 days"
+            />
+          </div>
         </motion.div>
 
         {/* Property Profitability Section */}
@@ -497,29 +497,55 @@ export function LandlordDashboard() {
             }}
             layout={false}
           >
-            <Card className="glass-card relative overflow-hidden">
+            <Card
+              className="glass-card relative overflow-hidden cursor-pointer"
+              onClick={() => dashboardActivities.length > 0 && setActivityModalOpen(true)}
+            >
               <GrainOverlay />
               <MatteLayer intensity="subtle" />
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest updates and notifications</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Activity</CardTitle>
+                    <CardDescription>Latest updates and notifications</CardDescription>
+                  </div>
+                  {dashboardActivities.length > 0 && recentActivity.length > 5 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={e => {
+                        e.stopPropagation()
+                        setActivityModalOpen(true)
+                      }}
+                    >
+                      View All
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 {requestsLoading || tenantsLoading ? (
                   <p className="text-muted-foreground">Loading...</p>
-                ) : recentActivity.length === 0 ? (
+                ) : dashboardActivities.length === 0 ? (
                   <p className="text-muted-foreground">No recent activity</p>
                 ) : (
-                  recentActivity.map((activity, index) => (
-                    <ActivityFeedItem
+                  dashboardActivities.map((activity, index) => (
+                    <div
                       key={activity.id}
-                      title={activity.title}
-                      description={activity.description}
-                      timestamp={activity.timestamp}
-                      icon={activity.icon}
-                      index={index}
-                      onClick={activity.onClick}
-                    />
+                      onClick={e => {
+                        e.stopPropagation()
+                        activity.onClick()
+                      }}
+                    >
+                      <ActivityFeedItem
+                        title={activity.title}
+                        description={activity.description}
+                        timestamp={activity.timestamp}
+                        icon={activity.icon}
+                        index={index}
+                        onClick={activity.onClick}
+                      />
+                    </div>
                   ))
                 )}
               </CardContent>
@@ -573,6 +599,30 @@ export function LandlordDashboard() {
           </motion.div>
         </div>
       </div>
+
+      {/* Revenue Breakdown Modal */}
+      <RevenueBreakdownModal
+        isOpen={revenueModalOpen}
+        onClose={() => setRevenueModalOpen(false)}
+        viewMode={revenueViewMode}
+        onViewModeChange={setRevenueViewMode}
+      />
+
+      {/* Recent Activity Modal */}
+      <RecentActivityModal
+        isOpen={activityModalOpen}
+        onClose={() => setActivityModalOpen(false)}
+        activities={recentActivity}
+      />
+
+      {/* Profit Breakdown Modal */}
+      <ProfitBreakdownModal isOpen={profitModalOpen} onClose={() => setProfitModalOpen(false)} />
+
+      {/* Expense Distribution Modal */}
+      <ExpenseDistributionModal
+        isOpen={expenseModalOpen}
+        onClose={() => setExpenseModalOpen(false)}
+      />
     </div>
   )
 }

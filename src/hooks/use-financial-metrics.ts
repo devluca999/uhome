@@ -4,6 +4,8 @@ import type { Database } from '@/types/database'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
 
+export type TimeRange = 'month' | 'quarter' | 'year'
+
 export type FinancialMetrics = {
   rentCollected: number
   rentOutstanding: number
@@ -38,7 +40,8 @@ export function useFinancialMetrics(
   rentRecords: RentRecordWithRelations[],
   expenses: Expense[],
   months: number = 6,
-  propertyId?: string
+  propertyId?: string,
+  timeRange: TimeRange = 'month'
 ): FinancialMetrics {
   return useMemo(() => {
     const now = new Date()
@@ -84,11 +87,26 @@ export function useFinancialMetrics(
     const marginPercentage =
       rentCollected > 0 ? ((rentCollected - totalExpenses) / rentCollected) * 100 : 0
 
-    // Calculate monthly rent collected for chart
-    const monthlyRentCollected: Array<{ month: string; amount: number }> = []
-    const monthlyExpenses: Array<{ month: string; amount: number }> = []
-    const monthlyNet: Array<{ month: string; income: number; expenses: number; net: number }> = []
+    // Calculate monthly rent collected for chart (always calculate monthly first, then aggregate)
+    const monthlyRentCollected: Array<{ month: string; amount: number; date: Date }> = []
+    const monthlyExpenses: Array<{ month: string; amount: number; date: Date }> = []
+    const monthlyNet: Array<{
+      month: string
+      income: number
+      expenses: number
+      net: number
+      date: Date
+    }> = []
 
+    // Calculate number of periods to show based on time range
+    let periodsToShow = months
+    if (timeRange === 'quarter') {
+      periodsToShow = Math.ceil(months / 3) // Number of quarters
+    } else if (timeRange === 'year') {
+      periodsToShow = Math.ceil(months / 12) // Number of years
+    }
+
+    // First, calculate all monthly data
     for (let i = months - 1; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -111,14 +129,100 @@ export function useFinancialMetrics(
         })
         .reduce((sum, e) => sum + Number(e.amount), 0)
 
-      monthlyRentCollected.push({ month: monthKey, amount: monthRent })
-      monthlyExpenses.push({ month: monthKey, amount: monthExpenses })
+      monthlyRentCollected.push({ month: monthKey, amount: monthRent, date })
+      monthlyExpenses.push({ month: monthKey, amount: monthExpenses, date })
       monthlyNet.push({
         month: monthKey,
         income: monthRent,
         expenses: monthExpenses,
         net: monthRent - monthExpenses,
+        date,
       })
+    }
+
+    // Aggregate based on time range
+    let aggregatedRentCollected: Array<{ month: string; amount: number }> = []
+    let aggregatedExpenses: Array<{ month: string; amount: number }> = []
+    let aggregatedNet: Array<{ month: string; income: number; expenses: number; net: number }> = []
+
+    if (timeRange === 'month') {
+      // Use monthly data as-is
+      aggregatedRentCollected = monthlyRentCollected.map(({ month, amount }) => ({ month, amount }))
+      aggregatedExpenses = monthlyExpenses.map(({ month, amount }) => ({ month, amount }))
+      aggregatedNet = monthlyNet.map(({ month, income, expenses, net }) => ({
+        month,
+        income,
+        expenses,
+        net,
+      }))
+    } else if (timeRange === 'quarter') {
+      // Aggregate into quarters
+      const quarterMap = new Map<string, { rent: number; expenses: number; date: Date }>()
+
+      monthlyRentCollected.forEach(({ date, amount }) => {
+        const quarter = Math.floor(date.getMonth() / 3) + 1
+        const quarterKey = `Q${quarter} ${date.getFullYear()}`
+        const existing = quarterMap.get(quarterKey) || { rent: 0, expenses: 0, date }
+        quarterMap.set(quarterKey, { ...existing, rent: existing.rent + amount, date })
+      })
+
+      monthlyExpenses.forEach(({ date, amount }) => {
+        const quarter = Math.floor(date.getMonth() / 3) + 1
+        const quarterKey = `Q${quarter} ${date.getFullYear()}`
+        const existing = quarterMap.get(quarterKey) || { rent: 0, expenses: 0, date }
+        quarterMap.set(quarterKey, { ...existing, expenses: existing.expenses + amount, date })
+      })
+
+      // Convert to arrays and sort by date
+      aggregatedRentCollected = Array.from(quarterMap.entries())
+        .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
+        .map(([month, data]) => ({ month, amount: data.rent }))
+
+      aggregatedExpenses = Array.from(quarterMap.entries())
+        .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
+        .map(([month, data]) => ({ month, amount: data.expenses }))
+
+      aggregatedNet = Array.from(quarterMap.entries())
+        .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
+        .map(([month, data]) => ({
+          month,
+          income: data.rent,
+          expenses: data.expenses,
+          net: data.rent - data.expenses,
+        }))
+    } else if (timeRange === 'year') {
+      // Aggregate into years
+      const yearMap = new Map<string, { rent: number; expenses: number; date: Date }>()
+
+      monthlyRentCollected.forEach(({ date, amount }) => {
+        const yearKey = date.getFullYear().toString()
+        const existing = yearMap.get(yearKey) || { rent: 0, expenses: 0, date }
+        yearMap.set(yearKey, { ...existing, rent: existing.rent + amount, date })
+      })
+
+      monthlyExpenses.forEach(({ date, amount }) => {
+        const yearKey = date.getFullYear().toString()
+        const existing = yearMap.get(yearKey) || { rent: 0, expenses: 0, date }
+        yearMap.set(yearKey, { ...existing, expenses: existing.expenses + amount, date })
+      })
+
+      // Convert to arrays and sort by date
+      aggregatedRentCollected = Array.from(yearMap.entries())
+        .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
+        .map(([month, data]) => ({ month, amount: data.rent }))
+
+      aggregatedExpenses = Array.from(yearMap.entries())
+        .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
+        .map(([month, data]) => ({ month, amount: data.expenses }))
+
+      aggregatedNet = Array.from(yearMap.entries())
+        .sort((a, b) => a[1].date.getTime() - b[1].date.getTime())
+        .map(([month, data]) => ({
+          month,
+          income: data.rent,
+          expenses: data.expenses,
+          net: data.rent - data.expenses,
+        }))
     }
 
     // Calculate expense averages by category with trends
@@ -132,12 +236,12 @@ export function useFinancialMetrics(
       netProfit,
       projectedNet,
       marginPercentage,
-      monthlyRentCollected,
-      monthlyExpenses,
-      monthlyNet,
+      monthlyRentCollected: aggregatedRentCollected,
+      monthlyExpenses: aggregatedExpenses,
+      monthlyNet: aggregatedNet,
       expenseAveragesByCategory,
     }
-  }, [rentRecords, expenses, months, propertyId])
+  }, [rentRecords, expenses, months, propertyId, timeRange])
 }
 
 /**

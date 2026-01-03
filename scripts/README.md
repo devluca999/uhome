@@ -10,15 +10,25 @@ npm run seed:mock
 
 ### What It Does
 
-The seed script creates realistic mock data for testing and development:
+The seed script creates realistic mock data for testing and development, simulating an **active power user account**:
 
 - **1 Landlord** user account
 - **3 Tenant** user accounts  
 - **3 Properties** with varied rent amounts and details
 - **3 Tenant assignments** (one tenant per property)
-- **9 Rent records** (3 months × 3 tenants) with mixed statuses (paid, pending)
-- **5 Maintenance requests** in various states (pending, in_progress, completed)
+- **36 Rent records** (12 months × 3 tenants) with:
+  - Variety in payment dates (early, on-time, late)
+  - Mix of payment methods (Zelle, Cash, Check, Venmo, Bank Transfer)
+  - Realistic status distribution (paid, pending, overdue)
+- **15-20 Expense records** across 12 months with:
+  - Multiple categories (maintenance, utilities, repairs, insurance, taxes)
+  - Realistic amounts ($50-$700 range)
+  - Some recurring expenses
+- **5+ Maintenance requests** in various states (pending, in_progress, completed)
 - **3 Sample documents** (lease agreements, guidelines)
+- **10+ Notes** (2-3 per property, plus notes on rent records and expenses)
+
+This creates a comprehensive dataset that demonstrates the full potential of the application with realistic, varied data that shows scale, momentum, and trust.
 
 ### Test Credentials
 
@@ -47,6 +57,8 @@ If using anon key only, you need to be logged in first (the script will use your
 - If properties already exist, it skips creation
 - To re-seed fresh data, delete existing properties first (this will cascade delete related data)
 - All created users use the password: `password123`
+- The seed script creates a **power user account** with 12 months of historical data to demonstrate the app's full capabilities
+- Mock data is designed to feel realistic and show the app in active use, not as an empty demo
 
 ### Troubleshooting
 

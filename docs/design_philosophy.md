@@ -6,6 +6,17 @@
 
 uhome prioritizes calm clarity, human-friendly language, and responsive interaction over analytical depth or feature overload. The product should feel like a lite landlord CRM, not an accounting system.
 
+## Product Values
+
+For high-level product values and principles, see [product_principles.md](./product_principles.md). This document focuses on design and interaction patterns that support those values.
+
+Key product values that inform design:
+- **Cohesion over feature count**: Connected workflows over disconnected features
+- **Calm, intuitive workflows**: Natural, minimal cognitive effort
+- **Opinionated defaults**: Smart choices that reduce decision fatigue
+- **No orphaned data**: All data visible and useful, information flows between features
+- **Property-first mental model**: Organized around properties, not accounting logic
+
 ## Guiding Principles
 
 1. **Financial clarity > financial complexity**
@@ -64,6 +75,20 @@ uhome prioritizes calm clarity, human-friendly language, and responsive interact
 - Initial page renders (except subtle fade-in)
 - Decorative elements
 - Looping or pulsing effects
+
+## Anti-Patterns (What NOT to Do)
+
+### No hidden workarounds
+Users should never need to find clever ways to accomplish basic tasks. Core functionality should be directly accessible.
+
+### No forced accounting logic
+Present financial information in plain language that landlords understand naturally, not accounting terminology.
+
+### No multi-step flows for simple actions
+Common, simple tasks should be achievable in one or two steps.
+
+### No help articles required for core tasks
+Core functionality should be self-evident. If documentation is needed for basic tasks, the design has failed.
 
 ## Language & Clarity Standards
 
@@ -141,4 +166,13 @@ When evaluating features or design decisions, ask:
 5. Does it differentiate through design/interaction?
 
 If any answer is "no", defer to post-MVP.
+
+## Property-First Mental Model
+
+uhome is organized around properties and relationships, not accounting concepts. The system supports:
+- Property-centric navigation and workflows
+- Relationships between landlords, tenants, and properties as the primary structure
+- Financial tracking that supports the property model, not dictates it
+
+This mental model ensures the product feels like a landlord CRM, not accounting software. All features should align with this property-first approach.
 

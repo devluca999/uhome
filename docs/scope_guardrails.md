@@ -164,6 +164,21 @@ This document should be reviewed when:
 - MVP launch approaches
 - Post-MVP planning begins
 
+## Architecture Notes
+
+### Organization/Workspace Model
+
+**MVP Status**: The current architecture uses `properties.owner_id` directly, which is sufficient for MVP where UI exposes only a single landlord.
+
+**Future Migration Path**: The architecture rule states "Use organization/workspace model internally, even if UI exposes only single landlord at MVP." While we maintain direct `owner_id` relationships for MVP simplicity, the schema can be migrated to an organization/workspace model later without breaking changes by:
+
+1. Creating an `organizations` table
+2. Adding `organization_id` to `properties` and other relevant tables
+3. Migrating existing `owner_id` relationships to organization memberships
+4. Updating RLS policies to work with organizations
+
+This future-proofing consideration does not require changes at MVP, but should be kept in mind when designing new features.
+
 ## Updates
 
 This document is a living guide. Update it when:

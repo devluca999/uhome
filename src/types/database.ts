@@ -202,6 +202,8 @@ export type Database = {
           status: 'pending' | 'paid' | 'overdue'
           paid_date: string | null
           payment_method: 'manual' | 'external' | null
+          payment_method_type: 'manual' | 'external' | null
+          payment_method_label: string | null
           notes: string | null
           receipt_url: string | null
           created_at: string
@@ -216,6 +218,8 @@ export type Database = {
           status?: 'pending' | 'paid' | 'overdue'
           paid_date?: string | null
           payment_method?: 'manual' | 'external' | null
+          payment_method_type?: 'manual' | 'external' | null
+          payment_method_label?: string | null
           notes?: string | null
           receipt_url?: string | null
           created_at?: string
@@ -230,6 +234,8 @@ export type Database = {
           status?: 'pending' | 'paid' | 'overdue'
           paid_date?: string | null
           payment_method?: 'manual' | 'external' | null
+          payment_method_type?: 'manual' | 'external' | null
+          payment_method_label?: string | null
           notes?: string | null
           receipt_url?: string | null
           created_at?: string

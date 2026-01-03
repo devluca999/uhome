@@ -71,26 +71,26 @@
   --reflective-opacity-medium-light: 0.15;
 }
 
-/* Dark Mode (Default) */
+/* Dark Mode (Default) - Layered dark shades for depth */
 :root {
-  --background: 17 8% 7%; /* #111318 */
+  --background: 17 8% 9%; /* #14171C - Slightly lighter than pure black for depth */
   --foreground: 220 13% 96%; /* #F5F6F8 */
-  --card: 220 10% 15%; /* #2A2D34 */
+  --card: 220 10% 20%; /* #2E3239 - Elevated layer with subtle elevation */
   --card-foreground: 220 13% 96%;
-  --popover: 220 10% 15%;
+  --popover: 220 10% 24%; /* #363A42 - Highest layer - modals and popovers */
   --popover-foreground: 220 13% 96%;
   --primary: 142 20% 58%; /* Sage green */
   --primary-foreground: 220 13% 96%;
-  --secondary: 220 10% 20%;
+  --secondary: 220 10% 22%; /* #333740 - Between card and popover */
   --secondary-foreground: 220 13% 96%;
-  --muted: 220 10% 20%;
-  --muted-foreground: 220 8% 50%; /* #7A869A */
-  --accent: 220 10% 20%;
+  --muted: 220 10% 22%;
+  --muted-foreground: 220 8% 55%; /* #7A869A - Slightly brighter for better legibility */
+  --accent: 220 10% 22%;
   --accent-foreground: 220 13% 96%;
   --destructive: 0 70% 50%;
   --destructive-foreground: 220 13% 96%;
-  --border: 220 10% 25%;
-  --input: 220 10% 25%;
+  --border: 220 10% 38%; /* More visible border for better distinction and depth */
+  --input: 220 10% 26%; /* Slightly elevated input fields */
   --ring: 142 20% 58%;
   --radius: 0.75rem;
 }
@@ -113,7 +113,7 @@
   --accent-foreground: 17 8% 7%;
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
-  --border: 20 5% 90%; /* #E7E5E4 */
+  --border: 20 5% 75%; /* Darker border for better distinction in light mode */
   --input: 20 5% 90%;
   --ring: 142 20% 58%;
 }
@@ -161,11 +161,16 @@
 .glass-card {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(42, 45, 52, 0.72); /* #2A2D34 with glass opacity */
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(
+    46,
+    50,
+    57,
+    0.75
+  ); /* Updated to match new card color #2E3239 with glass opacity */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* More rigid border for better distinction */
   box-shadow:
     var(--shadow-card),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06); /* Slightly increased inset highlight */
   transition: all var(--duration-base) var(--easing-motion);
   position: relative;
   overflow: hidden;
@@ -180,7 +185,7 @@
 /* Light Mode Glass Card */
 .light .glass-card {
   background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.2); /* More rigid border for better distinction */
   box-shadow:
     var(--shadow-card),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
@@ -334,4 +339,35 @@
 .light .glass-nav {
   background: rgba(255, 255, 255, 0.8);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Select and Option Styling for Legibility */
+select {
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+select:focus {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Option elements - ensure legibility in both themes */
+option {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  padding: 0.5rem;
+}
+
+/* Dark mode specific option styling */
+:root option {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+}
+
+/* Light mode specific option styling */
+.light option {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
 }

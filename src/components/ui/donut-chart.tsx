@@ -35,8 +35,8 @@ export function DonutChart({ data, className }: DonutChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
-          <p className="text-sm font-medium text-foreground">{data.name}</p>
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg z-50">
+          <p className="text-sm font-semibold text-foreground mb-1">{data.name}</p>
           <p className="text-sm text-muted-foreground">
             ${data.value.toLocaleString()} ({data.percentage}%)
           </p>

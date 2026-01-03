@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { RentLedgerRow } from '@/components/landlord/rent-ledger-row'
 import { ExpenseForm } from '@/components/landlord/expense-form'
 import { ExpenseList } from '@/components/landlord/expense-list'
+import { RentRecordForm } from '@/components/landlord/rent-record-form'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton-loader'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
@@ -27,6 +28,7 @@ export function LandlordLedger() {
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   const [showExpenseForm, setShowExpenseForm] = useState(false)
+  const [showRentForm, setShowRentForm] = useState(false)
   const cardSpring = createSpring('card')
 
   const dateRange = useMemo(() => {
@@ -41,6 +43,11 @@ export function LandlordLedger() {
         return {
           start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
           end: new Date(now.getFullYear(), now.getMonth(), 0),
+        }
+      case 'yearly':
+        return {
+          start: new Date(now.getFullYear(), 0, 1),
+          end: new Date(now.getFullYear(), 11, 31),
         }
       case 'custom':
         if (customStartDate && customEndDate) {
@@ -66,7 +73,7 @@ export function LandlordLedger() {
     return filter
   }, [selectedPropertyId, dateRange])
 
-  const { records, loading } = useLandlordRentRecords(filter)
+  const { records, loading, createRentRecord, refetch } = useLandlordRentRecords(filter)
 
   const summary = useMemo(() => {
     const collected = records
@@ -104,18 +111,64 @@ export function LandlordLedger() {
               <h1 className="text-4xl font-semibold text-foreground mb-2">Finances</h1>
               <p className="text-muted-foreground">Financial truth center</p>
             </div>
-            <Button variant="outline" onClick={() => setShowExpenseForm(!showExpenseForm)}>
-              {showExpenseForm ? (
-                'Cancel'
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Expense
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowRentForm(!showRentForm)}>
+                {showRentForm ? (
+                  'Cancel'
+                ) : (
+                  <>
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Log Rent
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={() => setShowExpenseForm(!showExpenseForm)}>
+                {showExpenseForm ? (
+                  'Cancel'
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Expense
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </motion.div>
+
+        {/* Rent Record Form */}
+        {showRentForm && (
+          <motion.div
+            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+            exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
+            transition={{
+              duration: motionTokens.duration.normal,
+              ease: motionTokens.easing.standard,
+            }}
+            className="mb-6"
+          >
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle>Log Rent Payment</CardTitle>
+                <CardDescription>Record a rent payment or upcoming rent</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RentRecordForm
+                  onSubmit={async data => {
+                    const result = await createRentRecord(data)
+                    if (!result.error) {
+                      setShowRentForm(false)
+                      await refetch()
+                    }
+                    return { error: result.error }
+                  }}
+                  onCancel={() => setShowRentForm(false)}
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Expense Form */}
         {showExpenseForm && (
@@ -255,6 +308,9 @@ export function LandlordLedger() {
                   <option value="lastMonth" className="text-foreground">
                     Last Month
                   </option>
+                  <option value="yearly" className="text-foreground">
+                    This Year
+                  </option>
                   <option value="custom" className="text-foreground">
                     Custom Range
                   </option>
@@ -372,7 +428,7 @@ export function LandlordLedger() {
                       }}
                       layout={false}
                     >
-                      <RentLedgerRow record={record} />
+                      <RentLedgerRow record={record} onReceiptGenerated={refetch} />
                     </motion.div>
                   ))}
                 </div>

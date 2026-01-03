@@ -1,10 +1,13 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useAuth } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
+import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { useReducedMotion } from '@/lib/motion'
 
 const ALL_NAV_ITEMS = [
   { path: '/tenant/dashboard', label: 'Dashboard', required: true },
@@ -19,6 +22,7 @@ export function TenantLayout() {
   const { signOut, user } = useAuth()
   const { settings } = useSettings()
   const [isMobile, setIsMobile] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
 
   // Detect mobile
@@ -114,7 +118,20 @@ export function TenantLayout() {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{
+              duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.base),
+              ease: motionTokens.ease.standard,
+            }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   )

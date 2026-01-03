@@ -11,6 +11,8 @@ export type RentRecordWithRelations = {
   status: 'pending' | 'paid' | 'overdue'
   paid_date?: string | null
   payment_method?: 'manual' | 'external' | null
+  payment_method_type?: 'manual' | 'external' | null
+  payment_method_label?: string | null
   notes?: string | null
   receipt_url?: string | null
   created_at: string
@@ -120,10 +122,48 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
     }
   }
 
+  async function createRentRecord(data: {
+    property_id: string
+    tenant_id: string
+    amount: number
+    due_date: string
+    status?: 'pending' | 'paid' | 'overdue'
+    paid_date?: string | null
+    payment_method_type?: 'manual' | 'external' | null
+    payment_method_label?: string | null
+    notes?: string | null
+  }) {
+    try {
+      const { data: newRecord, error: createError } = await supabase
+        .from('rent_records')
+        .insert(data)
+        .select(
+          `
+          *,
+          property:properties(id, name, address),
+          tenant:tenants(
+            id,
+            user:users(email)
+          )
+        `
+        )
+        .single()
+
+      if (createError) throw createError
+
+      setRecords(prev => [newRecord as RentRecordWithRelations, ...prev])
+      return { data: newRecord, error: null }
+    } catch (err) {
+      const error = err as Error
+      return { data: null, error }
+    }
+  }
+
   return {
     records,
     loading,
     error,
     refetch: fetchRecords,
+    createRentRecord,
   }
 }
