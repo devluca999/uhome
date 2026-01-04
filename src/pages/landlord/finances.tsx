@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton-loader'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { KPIStrip } from '@/components/landlord/kpi-strip'
-import { FinancialGraphSwitcher } from '@/components/landlord/financial-graph-switcher'
+import { FinancialGraphEnhanced } from '@/components/landlord/financial-graph-enhanced'
+import { RentSummaryCards } from '@/components/landlord/rent-summary-cards'
 import { ExpensesStream } from '@/components/landlord/expenses-stream'
 import { IncomeStream } from '@/components/landlord/income-stream'
 import { SmartInsights } from '@/components/landlord/smart-insights'
@@ -20,7 +21,7 @@ import { useProperties } from '@/hooks/use-properties'
 import { useExpenses } from '@/hooks/use-expenses'
 import { useFinancialMetrics } from '@/hooks/use-financial-metrics'
 import { exportLedgerToCSV } from '@/utils/export-csv'
-import { FileText, Plus, Download, X } from 'lucide-react'
+import { FileText, Plus, Download, X, Edit } from 'lucide-react'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import type { Database } from '@/types/database'
 
@@ -29,11 +30,19 @@ type DateRangePreset = 'thisMonth' | 'lastMonth' | 'custom' | 'all'
 type RentRecordWithRelations = import('@/hooks/use-landlord-rent-records').RentRecordWithRelations
 
 // Generate fallback mock rent records for demo purposes (power-user simulation)
-function generateFallbackRentRecords(): RentRecordWithRelations[] {
+// IMPORTANT: Uses actual property IDs from properties array to ensure property filter works
+function generateFallbackRentRecords(properties: Array<{ id: string; name: string; address?: string | null }>): RentRecordWithRelations[] {
   const today = new Date()
   const records: RentRecordWithRelations[] = []
   const amounts = [2400, 2800, 3200]
   const paymentMethods = ['Zelle', 'Cash', 'Check', 'Venmo', 'Bank Transfer']
+  
+  // Use actual properties, or fallback to 3 if none exist
+  const propsToUse = properties.length > 0 ? properties : [
+    { id: 'fallback-property-0', name: 'Property 1', address: '123 Demo St' },
+    { id: 'fallback-property-1', name: 'Property 2', address: '456 Demo St' },
+    { id: 'fallback-property-2', name: 'Property 3', address: '789 Demo St' },
+  ]
 
   // Generate 12 months of data (enhanced for realistic power-user simulation)
   for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
@@ -41,8 +50,9 @@ function generateFallbackRentRecords(): RentRecordWithRelations[] {
     const isPastMonth = monthOffset > 0
     const isCurrentMonth = monthOffset === 0
 
-    for (let i = 0; i < 3; i++) {
-      const amount = amounts[i]
+    for (let i = 0; i < propsToUse.length; i++) {
+      const property = propsToUse[i]
+      const amount = amounts[i % amounts.length]
       let status: 'paid' | 'pending' | 'overdue' = 'pending'
       let paidDate: string | null = null
       let paymentMethodType: 'manual' | 'external' | null = null
@@ -87,7 +97,7 @@ function generateFallbackRentRecords(): RentRecordWithRelations[] {
 
       records.push({
         id: `fallback-${monthOffset}-${i}`,
-        property_id: `fallback-property-${i}`,
+        property_id: property.id, // Use actual property ID
         tenant_id: `fallback-tenant-${i}`,
         amount: amount.toString(),
         due_date: dueDate.toISOString().split('T')[0],
@@ -100,9 +110,9 @@ function generateFallbackRentRecords(): RentRecordWithRelations[] {
         created_at: dueDate.toISOString(),
         updated_at: dueDate.toISOString(),
         property: {
-          id: `fallback-property-${i}`,
-          name: `Property ${i + 1}`,
-          address: `123 Demo St, Unit ${i + 1}`,
+          id: property.id,
+          name: property.name,
+          address: property.address || null,
         },
         tenant: {
           id: `fallback-tenant-${i}`,
@@ -119,7 +129,8 @@ function generateFallbackRentRecords(): RentRecordWithRelations[] {
 }
 
 // Generate fallback mock expenses for demo purposes
-function generateFallbackExpenses(): Expense[] {
+// IMPORTANT: Uses actual property IDs from properties array to ensure property filter works
+function generateFallbackExpenses(properties: Array<{ id: string; name: string }>): Expense[] {
   const today = new Date()
   const expenses: Expense[] = []
   const categories = ['maintenance', 'utilities', 'repairs', 'insurance', 'taxes']
@@ -130,6 +141,13 @@ function generateFallbackExpenses(): Expense[] {
     insurance: ['Property insurance', 'Liability insurance'],
     taxes: ['Property tax', 'Quarterly tax'],
   }
+  
+  // Use actual properties, or fallback to 3 if none exist
+  const propsToUse = properties.length > 0 ? properties : [
+    { id: 'fallback-property-0', name: 'Property 1' },
+    { id: 'fallback-property-1', name: 'Property 2' },
+    { id: 'fallback-property-2', name: 'Property 3' },
+  ]
 
   // Generate 12 months of expenses (enhanced for realistic simulation)
   for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
@@ -141,6 +159,7 @@ function generateFallbackExpenses(): Expense[] {
     const numExpenses = Math.random() > 0.5 ? 2 : 1
 
     for (let e = 0; e < numExpenses; e++) {
+      const property = propsToUse[e % propsToUse.length] // Distribute expenses across properties
       const category = categories[Math.floor(Math.random() * categories.length)]
       const categoryDescriptions = descriptions[category as keyof typeof descriptions]
       const description =
@@ -157,7 +176,7 @@ function generateFallbackExpenses(): Expense[] {
 
       expenses.push({
         id: `fallback-expense-${monthOffset}-${e}`,
-        property_id: `fallback-property-${Math.floor(Math.random() * 3)}`,
+        property_id: property.id, // Use actual property ID
         user_id: 'fallback-user',
         category,
         description,
@@ -187,6 +206,7 @@ export function LandlordFinances() {
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   const [showExpenseForm, setShowExpenseForm] = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set())
   const cardSpring = createSpring('card')
 
@@ -246,20 +266,22 @@ export function LandlordFinances() {
   const [graphTimeRange, setGraphTimeRange] = useState<'month' | 'quarter' | 'year'>('month')
 
   // Use fallback data if no real data exists (for mock mode / power-user simulation)
+  // IMPORTANT: Pass properties so fallback data uses real property IDs
   const records = useMemo(() => {
     if (realRecords.length === 0 && !loading) {
-      return generateFallbackRentRecords()
+      return generateFallbackRentRecords(properties)
     }
     return realRecords
-  }, [realRecords, loading])
+  }, [realRecords, loading, properties])
 
   // Use fallback expenses if no real expenses exist
+  // IMPORTANT: Pass properties so fallback data uses real property IDs
   const expensesWithFallback = useMemo(() => {
     if (expenses.length === 0) {
-      return generateFallbackExpenses()
+      return generateFallbackExpenses(properties)
     }
     return expenses
-  }, [expenses])
+  }, [expenses, properties])
 
   // Property filter: empty string or 'all' means all properties
   const propertyFilter =
@@ -562,7 +584,18 @@ export function LandlordFinances() {
       />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Section B: Primary Financial Visualization */}
+        {/* Section B: Rent Summary Cards */}
+        <RentSummaryCards
+          totalCollected={metrics.rentCollected}
+          outstanding={metrics.rentOutstanding}
+          expenses={metrics.totalExpenses}
+          netCashFlow={metrics.netProfit}
+          dateRange={dateRange}
+          propertyId={selectedPropertyId || undefined}
+          properties={properties}
+        />
+
+        {/* Section C: Primary Financial Visualization */}
         <motion.div
           initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
           animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
@@ -572,18 +605,27 @@ export function LandlordFinances() {
           }}
           className="mb-8"
         >
-          <FinancialGraphSwitcher
+          <FinancialGraphEnhanced
             lineData={lineChartData}
             barData={barChartData}
-            donutData={donutChartData}
-            pieData={pieChartData}
+            rentCollectedData={metrics.monthlyRentCollected.map(item => ({
+              month: item.month,
+              amount: item.amount,
+            }))}
+            outstandingRentData={[]} // TODO: Calculate outstanding rent by month
+            expensesData={metrics.monthlyExpenses.map(item => ({
+              month: item.month,
+              amount: item.amount,
+            }))}
+            netCashFlowData={metrics.monthlyNet.map(item => ({
+              month: item.month,
+              amount: item.net,
+            }))}
             properties={properties}
             selectedPropertyId={selectedPropertyId || 'all'}
-            timeRange={graphTimeRange}
             onPropertyChange={propertyId =>
               setSelectedPropertyId(propertyId === 'all' ? '' : propertyId)
             }
-            onTimeRangeChange={setGraphTimeRange}
           />
         </motion.div>
 
@@ -685,7 +727,7 @@ export function LandlordFinances() {
           </CardHeader>
 
           {/* Expense Form Modal */}
-          {showExpenseForm && (
+          {(showExpenseForm || editingExpense) && (
             <CardContent className="border-b border-border pb-6">
               <motion.div
                 initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
@@ -698,21 +740,39 @@ export function LandlordFinances() {
               >
                 <ExpenseForm
                   onSubmit={async data => {
-                    const result = await createExpense(data)
-                    if (!result.error) {
-                      setShowExpenseForm(false)
+                    if (editingExpense) {
+                      const result = await updateExpense(editingExpense.id, data)
+                      if (!result.error) {
+                        setEditingExpense(null)
+                        setShowExpenseForm(false)
+                      }
+                      return { error: result.error }
+                    } else {
+                      const result = await createExpense(data)
+                      if (!result.error) {
+                        setShowExpenseForm(false)
+                      }
+                      return { error: result.error }
                     }
-                    return { error: result.error }
                   }}
-                  onCancel={() => setShowExpenseForm(false)}
-                  initialData={selectedPropertyId ? { property_id: selectedPropertyId } : undefined}
+                  onCancel={() => {
+                    setShowExpenseForm(false)
+                    setEditingExpense(null)
+                  }}
+                  initialData={
+                    editingExpense
+                      ? { ...editingExpense, id: editingExpense.id }
+                      : selectedPropertyId
+                        ? { property_id: selectedPropertyId }
+                        : undefined
+                  }
                 />
               </motion.div>
             </CardContent>
           )}
 
           {/* Ledger Filters */}
-          <CardContent className={showExpenseForm ? 'border-b border-border pb-6' : 'pb-6'}>
+          <CardContent className={showExpenseForm || editingExpense ? 'border-b border-border pb-6' : 'pb-6'}>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Property</label>
@@ -830,7 +890,11 @@ export function LandlordFinances() {
                       }}
                       layout={false}
                     >
-                      <RentLedgerRow record={record} onReceiptGenerated={refetch} />
+                      <RentLedgerRow
+                        record={record}
+                        onReceiptGenerated={refetch}
+                        onLateFeeUpdated={refetch}
+                      />
                     </motion.div>
                   ))}
 
@@ -876,6 +940,18 @@ export function LandlordFinances() {
                             <span className="text-lg font-semibold text-foreground">
                               ${Number(expense.amount).toLocaleString()}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingExpense(expense)
+                                setShowExpenseForm(true)
+                              }}
+                              className="h-8 w-8 p-0"
+                              title="Edit expense"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>

@@ -25,6 +25,7 @@ interface LineChartProps {
   showIncome?: boolean
   showExpenses?: boolean
   showNet?: boolean
+  curveType?: 'smooth' | 'sharp'
 }
 
 export function LineChart({
@@ -33,6 +34,7 @@ export function LineChart({
   showIncome = true,
   showExpenses = true,
   showNet = true,
+  curveType = 'smooth',
 }: LineChartProps) {
   const { theme } = useTheme()
   const prefersReducedMotion =
@@ -93,7 +95,7 @@ export function LineChart({
           <Legend wrapperStyle={{ color: textColor }} iconType="line" />
           {showIncome && (
             <Line
-              type="monotone"
+              type={curveType === 'smooth' ? 'monotone' : 'linear'}
               dataKey="income"
               name="Income"
               stroke={incomeColor}
@@ -105,7 +107,7 @@ export function LineChart({
           )}
           {showExpenses && (
             <Line
-              type="monotone"
+              type={curveType === 'smooth' ? 'monotone' : 'linear'}
               dataKey="expenses"
               name="Expenses"
               stroke={expensesColor}
@@ -117,7 +119,7 @@ export function LineChart({
           )}
           {showNet && (
             <Line
-              type="monotone"
+              type={curveType === 'smooth' ? 'monotone' : 'linear'}
               dataKey="net"
               name="Net"
               stroke={netColor}

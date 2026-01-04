@@ -43,6 +43,7 @@
 - `table` - Data tables
 - `avatar` - User avatars
 - `skeleton` - Loading states
+- `modal-indicator` - Expand icon for cards that open modals
 
 ### Custom Components (Built on shadcn/ui)
 
@@ -102,6 +103,32 @@ Page components (src/pages/)
 - Extend shadcn/ui component props (e.g., `React.ComponentProps<typeof Button>`)
 - Use variant props for styling variations
 - Keep props explicit and typed
+
+## Modal Indicator Pattern
+
+**Purpose:** Visually communicate that a card opens a modal when clicked.
+
+**Implementation:**
+- Use `ModalIndicator` component from `@/components/ui/modal-indicator`
+- Place in top-right corner of card (absolute positioning)
+- Shows expand icon (⤢) with hover effects
+- Tooltip: "Expand"
+
+**Usage Rules:**
+- Only add to cards that open modals
+- Do not clutter non-interactive cards
+- Hover increases opacity and shows tooltip
+- Clicking icon or card opens the modal
+
+**Example:**
+```tsx
+<Card className="relative">
+  <ModalIndicator onClick={() => setModalOpen(true)} />
+  {/* Card content */}
+</Card>
+```
+
+**Documentation:** See `src/components/ui/modal-indicator.tsx` for implementation details.
 
 ## How to Add shadcn/ui Components
 

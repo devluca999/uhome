@@ -36,6 +36,12 @@ export type FinancialMetrics = {
   }>
 }
 
+/**
+ * Financial Metrics Hook
+ * 
+ * MVP: Calendar year YTD (Jan 1 to today), not fiscal year
+ * Post-MVP: Support for fiscal year and rolling 12-month ranges
+ */
 export function useFinancialMetrics(
   rentRecords: RentRecordWithRelations[],
   expenses: Expense[],
@@ -55,14 +61,14 @@ export function useFinancialMetrics(
       ? expenses.filter(e => e.property_id === propertyId)
       : expenses
 
-    // Calculate rent metrics
+    // Calculate rent metrics (MVP: Include late fees in calculations)
     const rentCollected = filteredRentRecords
       .filter(r => r.status === 'paid')
-      .reduce((sum, r) => sum + Number(r.amount), 0)
+      .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
 
     const rentOutstanding = filteredRentRecords
       .filter(r => r.status === 'overdue')
-      .reduce((sum, r) => sum + Number(r.amount), 0)
+      .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
 
     const upcomingRent = filteredRentRecords
       .filter(r => r.status === 'pending')
@@ -120,7 +126,7 @@ export function useFinancialMetrics(
           const paidDate = new Date(r.paid_date)
           return paidDate >= monthStart && paidDate <= monthEnd
         })
-        .reduce((sum, r) => sum + Number(r.amount), 0)
+        .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
 
       const monthExpenses = filteredExpenses
         .filter(e => {

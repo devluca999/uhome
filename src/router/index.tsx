@@ -17,6 +17,7 @@ import { LandlordDocuments } from '@/pages/landlord/documents'
 import { TenantDashboard } from '@/pages/tenant/dashboard'
 import { TenantMaintenance } from '@/pages/tenant/maintenance'
 import { TenantDocuments } from '@/pages/tenant/documents'
+import { TenantFinances } from '@/pages/tenant/finances'
 import { SettingsPage } from '@/pages/settings'
 import { DevBypass } from '@/pages/dev/bypass'
 import { ErrorPage } from '@/components/error-page'
@@ -126,6 +127,11 @@ export const router = createBrowserRouter(
         {
           path: 'documents',
           element: <TenantDocuments />,
+          errorElement: <ErrorPage />,
+        },
+        {
+          path: 'finances',
+          element: <TenantFinances />,
           errorElement: <ErrorPage />,
         },
         {

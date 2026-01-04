@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/ui/empty-state'
 import { HeroGreeting } from '@/components/ui/hero-greeting'
 import { PaymentCard } from '@/components/ui/payment-card'
+import { FinanceSummaryCard } from '@/components/tenant/finance-summary-card'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useRentRecords } from '@/hooks/use-rent-records'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
@@ -102,6 +103,9 @@ export function TenantDashboard() {
             />
           </div>
         )}
+
+        {/* Finance Summary */}
+        <FinanceSummaryCard rentRecords={rentRecords} />
 
         <div className="grid gap-6 md:grid-cols-2 mb-6">
           <motion.div

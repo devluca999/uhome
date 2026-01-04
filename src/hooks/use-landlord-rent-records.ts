@@ -15,6 +15,7 @@ export type RentRecordWithRelations = {
   payment_method_label?: string | null
   notes?: string | null
   receipt_url?: string | null
+  late_fee?: number
   created_at: string
   updated_at: string
   property?: {
@@ -159,11 +160,42 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
     }
   }
 
+  async function updateLateFee(recordId: string, lateFee: number) {
+    try {
+      const { data: updatedRecord, error: updateError } = await supabase
+        .from('rent_records')
+        .update({ late_fee: lateFee })
+        .eq('id', recordId)
+        .select(
+          `
+          *,
+          property:properties(id, name, address),
+          tenant:tenants(
+            id,
+            user:users(email)
+          )
+        `
+        )
+        .single()
+
+      if (updateError) throw updateError
+
+      setRecords(prev =>
+        prev.map(record => (record.id === recordId ? (updatedRecord as RentRecordWithRelations) : record))
+      )
+      return { data: updatedRecord, error: null }
+    } catch (err) {
+      const error = err as Error
+      return { data: null, error }
+    }
+  }
+
   return {
     records,
     loading,
     error,
     refetch: fetchRecords,
     createRentRecord,
+    updateLateFee,
   }
 }

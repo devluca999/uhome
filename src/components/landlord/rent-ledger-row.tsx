@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ChevronUp, Download, FileText, FileDown } from 'lucide-react'
+import { ChevronDown, ChevronUp, Download, FileText, FileDown, DollarSign } from 'lucide-react'
 import {
   createSpring,
   motion as motionTokens,
@@ -11,25 +11,42 @@ import { cn } from '@/lib/utils'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useNotes } from '@/hooks/use-notes'
 import { useReceiptGeneration } from '@/hooks/use-receipt-generation'
+import { supabase } from '@/lib/supabase/client'
 import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
 
 interface RentLedgerRowProps {
   record: RentRecordWithRelations
   onReceiptGenerated?: () => void
+  onLateFeeUpdated?: () => void
 }
 
-export function RentLedgerRow({ record, onReceiptGenerated }: RentLedgerRowProps) {
+export function RentLedgerRow({
+  record,
+  onReceiptGenerated,
+  onLateFeeUpdated,
+}: RentLedgerRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [showNotesEditor, setShowNotesEditor] = useState(false)
   const [editingNoteContent, setEditingNoteContent] = useState('')
+  const [showLateFeeInput, setShowLateFeeInput] = useState(false)
+  const [lateFeeAmount, setLateFeeAmount] = useState(
+    record.late_fee ? record.late_fee.toString() : '0'
+  )
+  const [updatingLateFee, setUpdatingLateFee] = useState(false)
   const { notes, createNote, updateNote } = useNotes('rent_record', record.id)
   const { generateReceipt, generating: generatingReceipt } = useReceiptGeneration()
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
 
   const note = notes[0] // Single note per rent record
+
+  // MVP: Manual late fee application (no automation)
+  const totalDue = Number(record.amount) + (record.late_fee || 0)
+  const hasLateFee = (record.late_fee || 0) > 0
+  const isOverdue = record.status === 'overdue'
 
   const handleSaveNote = async () => {
     if (note) {
@@ -39,6 +56,31 @@ export function RentLedgerRow({ record, onReceiptGenerated }: RentLedgerRowProps
     }
     setShowNotesEditor(false)
     setEditingNoteContent('')
+  }
+
+  const handleUpdateLateFee = async () => {
+    setUpdatingLateFee(true)
+    try {
+      const amount = parseFloat(lateFeeAmount) || 0
+      const { error } = await supabase
+        .from('rent_records')
+        .update({ late_fee: amount })
+        .eq('id', record.id)
+
+      if (error) {
+        alert(`Failed to update late fee: ${error.message}`)
+      } else {
+        setShowLateFeeInput(false)
+        if (onLateFeeUpdated) {
+          onLateFeeUpdated()
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update late fee:', error)
+      alert('Failed to update late fee')
+    } finally {
+      setUpdatingLateFee(false)
+    }
   }
 
   const getStatusColor = () => {
@@ -123,8 +165,13 @@ export function RentLedgerRow({ record, onReceiptGenerated }: RentLedgerRowProps
           </div>
           <div className="text-right">
             <div className={cn('font-semibold', getStatusColor())}>
-              ${Number(record.amount).toLocaleString()}
+              ${totalDue.toLocaleString()}
             </div>
+            {hasLateFee && (
+              <div className="text-xs text-red-600 dark:text-red-400">
+                ${Number(record.amount).toLocaleString()} + ${(record.late_fee || 0).toLocaleString()} late fee
+              </div>
+            )}
             <div className="text-xs text-muted-foreground">
               Due: {new Date(record.due_date).toLocaleDateString()}
             </div>
@@ -157,6 +204,75 @@ export function RentLedgerRow({ record, onReceiptGenerated }: RentLedgerRowProps
             layout={false}
           >
             <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+              {/* Late Fee Section - MVP: Manual application only */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">Late Fee:</span>
+                  {!showLateFeeInput && isOverdue && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setLateFeeAmount(record.late_fee ? record.late_fee.toString() : '0')
+                        setShowLateFeeInput(true)
+                      }}
+                      className="h-6 text-xs"
+                    >
+                      {hasLateFee ? 'Edit' : 'Apply'} Late Fee
+                    </Button>
+                  )}
+                </div>
+                {showLateFeeInput ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={lateFeeAmount}
+                        onChange={e => setLateFeeAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="flex-1 h-8 text-sm"
+                        disabled={updatingLateFee}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleUpdateLateFee}
+                        className="h-8 text-xs"
+                        disabled={updatingLateFee}
+                      >
+                        {updatingLateFee ? 'Saving...' : 'Save'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowLateFeeInput(false)
+                          setLateFeeAmount(record.late_fee ? record.late_fee.toString() : '0')
+                        }}
+                        className="h-8 text-xs"
+                        disabled={updatingLateFee}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Total due: ${(Number(record.amount) + (parseFloat(lateFeeAmount) || 0)).toLocaleString()}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-foreground">
+                    {hasLateFee ? (
+                      <span className="text-red-600 dark:text-red-400">
+                        ${(record.late_fee || 0).toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground italic">No late fee</span>
+                    )}
+                  </p>
+                )}
+              </div>
+
               {record.paid_date && (
                 <div>
                   <span className="text-xs text-muted-foreground">Paid Date:</span>

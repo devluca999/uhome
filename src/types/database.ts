@@ -206,6 +206,7 @@ export type Database = {
           payment_method_label: string | null
           notes: string | null
           receipt_url: string | null
+          late_fee: number
           created_at: string
           updated_at: string
         }
@@ -222,6 +223,7 @@ export type Database = {
           payment_method_label?: string | null
           notes?: string | null
           receipt_url?: string | null
+          late_fee?: number
           created_at?: string
           updated_at?: string
         }
@@ -238,6 +240,7 @@ export type Database = {
           payment_method_label?: string | null
           notes?: string | null
           receipt_url?: string | null
+          late_fee?: number
           created_at?: string
           updated_at?: string
         }
