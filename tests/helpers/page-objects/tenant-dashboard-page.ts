@@ -28,4 +28,3 @@ export class TenantDashboardPage extends BasePage {
     await this.waitForVisible('text=/rent|payment/i', { timeout: 5000 })
   }
 }
-

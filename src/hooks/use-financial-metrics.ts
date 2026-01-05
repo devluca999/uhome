@@ -1,6 +1,15 @@
 import { useMemo } from 'react'
 import type { RentRecordWithRelations } from './use-landlord-rent-records'
 import type { Database } from '@/types/database'
+import {
+  calculateRentCollected,
+  calculateUnpaidRent,
+  calculateTotalExpenses,
+  calculateNetCashFlow,
+  calculateUpcomingRent,
+  calculateProjectedExpenses,
+  type FinanceFilters,
+} from '@/lib/finance-calculations'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
 
@@ -38,47 +47,43 @@ export type FinancialMetrics = {
 
 /**
  * Financial Metrics Hook
- * 
+ *
+ * V1 Canon Implementation - Uses centralized calculation functions from finance-calculations.ts
+ *
  * MVP: Calendar year YTD (Jan 1 to today), not fiscal year
  * Post-MVP: Support for fiscal year and rolling 12-month ranges
+ *
+ * V1 Exclusions:
+ * - Tax calculations
+ * - Depreciation
+ * - Investment metrics
+ * - Accounting classifications
  */
 export function useFinancialMetrics(
   rentRecords: RentRecordWithRelations[],
   expenses: Expense[],
   months: number = 6,
   propertyId?: string,
-  timeRange: TimeRange = 'month'
+  timeRange: TimeRange = 'month',
+  dateRangeFilter?: { start: Date; end: Date }
 ): FinancialMetrics {
   return useMemo(() => {
     const now = new Date()
 
-    // Filter by property if specified
-    const filteredRentRecords = propertyId
-      ? rentRecords.filter(r => r.property_id === propertyId)
-      : rentRecords
+    // Build filters for centralized calculations
+    const filters: FinanceFilters = {
+      propertyId,
+      dateRange: dateRangeFilter,
+    }
 
-    const filteredExpenses = propertyId
-      ? expenses.filter(e => e.property_id === propertyId)
-      : expenses
-
-    // Calculate rent metrics (MVP: Include late fees in calculations)
-    const rentCollected = filteredRentRecords
-      .filter(r => r.status === 'paid')
-      .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
-
-    const rentOutstanding = filteredRentRecords
-      .filter(r => r.status === 'overdue')
-      .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
-
-    const upcomingRent = filteredRentRecords
-      .filter(r => r.status === 'pending')
-      .reduce((sum, r) => sum + Number(r.amount), 0)
-
-    // Calculate expenses (including recurring projections)
-    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+    // Use centralized calculation functions
+    const rentCollected = calculateRentCollected(rentRecords, filters)
+    const rentOutstanding = calculateUnpaidRent(rentRecords, filters)
+    const upcomingRent = calculateUpcomingRent(rentRecords, filters)
+    const totalExpenses = calculateTotalExpenses(expenses, filters)
 
     // Calculate projected expenses from recurring expenses (next 30 days)
-    const projectedExpenses = calculateProjectedExpenses(filteredExpenses, 30)
+    const projectedExpenses = calculateProjectedExpenses(expenses, 30, filters)
 
     // Calculate projected income (next 30 days - pending rent)
     const projectedIncome = upcomingRent
@@ -86,12 +91,21 @@ export function useFinancialMetrics(
     // Calculate projected net (next 30 days)
     const projectedNet = projectedIncome - projectedExpenses
 
-    // Calculate net profit
-    const netProfit = rentCollected - totalExpenses
+    // Calculate net cash flow (net profit) using centralized function
+    const netProfit = calculateNetCashFlow(rentCollected, totalExpenses)
 
     // Calculate margin percentage
     const marginPercentage =
       rentCollected > 0 ? ((rentCollected - totalExpenses) / rentCollected) * 100 : 0
+
+    // For monthly calculations, we still need to filter by property for chart data
+    const filteredRentRecords = propertyId
+      ? rentRecords.filter(r => r.property_id === propertyId)
+      : rentRecords
+
+    const filteredExpenses = propertyId
+      ? expenses.filter(e => e.property_id === propertyId)
+      : expenses
 
     // Calculate monthly rent collected for chart (always calculate monthly first, then aggregate)
     const monthlyRentCollected: Array<{ month: string; amount: number; date: Date }> = []
@@ -247,60 +261,7 @@ export function useFinancialMetrics(
       monthlyNet: aggregatedNet,
       expenseAveragesByCategory,
     }
-  }, [rentRecords, expenses, months, propertyId, timeRange])
-}
-
-/**
- * Calculate projected expenses from recurring expenses for the next N days
- */
-function calculateProjectedExpenses(expenses: Expense[], days: number): number {
-  const now = new Date()
-  const endDate = new Date(now)
-  endDate.setDate(endDate.getDate() + days)
-
-  let projected = 0
-
-  for (const expense of expenses) {
-    if (!expense.is_recurring || !expense.recurring_frequency || !expense.recurring_start_date) {
-      continue
-    }
-
-    const startDate = new Date(expense.recurring_start_date)
-    const endRecurringDate = expense.recurring_end_date
-      ? new Date(expense.recurring_end_date)
-      : null
-
-    // Check if recurring period is active
-    if (startDate > endDate) continue
-    if (endRecurringDate && endRecurringDate < now) continue
-
-    // Calculate how many occurrences in the projection period
-    const periodStart = startDate > now ? startDate : now
-    const periodEnd = endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
-
-    let occurrences = 0
-    const current = new Date(periodStart)
-
-    while (current <= periodEnd) {
-      occurrences++
-
-      switch (expense.recurring_frequency) {
-        case 'monthly':
-          current.setMonth(current.getMonth() + 1)
-          break
-        case 'quarterly':
-          current.setMonth(current.getMonth() + 3)
-          break
-        case 'yearly':
-          current.setFullYear(current.getFullYear() + 1)
-          break
-      }
-    }
-
-    projected += Number(expense.amount) * occurrences
-  }
-
-  return projected
+  }, [rentRecords, expenses, months, propertyId, timeRange, dateRangeFilter])
 }
 
 /**

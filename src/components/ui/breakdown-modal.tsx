@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { motionTokens, createSpring, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
+import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
 import { cn } from '@/lib/utils'
 
 export interface BreakdownSection {
@@ -42,6 +43,9 @@ export function BreakdownModal({
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
 
+  // Lock body scroll when modal is open
+  useModalScrollLock(isOpen)
+
   if (!isOpen) return null
 
   return (
@@ -73,11 +77,11 @@ export function BreakdownModal({
                   ...cardSpring,
                 }
           }
-          className={cn('relative z-10 w-full max-w-2xl max-h-[90vh] overflow-hidden', className)}
+          className={cn('relative z-10 w-full max-w-2xl max-h-[90vh] overflow-visible', className)}
         >
-          <Card className="glass-card">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
-              <div className="flex-1">
+          <Card className="glass-card h-full flex flex-col overflow-hidden">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 flex-shrink-0">
+              <div className="flex-1 pr-2">
                 <CardTitle className="text-2xl">{title}</CardTitle>
                 {description && <CardDescription className="mt-2">{description}</CardDescription>}
               </div>
@@ -85,13 +89,13 @@ export function BreakdownModal({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 flex-shrink-0"
                 aria-label="Close modal"
               >
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
-            <CardContent className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <CardContent className="space-y-6 overflow-y-auto flex-1 min-h-0">
               {/* Sections */}
               <div className="space-y-4">
                 {sections.map((section, index) => {

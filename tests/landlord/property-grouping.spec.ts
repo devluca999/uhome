@@ -76,4 +76,3 @@ test.describe('Property Grouping', () => {
     expect(assignment).toBeTruthy()
   })
 })
-

@@ -14,7 +14,8 @@ const __dirname = dirname(__filename)
 config({ path: resolve(process.cwd(), '.env.local') })
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase environment variables')
@@ -164,20 +165,19 @@ async function seedMockData() {
             tenantUsers.push({ id: existingTenant.id, email: existingTenant.email || email })
             console.log(`   Using existing tenant: ${email}`)
           } else {
-            const { data: authTenant, error: tenantAuthError } = await supabase.auth.admin.createUser({
-              email,
-              password: 'password123',
-              email_confirm: true,
-            })
+            const { data: authTenant, error: tenantAuthError } =
+              await supabase.auth.admin.createUser({
+                email,
+                password: 'password123',
+                email_confirm: true,
+              })
 
             if (tenantAuthError || !authTenant.user) {
               console.warn(`   ⚠️  Failed to create tenant ${email}: ${tenantAuthError?.message}`)
               continue
             }
 
-            await supabase
-              .from('users')
-              .upsert({ id: authTenant.user.id, email, role: 'tenant' })
+            await supabase.from('users').upsert({ id: authTenant.user.id, email, role: 'tenant' })
 
             tenantUsers.push({ id: authTenant.user.id, email })
             console.log(`   Created tenant: ${email}`)
@@ -254,7 +254,11 @@ async function seedMockData() {
 
             // Create records for last 15 months (enhanced for power-user simulation)
             for (let monthOffset = 14; monthOffset >= 0; monthOffset--) {
-              const dueDateObj = new Date(today.getFullYear(), today.getMonth() - monthOffset, dueDate)
+              const dueDateObj = new Date(
+                today.getFullYear(),
+                today.getMonth() - monthOffset,
+                dueDate
+              )
               const isPastMonth = monthOffset > 0
               const isCurrentMonth = monthOffset === 0
               const isFutureMonth = monthOffset < 0
@@ -270,14 +274,17 @@ async function seedMockData() {
                 // Past months are paid
                 status = 'paid'
                 paymentMethodType = 'external'
-                paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
-                
+                paymentMethodLabel =
+                  paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+
                 // Vary paid date: 70% on time or early, 30% late
                 const paymentVariation = Math.random()
                 if (paymentVariation < 0.3) {
                   // Late payment (1-5 days after due date)
                   const daysLate = Math.floor(Math.random() * 5) + 1
-                  paidDate = new Date(dueDateObj.getTime() + daysLate * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                  paidDate = new Date(dueDateObj.getTime() + daysLate * 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .split('T')[0]
                   recordNotes = notes[Math.floor(Math.random() * notes.length)]
                 } else if (paymentVariation < 0.7) {
                   // On time (due date)
@@ -285,7 +292,9 @@ async function seedMockData() {
                 } else {
                   // Early payment (1-2 days before)
                   const daysEarly = Math.floor(Math.random() * 2) + 1
-                  paidDate = new Date(dueDateObj.getTime() - daysEarly * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                  paidDate = new Date(dueDateObj.getTime() - daysEarly * 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .split('T')[0]
                 }
               } else if (isCurrentMonth) {
                 // Current month: mix of paid and pending
@@ -293,9 +302,12 @@ async function seedMockData() {
                   // 70% chance it's paid
                   status = 'paid'
                   paymentMethodType = 'external'
-                  paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+                  paymentMethodLabel =
+                    paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
                   const daysAgo = Math.floor(Math.random() * 5) // Paid 0-5 days ago
-                  paidDate = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                  paidDate = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .split('T')[0]
                 } else {
                   // 30% chance it's still pending
                   status = 'pending'
@@ -370,7 +382,9 @@ async function seedMockData() {
               : []),
           ]
 
-          const { error: maintError } = await supabase.from('maintenance_requests').insert(maintenanceRequests)
+          const { error: maintError } = await supabase
+            .from('maintenance_requests')
+            .insert(maintenanceRequests)
 
           if (maintError) {
             console.warn(`   ⚠️  Maintenance requests error: ${maintError.message}`)
@@ -413,11 +427,29 @@ async function seedMockData() {
         }
 
         // Create Expenses - 15-20 records across multiple months
-        const expenseCategories = ['maintenance', 'utilities', 'repairs', 'insurance', 'taxes', 'landscaping', 'cleaning']
+        const expenseCategories = [
+          'maintenance',
+          'utilities',
+          'repairs',
+          'insurance',
+          'taxes',
+          'landscaping',
+          'cleaning',
+        ]
         const expenseDescriptions = {
-          maintenance: ['Monthly HVAC service', 'Gutter cleaning', 'Lawn mowing service', 'Window cleaning'],
+          maintenance: [
+            'Monthly HVAC service',
+            'Gutter cleaning',
+            'Lawn mowing service',
+            'Window cleaning',
+          ],
           utilities: ['Water bill', 'Electricity bill', 'Gas bill', 'Trash collection'],
-          repairs: ['Plumbing repair - kitchen sink', 'Electrical repair - outlet replacement', 'Roof leak repair', 'Door lock replacement'],
+          repairs: [
+            'Plumbing repair - kitchen sink',
+            'Electrical repair - outlet replacement',
+            'Roof leak repair',
+            'Door lock replacement',
+          ],
           insurance: ['Property insurance premium', 'Liability insurance'],
           taxes: ['Property tax payment', 'Quarterly tax payment'],
           landscaping: ['Tree trimming', 'Garden maintenance', 'Sprinkler system repair'],
@@ -428,16 +460,20 @@ async function seedMockData() {
         const expenseMonths = 12 // Distribute expenses across 12 months
 
         for (let monthOffset = expenseMonths - 1; monthOffset >= 0; monthOffset--) {
-          const expenseDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, Math.floor(Math.random() * 28) + 1)
-          
+          const expenseDate = new Date(
+            today.getFullYear(),
+            today.getMonth() - monthOffset,
+            Math.floor(Math.random() * 28) + 1
+          )
+
           // Create 1-2 expenses per month
           const expensesThisMonth = Math.random() > 0.5 ? 2 : 1
-          
+
           for (let e = 0; e < expensesThisMonth; e++) {
             const category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)]
             const descriptions = expenseDescriptions[category as keyof typeof expenseDescriptions]
             const description = descriptions[Math.floor(Math.random() * descriptions.length)]
-            
+
             // Realistic amounts based on category
             let amount: number
             if (category === 'insurance' || category === 'taxes') {
@@ -452,7 +488,7 @@ async function seedMockData() {
 
             // Distribute across properties more evenly for power user demo
             // Cycle through properties to ensure all get expenses
-            const propertyIndex = (expenses.length % createdProperties.length)
+            const propertyIndex = expenses.length % createdProperties.length
             const property = createdProperties[propertyIndex]
 
             expenses.push({
@@ -490,7 +526,10 @@ async function seedMockData() {
         const { data: allRentRecords } = await supabase
           .from('rent_records')
           .select('id, property_id, tenant_id, status, payment_method_label')
-          .in('property_id', existingProperties.map(p => p.id))
+          .in(
+            'property_id',
+            existingProperties.map(p => p.id)
+          )
           .limit(200)
 
         const { data: allExpenses } = await supabase
@@ -521,7 +560,9 @@ async function seedMockData() {
           }
 
           // Notes on some rent records (about 20% of paid records)
-          const paidRecords = allRentRecords.filter(r => r.status === 'paid').slice(0, Math.floor(allRentRecords.filter(r => r.status === 'paid').length * 0.2))
+          const paidRecords = allRentRecords
+            .filter(r => r.status === 'paid')
+            .slice(0, Math.floor(allRentRecords.filter(r => r.status === 'paid').length * 0.2))
           for (const record of paidRecords) {
             notesToInsert.push({
               user_id: landlordId,
@@ -577,4 +618,3 @@ async function seedMockData() {
 }
 
 seedMockData()
-

@@ -72,4 +72,3 @@ test.describe('Tenant Signup and Login', () => {
     await expect(page).toHaveURL('/tenant/dashboard')
   })
 })
-

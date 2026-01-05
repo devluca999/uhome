@@ -48,7 +48,9 @@ test.describe('Landlord Signup', () => {
         const errorText = await errorElement.textContent()
         // If it's a rate limit error, provide helpful message
         if (errorText?.toLowerCase().includes('rate limit')) {
-          throw new Error(`Signup failed: Email rate limit exceeded. This happens when creating too many test users. Consider: 1) Disabling email confirmation in test Supabase instance, 2) Adding delays between tests, or 3) Using service role key to create users directly. Error: ${errorText}`)
+          throw new Error(
+            `Signup failed: Email rate limit exceeded. This happens when creating too many test users. Consider: 1) Disabling email confirmation in test Supabase instance, 2) Adding delays between tests, or 3) Using service role key to create users directly. Error: ${errorText}`
+          )
         }
         throw new Error(`Signup failed with error: ${errorText}. Current URL: ${page.url()}`)
       }
@@ -94,11 +96,11 @@ test.describe('Landlord Signup', () => {
     // Try to find error text in destructive-styled elements or check if form was prevented from submitting
     const errorDiv = page.locator('[class*="destructive"]').filter({ hasText: /password/i })
     const hasErrorDiv = await errorDiv.isVisible().catch(() => false)
-    
+
     // Also check if we're still on signup page (form didn't submit)
     const currentUrl = page.url()
     const stillOnSignup = currentUrl.includes('/signup')
-    
+
     // Either error div should be visible OR we should still be on signup page (validation prevented submission)
     expect(hasErrorDiv || stillOnSignup).toBeTruthy()
 
@@ -106,4 +108,3 @@ test.describe('Landlord Signup', () => {
     await expect(page).toHaveURL(/\/signup/)
   })
 })
-

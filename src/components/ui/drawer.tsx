@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { motionTokens, createSpring, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
+import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
 import { cn } from '@/lib/utils'
 
 interface DrawerProps {
@@ -28,6 +29,9 @@ export function Drawer({
 }: DrawerProps) {
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
+
+  // Lock body scroll when drawer is open
+  useModalScrollLock(isOpen)
 
   if (!isOpen) return null
 

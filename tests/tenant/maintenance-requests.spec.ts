@@ -137,9 +137,7 @@ test.describe('Maintenance Requests', () => {
     expect(requests![0].tenant_id).toBe(tenantRecordId)
   })
 
-  test('should allow landlord to view and update maintenance request status', async ({
-    page,
-  }) => {
+  test('should allow landlord to view and update maintenance request status', async ({ page }) => {
     const supabase = getSupabaseClient()
 
     // Create maintenance request via database
@@ -188,7 +186,9 @@ test.describe('Maintenance Requests', () => {
       expect(updatedRequest?.status).toBe('in_progress')
 
       // Click "Mark Complete" button
-      const markCompleteButton = page.getByRole('button', { name: /mark complete|complete/i }).first()
+      const markCompleteButton = page
+        .getByRole('button', { name: /mark complete|complete/i })
+        .first()
       if (await markCompleteButton.isVisible()) {
         await markCompleteButton.click()
         await page.waitForTimeout(1000)
@@ -208,4 +208,3 @@ test.describe('Maintenance Requests', () => {
     }
   })
 })
-

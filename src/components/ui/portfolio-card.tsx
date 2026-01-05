@@ -56,7 +56,7 @@ export const PortfolioCard = memo(function PortfolioCard({
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <ReflectiveGradient />
-        <CardHeader>
+        <CardHeader className="[.relative_&]:pr-12">
           <CardTitle className="text-lg">{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>

@@ -70,6 +70,10 @@ tests/
 ├── auth/              # Authentication tests
 ├── landlord/          # Landlord flow tests
 ├── tenant/            # Tenant flow tests
+├── visual/            # Visual UAT tests
+│   ├── baselines/     # Baseline screenshots (git-tracked)
+│   ├── helpers/       # Visual test utilities
+│   └── *.spec.ts      # Visual test files
 ├── helpers/           # Test utilities and helpers
 │   ├── auth-helpers.ts
 │   ├── db-helpers.ts
@@ -136,11 +140,53 @@ Tests are configured to run in CI environments:
 4. **Check videos:**
    Videos are saved in `test-results/` directory on failure (if enabled)
 
+## Visual UAT
+
+Visual UAT tests validate UI correctness, data presence, readability, and design integrity using deterministic mock data.
+
+### Quick Start
+
+```bash
+# Run visual tests locally
+npm run test:visual
+
+# Run visual tests headless (for CI)
+npm run test:visual:headless
+
+# Update baseline screenshots (after intentional UI changes)
+npm run test:visual:update
+```
+
+### Key Features
+
+- **Deterministic Mock Data**: Same data on every run (no randomness, no timestamps)
+- **No Database Dependency**: Mock data is in-memory/static, NOT Supabase
+- **Power User Simulation**: Tests against realistic, populated data
+- **Dark Mode Testing**: Validates depth, contrast, and readability
+
+### Philosophy
+
+**"If mock data makes the app look broken, the MVP is broken."**
+
+- Empty UI = Failed test
+- Unreadable UI = Failed test
+- Flat, lifeless UI = Failed test
+
+### Documentation
+
+See `docs/visual_uat.md` for complete documentation on:
+- Visual UAT philosophy
+- Mock data system
+- Baseline management
+- Acceptance checklist
+- Troubleshooting
+
 ## Notes
 
 - Tests run against local dev server (http://localhost:1000)
-- Tests require a separate test Supabase instance with schema set up (see `tests/STAGING_SETUP.md`)
-- Tests run sequentially (1 worker) to avoid Supabase rate limits (30 sign-ups per 5 minutes)
+- Visual tests use deterministic mock data (no database required)
+- E2E tests require a separate test Supabase instance with schema set up (see `tests/STAGING_SETUP.md`)
+- E2E tests run sequentially (1 worker) to avoid Supabase rate limits (30 sign-ups per 5 minutes)
 - Email confirmation must be disabled in test Supabase instance (see `tests/RATE_LIMIT_FIX.md`)
 - Some tests may require edge functions to be deployed (e.g., receipt generation)
 - See `tests/RATE_LIMITS.md` for details on rate limit handling

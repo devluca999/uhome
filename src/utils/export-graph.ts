@@ -1,6 +1,6 @@
 /**
  * Graph Export Utilities
- * 
+ *
  * MVP: Export graph as PNG (screenshot) or CSV (data)
  * Exports respect current filters, active datasets, and date range
  */
@@ -133,4 +133,3 @@ async function captureElementAsCanvas(element: HTMLElement): Promise<HTMLCanvasE
 
   return canvas
 }
-

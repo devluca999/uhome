@@ -1,26 +1,42 @@
+import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { X } from 'lucide-react'
+import { X, DollarSign, Calendar, MapPin } from 'lucide-react'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
+import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
+import { filterRentRecords, filterExpenses, type FinanceFilters } from '@/lib/finance-calculations'
 import { cn } from '@/lib/utils'
+import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
+import type { Database } from '@/types/database'
+
+type Expense = Database['public']['Tables']['expenses']['Row']
 
 interface RentSummaryModalProps {
   isOpen: boolean
   onClose: () => void
-  metricType: 'collected' | 'outstanding' | 'expenses' | 'net'
+  metricType:
+    | 'collected'
+    | 'outstanding'
+    | 'expenses'
+    | 'net'
+    | 'projected'
+    | 'activeProperties'
+    | 'occupancy'
   dateRange?: {
     start: Date
     end: Date
   }
   propertyId?: string
   properties?: Array<{ id: string; name: string }>
+  rentRecords?: RentRecordWithRelations[]
+  expenses?: Expense[]
 }
 
 /**
  * Rent Summary Modal
- * 
+ *
  * Shows filtered details for the selected financial metric.
  * Respects current date range and property filters.
  */
@@ -31,24 +47,191 @@ export function RentSummaryModal({
   dateRange,
   propertyId,
   properties = [],
+  rentRecords = [],
+  expenses = [],
 }: RentSummaryModalProps) {
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
+
+  // Lock body scroll when modal is open
+  useModalScrollLock(isOpen)
+
+  // Filter data based on modal filters
+  const filters: FinanceFilters = useMemo(
+    () => ({
+      propertyId,
+      dateRange,
+    }),
+    [propertyId, dateRange]
+  )
+
+  const filteredRentRecords = useMemo(() => {
+    return filterRentRecords(rentRecords, filters)
+  }, [rentRecords, filters])
+
+  const filteredExpenses = useMemo(() => {
+    return filterExpenses(expenses, filters)
+  }, [expenses, filters])
+
+  // Calculate breakdown data based on metric type
+  const breakdownData = useMemo(() => {
+    switch (metricType) {
+      case 'collected': {
+        const paidRecords = filteredRentRecords.filter(r => r.status === 'paid')
+        const byProperty = new Map<
+          string,
+          { amount: number; count: number; records: RentRecordWithRelations[] }
+        >()
+
+        paidRecords.forEach(record => {
+          const propId = record.property_id
+          const existing = byProperty.get(propId) || { amount: 0, count: 0, records: [] }
+          const amount = Number(record.amount) + (Number(record.late_fee) || 0)
+          byProperty.set(propId, {
+            amount: existing.amount + amount,
+            count: existing.count + 1,
+            records: [...existing.records, record],
+          })
+        })
+
+        return {
+          total: paidRecords.reduce(
+            (sum, r) => sum + Number(r.amount) + (Number(r.late_fee) || 0),
+            0
+          ),
+          byProperty: Array.from(byProperty.entries()).map(([propId, data]) => ({
+            property: properties.find(p => p.id === propId)?.name || 'Unknown',
+            amount: data.amount,
+            count: data.count,
+            records: data.records,
+          })),
+          transactions: paidRecords.sort((a, b) => {
+            const dateA = a.paid_date ? new Date(a.paid_date).getTime() : 0
+            const dateB = b.paid_date ? new Date(b.paid_date).getTime() : 0
+            return dateB - dateA
+          }),
+        }
+      }
+      case 'outstanding': {
+        const overdueRecords = filteredRentRecords.filter(r => r.status === 'overdue')
+        const byProperty = new Map<
+          string,
+          { amount: number; count: number; records: RentRecordWithRelations[] }
+        >()
+
+        overdueRecords.forEach(record => {
+          const propId = record.property_id
+          const existing = byProperty.get(propId) || { amount: 0, count: 0, records: [] }
+          const amount = Number(record.amount) + (Number(record.late_fee) || 0)
+          byProperty.set(propId, {
+            amount: existing.amount + amount,
+            count: existing.count + 1,
+            records: [...existing.records, record],
+          })
+        })
+
+        return {
+          total: overdueRecords.reduce(
+            (sum, r) => sum + Number(r.amount) + (Number(r.late_fee) || 0),
+            0
+          ),
+          byProperty: Array.from(byProperty.entries()).map(([propId, data]) => ({
+            property: properties.find(p => p.id === propId)?.name || 'Unknown',
+            amount: data.amount,
+            count: data.count,
+            records: data.records,
+          })),
+          transactions: overdueRecords.sort((a, b) => {
+            const dateA = new Date(a.due_date).getTime()
+            const dateB = new Date(b.due_date).getTime()
+            return dateB - dateA
+          }),
+        }
+      }
+      case 'expenses': {
+        const byProperty = new Map<string, { amount: number; count: number; expenses: Expense[] }>()
+        const byCategory = new Map<string, { amount: number; count: number }>()
+
+        filteredExpenses.forEach(expense => {
+          const propId = expense.property_id
+          const category = expense.category || 'uncategorized'
+
+          // By property
+          const propExisting = byProperty.get(propId) || { amount: 0, count: 0, expenses: [] }
+          byProperty.set(propId, {
+            amount: propExisting.amount + Number(expense.amount),
+            count: propExisting.count + 1,
+            expenses: [...propExisting.expenses, expense],
+          })
+
+          // By category
+          const catExisting = byCategory.get(category) || { amount: 0, count: 0 }
+          byCategory.set(category, {
+            amount: catExisting.amount + Number(expense.amount),
+            count: catExisting.count + 1,
+          })
+        })
+
+        return {
+          total: filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0),
+          byProperty: Array.from(byProperty.entries()).map(([propId, data]) => ({
+            property: properties.find(p => p.id === propId)?.name || 'Unknown',
+            amount: data.amount,
+            count: data.count,
+            expenses: data.expenses,
+          })),
+          byCategory: Array.from(byCategory.entries()).map(([category, data]) => ({
+            category: category.charAt(0).toUpperCase() + category.slice(1),
+            amount: data.amount,
+            count: data.count,
+          })),
+          transactions: filteredExpenses.sort((a, b) => {
+            const dateA = new Date(a.date).getTime()
+            const dateB = new Date(b.date).getTime()
+            return dateB - dateA
+          }),
+        }
+      }
+      case 'net': {
+        const collected = filteredRentRecords
+          .filter(r => r.status === 'paid')
+          .reduce((sum, r) => sum + Number(r.amount) + (Number(r.late_fee) || 0), 0)
+        const totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+        return {
+          total: collected - totalExpenses,
+          income: collected,
+          expenses: totalExpenses,
+        }
+      }
+      default:
+        return null
+    }
+  }, [metricType, filteredRentRecords, filteredExpenses, properties])
 
   if (!isOpen) return null
 
   const titles = {
     collected: 'Total Rent Collected',
-    outstanding: 'Outstanding Balance',
+    outstanding: 'Outstanding Rent',
     expenses: 'Total Expenses',
     net: 'Net Cash Flow',
+    projected: 'Projected Net',
+    activeProperties: 'Active Properties',
+    occupancy: 'Occupancy Rate',
   }
 
   const descriptions = {
-    collected: 'Rent payments received in the selected period',
-    outstanding: 'Unpaid rent amounts in the selected period',
-    expenses: 'All expenses recorded in the selected period',
-    net: 'Net cash flow (income minus expenses) in the selected period',
+    collected:
+      "Rent payments you've received in the selected period. Includes late fees when applicable.",
+    outstanding:
+      "Rent payments that are overdue and haven't been paid yet. Includes any late fees.",
+    expenses:
+      "All expenses you've recorded in the selected period, including maintenance, repairs, and other costs.",
+    net: 'Your profit or loss for the period. Calculated as rent collected minus total expenses.',
+    projected:
+      'Estimated cash flow for the next 30 days based on upcoming rent and recurring expenses.',
+    activeProperties: 'Number of properties that currently have tenants living in them.',
+    occupancy: 'Percentage of your properties that are currently occupied by tenants.',
   }
 
   const dateRangeText = dateRange
@@ -88,11 +271,11 @@ export function RentSummaryModal({
                   ...cardSpring,
                 }
           }
-          className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-hidden"
+          className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-visible"
         >
-          <Card className="glass-card">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
-              <div className="flex-1">
+          <Card className="glass-card h-full flex flex-col overflow-hidden">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 flex-shrink-0">
+              <div className="flex-1 pr-2">
                 <CardTitle className="text-2xl">{titles[metricType]}</CardTitle>
                 <CardDescription className="mt-2">{descriptions[metricType]}</CardDescription>
                 <div className="mt-2 text-xs text-muted-foreground">
@@ -104,20 +287,223 @@ export function RentSummaryModal({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 flex-shrink-0"
                 aria-label="Close modal"
               >
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4 overflow-y-auto max-h-[calc(90vh-120px)]">
-              {/* MVP: Placeholder for detailed breakdown */}
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Detailed breakdown coming soon</p>
-                <p className="text-xs mt-2">
-                  This modal will show filtered transaction details for {titles[metricType].toLowerCase()}
-                </p>
-              </div>
+            <CardContent className="space-y-4 overflow-y-auto flex-1 min-h-0">
+              {breakdownData && (
+                <div className="space-y-6">
+                  {/* Summary */}
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total {titles[metricType]}</p>
+                      <p className="text-2xl font-semibold text-foreground mt-1">
+                        {metricType === 'net' && breakdownData.total !== null
+                          ? `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                          : metricType === 'activeProperties' || metricType === 'occupancy'
+                            ? `${breakdownData.total}${metricType === 'occupancy' ? '%' : ''}`
+                            : `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                      </p>
+                      {metricType === 'net' && breakdownData.total !== null && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <p>Income: ${breakdownData.income?.toLocaleString()}</p>
+                          <p>Expenses: ${breakdownData.expenses?.toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Breakdown by Property */}
+                  {breakdownData.byProperty && breakdownData.byProperty.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-foreground mb-3">By Property</h3>
+                      <div className="space-y-2">
+                        {breakdownData.byProperty.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
+                          >
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-muted-foreground" />
+                              <span className="font-medium text-foreground">{item.property}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({item.count} {item.count === 1 ? 'transaction' : 'transactions'})
+                              </span>
+                            </div>
+                            <span className="font-semibold text-foreground">
+                              $
+                              {item.amount.toLocaleString(undefined, {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                              })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Breakdown by Category (for expenses) */}
+                  {breakdownData.byCategory && breakdownData.byCategory.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-foreground mb-3">By Category</h3>
+                      <div className="space-y-2">
+                        {breakdownData.byCategory.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground">{item.category}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({item.count} {item.count === 1 ? 'expense' : 'expenses'})
+                              </span>
+                            </div>
+                            <span className="font-semibold text-foreground">
+                              $
+                              {item.amount.toLocaleString(undefined, {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                              })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transaction List */}
+                  {breakdownData.transactions && breakdownData.transactions.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-foreground mb-3">
+                        Recent Transactions ({breakdownData.transactions.length})
+                      </h3>
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {breakdownData.transactions.slice(0, 10).map((transaction, index) => {
+                          if (metricType === 'expenses' && 'name' in transaction) {
+                            const expense = transaction as Expense
+                            return (
+                              <div
+                                key={expense.id || index}
+                                className="flex items-center justify-between p-3 bg-background rounded-lg border border-border/50"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign className="w-4 h-4 text-muted-foreground" />
+                                    <span className="font-medium text-foreground">
+                                      {expense.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {new Date(expense.date).toLocaleDateString()}
+                                    </span>
+                                    {expense.category && (
+                                      <span className="px-2 py-0.5 bg-muted rounded text-xs">
+                                        {expense.category}
+                                      </span>
+                                    )}
+                                    {properties.find(p => p.id === expense.property_id) && (
+                                      <span className="flex items-center gap-1">
+                                        <MapPin className="w-3 h-3" />
+                                        {properties.find(p => p.id === expense.property_id)?.name}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="font-semibold text-foreground ml-4">
+                                  $
+                                  {Number(expense.amount).toLocaleString(undefined, {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  })}
+                                </span>
+                              </div>
+                            )
+                          } else if ('property' in transaction) {
+                            const record = transaction as RentRecordWithRelations
+                            const amount = Number(record.amount) + (Number(record.late_fee) || 0)
+                            return (
+                              <div
+                                key={record.id || index}
+                                className="flex items-center justify-between p-3 bg-background rounded-lg border border-border/50"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign className="w-4 h-4 text-muted-foreground" />
+                                    <span className="font-medium text-foreground">
+                                      Rent - {record.property?.name || 'Unknown'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {record.paid_date
+                                        ? new Date(record.paid_date).toLocaleDateString()
+                                        : new Date(record.due_date).toLocaleDateString()}
+                                    </span>
+                                    <span
+                                      className={`px-2 py-0.5 rounded text-xs ${
+                                        record.status === 'paid'
+                                          ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                          : record.status === 'overdue'
+                                            ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                            : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                                      }`}
+                                    >
+                                      {record.status}
+                                    </span>
+                                    {Number(record.late_fee) > 0 && (
+                                      <span className="text-xs">
+                                        + ${Number(record.late_fee).toLocaleString()} late fee
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="font-semibold text-foreground ml-4">
+                                  $
+                                  {amount.toLocaleString(undefined, {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  })}
+                                </span>
+                              </div>
+                            )
+                          }
+                          return null
+                        })}
+                      </div>
+                      {breakdownData.transactions.length > 10 && (
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          Showing 10 of {breakdownData.transactions.length} transactions
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {(!breakdownData.transactions || breakdownData.transactions.length === 0) &&
+                    (!breakdownData.byProperty || breakdownData.byProperty.length === 0) && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No transactions found for the selected filters</p>
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {/* Fallback for metrics without breakdown */}
+              {!breakdownData &&
+                (metricType === 'projected' ||
+                  metricType === 'activeProperties' ||
+                  metricType === 'occupancy') && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Detailed breakdown for {titles[metricType].toLowerCase()} coming soon</p>
+                  </div>
+                )}
             </CardContent>
           </Card>
         </motion.div>
@@ -125,4 +511,3 @@ export function RentSummaryModal({
     </AnimatePresence>
   )
 }
-

@@ -152,14 +152,80 @@ export function ExpenseForm({
         </div>
       )}
 
-      {isEditMode && (
+      {isEditMode && hasChanges && (
         <div className="p-3 text-sm bg-muted/50 rounded-md border border-border">
-          <p className="font-medium text-foreground mb-2">Editing Expense</p>
-          {hasChanges && (
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p>Original values shown below for reference</p>
-            </div>
-          )}
+          <p className="font-medium text-foreground mb-2">Changes Detected</p>
+          <div className="space-y-2 text-xs">
+            {name !== originalValues.name && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Name:</span>
+                <div className="flex items-center gap-2">
+                  <span className="line-through text-muted-foreground">
+                    {originalValues.name || 'N/A'}
+                  </span>
+                  <span className="text-foreground">→</span>
+                  <span className="font-medium text-foreground">{name}</span>
+                </div>
+              </div>
+            )}
+            {amount !== originalValues.amount && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Amount:</span>
+                <div className="flex items-center gap-2">
+                  <span className="line-through text-muted-foreground">
+                    $
+                    {originalValues.amount ? Number(originalValues.amount).toLocaleString() : 'N/A'}
+                  </span>
+                  <span className="text-foreground">→</span>
+                  <span className="font-medium text-foreground">
+                    ${Number(amount || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+            {date !== originalValues.date && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Date:</span>
+                <div className="flex items-center gap-2">
+                  <span className="line-through text-muted-foreground">
+                    {originalValues.date
+                      ? new Date(originalValues.date).toLocaleDateString()
+                      : 'N/A'}
+                  </span>
+                  <span className="text-foreground">→</span>
+                  <span className="font-medium text-foreground">
+                    {new Date(date).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            )}
+            {propertyId !== originalValues.property_id && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Property:</span>
+                <div className="flex items-center gap-2">
+                  <span className="line-through text-muted-foreground">
+                    {properties.find(p => p.id === originalValues.property_id)?.name || 'N/A'}
+                  </span>
+                  <span className="text-foreground">→</span>
+                  <span className="font-medium text-foreground">
+                    {properties.find(p => p.id === propertyId)?.name || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            )}
+            {category !== originalValues.category && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Category:</span>
+                <div className="flex items-center gap-2">
+                  <span className="line-through text-muted-foreground">
+                    {originalValues.category || 'None'}
+                  </span>
+                  <span className="text-foreground">→</span>
+                  <span className="font-medium text-foreground">{category || 'None'}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -380,9 +446,7 @@ export function ExpenseForm({
             placeholder="e.g., Corrected amount, Updated category"
             disabled={loading}
           />
-          <p className="text-xs text-muted-foreground">
-            This will be stored in the expense notes
-          </p>
+          <p className="text-xs text-muted-foreground">This will be stored in the expense notes</p>
         </div>
       )}
 

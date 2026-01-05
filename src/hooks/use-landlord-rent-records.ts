@@ -181,7 +181,9 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
       if (updateError) throw updateError
 
       setRecords(prev =>
-        prev.map(record => (record.id === recordId ? (updatedRecord as RentRecordWithRelations) : record))
+        prev.map(record =>
+          record.id === recordId ? (updatedRecord as RentRecordWithRelations) : record
+        )
       )
       return { data: updatedRecord, error: null }
     } catch (err) {

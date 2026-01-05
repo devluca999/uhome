@@ -14,13 +14,13 @@ import { cn } from '@/lib/utils'
 
 /**
  * Tenant Finances Page
- * 
+ *
  * Read-only view of tenant financial information:
  * - Full payment history
  * - Late fees (read-only)
  * - Receipts download
  * - Notes (read-only)
- * 
+ *
  * Tenants must never be able to edit financial data.
  */
 export function TenantFinances() {
@@ -89,7 +89,9 @@ export function TenantFinances() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Outstanding</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Outstanding
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold text-red-600 dark:text-red-400">
@@ -109,7 +111,9 @@ export function TenantFinances() {
           </Card>
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Total Paid</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Total Paid
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
@@ -119,7 +123,9 @@ export function TenantFinances() {
           </Card>
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Current Balance</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Current Balance
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold text-foreground">
@@ -217,7 +223,8 @@ function TenantRentRecordRow({ record }: { record: any }) {
           </div>
           {hasLateFee && (
             <div className="text-xs text-red-600 dark:text-red-400">
-              ${Number(record.amount).toLocaleString()} + ${(record.late_fee || 0).toLocaleString()} late fee
+              ${Number(record.amount).toLocaleString()} + ${(record.late_fee || 0).toLocaleString()}{' '}
+              late fee
             </div>
           )}
         </div>
@@ -260,4 +267,3 @@ function TenantRentRecordRow({ record }: { record: any }) {
     </motion.div>
   )
 }
-

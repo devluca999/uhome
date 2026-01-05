@@ -29,29 +29,28 @@ export default defineConfig({
           {
             src: 'pwa-192x192.svg',
             sizes: '192x192',
-            type: 'image/svg+xml'
+            type: 'image/svg+xml',
           },
           {
             src: 'pwa-512x512.svg',
             sizes: '512x512',
-            type: 'image/svg+xml'
-          }
-        ]
+            type: 'image/svg+xml',
+          },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        runtimeCaching: []
+        runtimeCaching: [],
       },
       devOptions: {
         enabled: false,
-        type: 'module'
-      }
-    })
+        type: 'module',
+      },
+    }),
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
-    }
-  }
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
 })
-

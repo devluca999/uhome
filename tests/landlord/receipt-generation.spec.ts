@@ -155,4 +155,3 @@ test.describe('Receipt Generation', () => {
     }
   })
 })
-

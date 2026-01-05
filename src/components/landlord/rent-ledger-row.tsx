@@ -89,10 +89,11 @@ export function RentLedgerRow({
         return 'text-green-600 dark:text-green-400'
       case 'overdue':
         return 'text-red-600 dark:text-red-400'
-      case 'pending':
+      case 'pending': {
         const dueDate = new Date(record.due_date)
         const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         return daysUntilDue <= 7 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
+      }
       default:
         return 'text-muted-foreground'
     }
@@ -104,12 +105,13 @@ export function RentLedgerRow({
         return 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30'
       case 'overdue':
         return 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30'
-      case 'pending':
+      case 'pending': {
         const dueDate = new Date(record.due_date)
         const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         return daysUntilDue <= 7
           ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
           : 'bg-muted text-muted-foreground border-border'
+      }
       default:
         return 'bg-muted text-muted-foreground border-border'
     }
@@ -169,7 +171,8 @@ export function RentLedgerRow({
             </div>
             {hasLateFee && (
               <div className="text-xs text-red-600 dark:text-red-400">
-                ${Number(record.amount).toLocaleString()} + ${(record.late_fee || 0).toLocaleString()} late fee
+                ${Number(record.amount).toLocaleString()} + $
+                {(record.late_fee || 0).toLocaleString()} late fee
               </div>
             )}
             <div className="text-xs text-muted-foreground">
@@ -257,7 +260,8 @@ export function RentLedgerRow({
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Total due: ${(Number(record.amount) + (parseFloat(lateFeeAmount) || 0)).toLocaleString()}
+                      Total due: $
+                      {(Number(record.amount) + (parseFloat(lateFeeAmount) || 0)).toLocaleString()}
                     </p>
                   </div>
                 ) : (

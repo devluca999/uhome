@@ -9,10 +9,10 @@ interface ModalIndicatorProps {
 
 /**
  * Modal Indicator Component
- * 
+ *
  * Global pattern for indicating that a card opens a modal.
  * Shows a small expand icon (⤢) in the top-right corner.
- * 
+ *
  * Usage:
  * - Only add to cards that open modals
  * - Do not clutter non-interactive cards
@@ -25,7 +25,11 @@ export function ModalIndicator({ className, onClick }: ModalIndicatorProps) {
     <div className="relative group">
       <button
         type="button"
-        onClick={onClick}
+        onClick={e => {
+          e.stopPropagation()
+          e.preventDefault()
+          onClick?.()
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
@@ -38,6 +42,7 @@ export function ModalIndicator({ className, onClick }: ModalIndicatorProps) {
           'transition-all duration-200',
           'opacity-60 hover:opacity-100',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'cursor-pointer',
           className
         )}
         aria-label="Expand"
@@ -54,4 +59,3 @@ export function ModalIndicator({ className, onClick }: ModalIndicatorProps) {
     </div>
   )
 }
-

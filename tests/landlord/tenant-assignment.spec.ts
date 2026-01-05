@@ -143,4 +143,3 @@ test.describe('Tenant Assignment', () => {
     await expect(page.locator('h1')).toContainText(/dashboard/i)
   })
 })
-

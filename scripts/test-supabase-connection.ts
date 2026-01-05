@@ -37,13 +37,17 @@ async function testConnection() {
   console.log('\n2. Checking if RLS fix was applied (helper functions)...')
   try {
     // Try to query using the helper function - if it exists, the fix was applied
-    const { data, error } = await supabase.rpc('user_owns_property', { property_uuid: '00000000-0000-0000-0000-000000000000' })
+    const { data, error } = await supabase.rpc('user_owns_property', {
+      property_uuid: '00000000-0000-0000-0000-000000000000',
+    })
     if (error) {
       if (error.message.includes('function') && error.message.includes('does not exist')) {
         console.log('   ❌ Helper functions NOT FOUND - fix_rls_recursion.sql was NOT run!')
         console.log('   📝 Please run fix_rls_recursion.sql in Supabase SQL Editor')
       } else {
-        console.log(`   ✅ Helper function exists (error is expected for test UUID): ${error.message}`)
+        console.log(
+          `   ✅ Helper function exists (error is expected for test UUID): ${error.message}`
+        )
       }
     } else {
       console.log('   ✅ Helper function exists and works')
@@ -58,12 +62,12 @@ async function testConnection() {
     // Sign in as the test landlord
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: 'landlord@example.com',
-      password: 'password123'
+      password: 'password123',
     })
 
     if (authError) {
       console.log(`   ⚠️  Could not authenticate: ${authError.message}`)
-      console.log('   📝 This is OK if you haven\'t run the seed script')
+      console.log("   📝 This is OK if you haven't run the seed script")
     } else {
       console.log('   ✅ Authenticated successfully')
 
@@ -96,4 +100,3 @@ async function testConnection() {
 }
 
 testConnection().catch(console.error)
-

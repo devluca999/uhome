@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import { ModalIndicator } from '@/components/ui/modal-indicator'
 import { PortfolioCard } from '@/components/ui/portfolio-card'
 import { ActivityFeedItem } from '@/components/ui/activity-feed-item'
 import { DonutChart } from '@/components/ui/donut-chart'
@@ -16,6 +18,10 @@ import { RevenueBreakdownModal } from '@/components/landlord/revenue-breakdown-m
 import { RecentActivityModal } from '@/components/landlord/recent-activity-modal'
 import { ProfitBreakdownModal } from '@/components/landlord/profit-breakdown-modal'
 import { ExpenseDistributionModal } from '@/components/landlord/expense-distribution-modal'
+import { PropertiesDistributionModal } from '@/components/landlord/properties-distribution-modal'
+import { TenantDistributionModal } from '@/components/landlord/tenant-distribution-modal'
+import { OccupancyBreakdownModal } from '@/components/landlord/occupancy-breakdown-modal'
+import { TaskDistributionModal } from '@/components/landlord/task-distribution-modal'
 import { MetricCard } from '@/components/ui/metric-card'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
@@ -38,6 +44,7 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { calculateOccupancyRate } from '@/lib/finance-calculations'
 
 export function LandlordDashboard() {
   const navigate = useNavigate()
@@ -55,17 +62,23 @@ export function LandlordDashboard() {
   const [activityModalOpen, setActivityModalOpen] = useState(false)
   const [profitModalOpen, setProfitModalOpen] = useState(false)
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
+  const [propertiesModalOpen, setPropertiesModalOpen] = useState(false)
+  const [tenantsModalOpen, setTenantsModalOpen] = useState(false)
+  const [occupancyModalOpen, setOccupancyModalOpen] = useState(false)
+  const [tasksModalOpen, setTasksModalOpen] = useState(false)
 
-  // Count pending tenant tasks
+  // Count pending tasks (all types, not just tenant tasks)
+  const pendingTasks = tasks.filter(t => t.status === 'pending').length
   const pendingTenantTasks = tasks.filter(
     t => t.status === 'pending' && t.assigned_to_type === 'tenant'
   ).length
 
   const hasErrors = propertiesError || tenantsError || requestsError
 
-  // Calculate occupancy percentage (simplified - assumes all properties have tenants)
-  const occupancyRate =
-    properties.length > 0 ? Math.round((tenants.length / properties.length) * 100) : 0
+  // Calculate occupancy rate using centralized calculation (consistent with Finances page)
+  const occupancyRate = useMemo(() => {
+    return calculateOccupancyRate(properties, tenants)
+  }, [properties, tenants])
 
   // Use financial metrics for consistency across app
   // Total monthly revenue should match what's shown in finances page
@@ -296,34 +309,63 @@ export function LandlordDashboard() {
         )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-          <PortfolioCard
-            title="Properties"
-            value={propertiesLoading ? 0 : properties.length}
-            description="Total properties"
-            index={0}
-          />
-          <PortfolioCard
-            title="Occupancy"
-            value={tenantsLoading ? 0 : occupancyRate}
-            description="Occupancy rate"
-            format={v => `${Math.round(v)}%`}
-            index={1}
-          />
-          <div onClick={() => setRevenueModalOpen(true)} className="cursor-pointer">
-            <PortfolioCard
-              title="Monthly Revenue"
-              value={totalMonthlyPayments}
-              description="Total collected + upcoming"
-              format={v => `$${Math.round(v).toLocaleString()}`}
-              index={2}
-            />
+          <div onClick={() => setPropertiesModalOpen(true)} className="cursor-pointer relative">
+            <ModalIndicator onClick={() => setPropertiesModalOpen(true)} />
+            <div className="[&_.card-header]:pr-12">
+              <PortfolioCard
+                title="Properties"
+                value={propertiesLoading ? 0 : properties.length}
+                description="Total properties"
+                index={0}
+              />
+            </div>
           </div>
-          <PortfolioCard
-            title="Pending Tasks"
-            value={pendingTenantTasks}
-            description="Tenant tasks pending"
-            index={3}
-          />
+          <div onClick={() => setTenantsModalOpen(true)} className="cursor-pointer relative">
+            <ModalIndicator onClick={() => setTenantsModalOpen(true)} />
+            <div className="[&_.card-header]:pr-12">
+              <PortfolioCard
+                title="Tenants"
+                value={tenantsLoading ? 0 : tenants.length}
+                description="Total tenants"
+                index={1}
+              />
+            </div>
+          </div>
+          <div onClick={() => setOccupancyModalOpen(true)} className="cursor-pointer relative">
+            <ModalIndicator onClick={() => setOccupancyModalOpen(true)} />
+            <div className="[&_.card-header]:pr-12">
+              <PortfolioCard
+                title="Occupancy"
+                value={tenantsLoading ? 0 : occupancyRate}
+                description="Occupancy rate"
+                format={v => `${Math.round(v)}%`}
+                index={2}
+              />
+            </div>
+          </div>
+          <div onClick={() => setRevenueModalOpen(true)} className="cursor-pointer relative">
+            <ModalIndicator onClick={() => setRevenueModalOpen(true)} />
+            <div className="[&_.card-header]:pr-12">
+              <PortfolioCard
+                title="Monthly Revenue"
+                value={totalMonthlyPayments}
+                description="Blended (collected + upcoming)"
+                format={v => `$${Math.round(v).toLocaleString()}`}
+                index={3}
+              />
+            </div>
+          </div>
+          <div onClick={() => setTasksModalOpen(true)} className="cursor-pointer relative">
+            <ModalIndicator onClick={() => setTasksModalOpen(true)} />
+            <div className="[&_.card-header]:pr-12">
+              <PortfolioCard
+                title="Pending Tasks"
+                value={pendingTasks}
+                description="All pending tasks"
+                index={4}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Financial Summary Section */}
@@ -401,20 +443,26 @@ export function LandlordDashboard() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <MetricCard
-              title="Net Profit"
-              value={`$${Math.round(metrics.netProfit).toLocaleString()}`}
-              description={`${metrics.marginPercentage.toFixed(1)}% margin`}
-              onClick={() => setProfitModalOpen(true)}
-              variant={metrics.netProfit >= 0 ? 'success' : 'danger'}
-            />
-            <MetricCard
-              title="Total Expenses"
-              value={`$${Math.round(metrics.totalExpenses).toLocaleString()}`}
-              description="This month"
-              icon={<Receipt className="w-4 h-4" />}
-              onClick={() => setExpenseModalOpen(true)}
-            />
+            <div className="relative">
+              <ModalIndicator onClick={() => setProfitModalOpen(true)} />
+              <MetricCard
+                title="Net Profit"
+                value={`$${Math.round(metrics.netProfit).toLocaleString()}`}
+                description={`${metrics.marginPercentage.toFixed(1)}% margin`}
+                onClick={() => setProfitModalOpen(true)}
+                variant={metrics.netProfit >= 0 ? 'success' : 'danger'}
+              />
+            </div>
+            <div className="relative">
+              <ModalIndicator onClick={() => setExpenseModalOpen(true)} />
+              <MetricCard
+                title="Total Expenses"
+                value={`$${Math.round(metrics.totalExpenses).toLocaleString()}`}
+                description="This month"
+                icon={<Receipt className="w-4 h-4" />}
+                onClick={() => setExpenseModalOpen(true)}
+              />
+            </div>
             <MetricCard
               title="Projected Net"
               value={`$${Math.round(metrics.projectedNet).toLocaleString()}`}
@@ -457,100 +505,109 @@ export function LandlordDashboard() {
 
         {/* Smart Insights Section */}
         {insights.length > 0 && (
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: durationToSeconds(motionTokens.duration.base),
-              delay: 0.3, // Reduced from 0.6
-              ease: motionTokens.ease.standard,
-            }}
-            layout={false}
+          <CollapsibleSection
+            id="dashboard-smart-insights"
+            title="Smart Insights"
+            defaultExpanded={true}
             className="mb-8"
           >
-            <div className="mb-4">
-              <h2 className="text-2xl font-semibold text-foreground">Insights</h2>
-              <p className="text-sm text-muted-foreground">Key metrics and observations</p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {insights.map((insight, index) => (
-                <SmartInsightCard
-                  key={index}
-                  message={insight.message}
-                  type={insight.type}
-                  index={index}
-                />
-              ))}
-            </div>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+              animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+              transition={{
+                duration: durationToSeconds(motionTokens.duration.base),
+                delay: 0.3,
+                ease: motionTokens.ease.standard,
+              }}
+              layout={false}
+            >
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {insights.map((insight, index) => (
+                  <SmartInsightCard
+                    key={index}
+                    message={insight.message}
+                    type={insight.type}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </CollapsibleSection>
         )}
 
         <div className="grid gap-6 lg:grid-cols-2 mb-8">
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: durationToSeconds(motionTokens.duration.base),
-              delay: 0.36, // Reduced from 0.7
-              ease: motionTokens.ease.standard,
-            }}
-            layout={false}
+          <CollapsibleSection
+            id="dashboard-recent-activity"
+            title="Recent Activity"
+            defaultExpanded={true}
           >
-            <Card
-              className="glass-card relative overflow-hidden cursor-pointer"
-              onClick={() => dashboardActivities.length > 0 && setActivityModalOpen(true)}
+            <motion.div
+              initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+              animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+              transition={{
+                duration: durationToSeconds(motionTokens.duration.base),
+                delay: 0.36,
+                ease: motionTokens.ease.standard,
+              }}
+              layout={false}
             >
-              <GrainOverlay />
-              <MatteLayer intensity="subtle" />
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Recent Activity</CardTitle>
-                    <CardDescription>Latest updates and notifications</CardDescription>
-                  </div>
-                  {dashboardActivities.length > 0 && recentActivity.length > 5 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={e => {
-                        e.stopPropagation()
-                        setActivityModalOpen(true)
-                      }}
-                    >
-                      View All
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {requestsLoading || tenantsLoading ? (
-                  <p className="text-muted-foreground">Loading...</p>
-                ) : dashboardActivities.length === 0 ? (
-                  <p className="text-muted-foreground">No recent activity</p>
-                ) : (
-                  dashboardActivities.map((activity, index) => (
-                    <div
-                      key={activity.id}
-                      onClick={e => {
-                        e.stopPropagation()
-                        activity.onClick()
-                      }}
-                    >
-                      <ActivityFeedItem
-                        title={activity.title}
-                        description={activity.description}
-                        timestamp={activity.timestamp}
-                        icon={activity.icon}
-                        index={index}
-                        onClick={activity.onClick}
-                      />
+              <Card
+                className="glass-card relative overflow-hidden cursor-pointer"
+                onClick={() => dashboardActivities.length > 0 && setActivityModalOpen(true)}
+              >
+                <ModalIndicator
+                  onClick={() => dashboardActivities.length > 0 && setActivityModalOpen(true)}
+                />
+                <GrainOverlay />
+                <MatteLayer intensity="subtle" />
+                <CardHeader className="pr-12">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardDescription>Latest updates and notifications</CardDescription>
                     </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                    {dashboardActivities.length > 0 && recentActivity.length > 5 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={e => {
+                          e.stopPropagation()
+                          setActivityModalOpen(true)
+                        }}
+                      >
+                        View All
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {requestsLoading || tenantsLoading ? (
+                    <p className="text-muted-foreground">Loading...</p>
+                  ) : dashboardActivities.length === 0 ? (
+                    <p className="text-muted-foreground">No recent activity</p>
+                  ) : (
+                    dashboardActivities.map((activity, index) => (
+                      <div
+                        key={activity.id}
+                        onClick={e => {
+                          e.stopPropagation()
+                          activity.onClick()
+                        }}
+                      >
+                        <ActivityFeedItem
+                          title={activity.title}
+                          description={activity.description}
+                          timestamp={activity.timestamp}
+                          icon={activity.icon}
+                          index={index}
+                          onClick={activity.onClick}
+                        />
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </CollapsibleSection>
 
           <motion.div
             initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
@@ -623,6 +680,27 @@ export function LandlordDashboard() {
         isOpen={expenseModalOpen}
         onClose={() => setExpenseModalOpen(false)}
       />
+
+      {/* Properties Distribution Modal */}
+      <PropertiesDistributionModal
+        isOpen={propertiesModalOpen}
+        onClose={() => setPropertiesModalOpen(false)}
+      />
+
+      {/* Tenant Distribution Modal */}
+      <TenantDistributionModal
+        isOpen={tenantsModalOpen}
+        onClose={() => setTenantsModalOpen(false)}
+      />
+
+      {/* Occupancy Breakdown Modal */}
+      <OccupancyBreakdownModal
+        isOpen={occupancyModalOpen}
+        onClose={() => setOccupancyModalOpen(false)}
+      />
+
+      {/* Task Distribution Modal */}
+      <TaskDistributionModal isOpen={tasksModalOpen} onClose={() => setTasksModalOpen(false)} />
     </div>
   )
 }

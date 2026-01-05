@@ -38,7 +38,7 @@ export async function createTestLandlord(
     // Longer delay to avoid rate limits (30 requests per 5 min = ~10 seconds between requests)
     // Using 500ms as compromise between test speed and rate limit avoidance
     await delay(500)
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -79,7 +79,7 @@ export async function createTestLandlord(
       const { error: insertError } = await supabase
         .from('users')
         .insert({ id: data.user.id, email: data.user.email, role: 'landlord' })
-      
+
       if (insertError) {
         return { userId: data.user.id, error: insertError }
       }
@@ -103,7 +103,7 @@ export async function createTestTenant(
     // Longer delay to avoid rate limits (30 requests per 5 min = ~10 seconds between requests)
     // Using 500ms as compromise between test speed and rate limit avoidance
     await delay(500)
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -144,7 +144,7 @@ export async function createTestTenant(
       const { error: insertError } = await supabase
         .from('users')
         .insert({ id: data.user.id, email: data.user.email, role: 'tenant' })
-      
+
       if (insertError) {
         return { userId: data.user.id, error: insertError }
       }
@@ -159,11 +159,7 @@ export async function createTestTenant(
 /**
  * Login as landlord via UI
  */
-export async function loginAsLandlord(
-  page: Page,
-  email: string,
-  password: string
-): Promise<void> {
+export async function loginAsLandlord(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/login')
   await page.waitForLoadState('networkidle')
 
@@ -181,11 +177,7 @@ export async function loginAsLandlord(
 /**
  * Login as tenant via UI
  */
-export async function loginAsTenant(
-  page: Page,
-  email: string,
-  password: string
-): Promise<void> {
+export async function loginAsTenant(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/login')
   await page.waitForLoadState('networkidle')
 
@@ -220,4 +212,3 @@ export async function signOut(page: Page): Promise<void> {
 export function getSupabaseClient() {
   return supabase
 }
-

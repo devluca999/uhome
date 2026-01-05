@@ -15,17 +15,17 @@ export function ToastNotification({ message, onDismiss, duration = 3000 }: Toast
   const { settings } = useSettings()
   const buttonSpring = createSpring('button')
 
-  // Don't show toast if toast reminders are disabled
-  if (!settings.toastReminders) {
-    return null
-  }
-
   useEffect(() => {
     if (duration > 0 && onDismiss) {
       const timer = setTimeout(onDismiss, duration)
       return () => clearTimeout(timer)
     }
   }, [duration, onDismiss])
+
+  // Don't show toast if toast reminders are disabled
+  if (!settings.toastReminders) {
+    return null
+  }
 
   return (
     <motion.div

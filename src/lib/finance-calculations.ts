@@ -1,0 +1,346 @@
+/**
+ * Centralized Finance Calculation Layer
+ *
+ * V1 Canon Implementation - This module provides pure calculation functions for all finance-related metrics.
+ * All calculations are filter-aware and traceable to ledger entries.
+ *
+ * V1 Canon Requirements:
+ * - Total Rent Collected
+ * - Outstanding / Unpaid Rent
+ * - Total Expenses
+ * - Net Cash Flow (rent_collected - expenses)
+ * - Active Properties
+ * - Occupancy Rate
+ *
+ * V1 Exclusions (Do NOT implement):
+ * - Tax logic
+ * - Depreciation
+ * - Investment metrics (ROI, IRR, etc.)
+ * - Accounting classifications
+ *
+ * Rules:
+ * - All functions are pure (no side effects)
+ * - All functions accept filter parameters
+ * - Calculations must be traceable to ledger entries
+ * - Late fees are included in rent calculations (MVP requirement)
+ */
+
+import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
+import type { Database } from '@/types/database'
+
+type Expense = Database['public']['Tables']['expenses']['Row']
+type Property = Database['public']['Tables']['properties']['Row']
+type Tenant = {
+  id: string
+  property_id: string
+  [key: string]: any
+}
+
+export interface FinanceFilters {
+  propertyId?: string
+  dateRange?: {
+    start: Date
+    end: Date
+  }
+}
+
+/**
+ * Filter rent records by property and date range
+ */
+export function filterRentRecords(
+  records: RentRecordWithRelations[],
+  filters?: FinanceFilters
+): RentRecordWithRelations[] {
+  let filtered = [...records]
+
+  if (filters?.propertyId) {
+    filtered = filtered.filter(r => r.property_id === filters.propertyId)
+  }
+
+  if (filters?.dateRange) {
+    const { start, end } = filters.dateRange
+    filtered = filtered.filter(r => {
+      // For paid records, use paid_date
+      if (r.status === 'paid' && r.paid_date) {
+        const paidDate = new Date(r.paid_date)
+        return paidDate >= start && paidDate <= end
+      }
+      // For overdue/pending, use due_date
+      const dueDate = new Date(r.due_date)
+      return dueDate >= start && dueDate <= end
+    })
+  }
+
+  return filtered
+}
+
+/**
+ * Filter expenses by property and date range
+ */
+export function filterExpenses(expenses: Expense[], filters?: FinanceFilters): Expense[] {
+  let filtered = [...expenses]
+
+  if (filters?.propertyId) {
+    filtered = filtered.filter(e => e.property_id === filters.propertyId)
+  }
+
+  if (filters?.dateRange) {
+    const { start, end } = filters.dateRange
+    filtered = filtered.filter(e => {
+      const expenseDate = new Date(e.date)
+      return expenseDate >= start && expenseDate <= end
+    })
+  }
+
+  return filtered
+}
+
+/**
+ * Calculate Total Rent Collected
+ *
+ * Formula: SUM(amount + late_fee) WHERE status = 'paid'
+ * Includes late fees in calculation (MVP requirement)
+ *
+ * @param rentRecords - All rent records
+ * @param filters - Optional filters (property, date range)
+ * @returns Total rent collected amount
+ */
+export function calculateRentCollected(
+  rentRecords: RentRecordWithRelations[],
+  filters?: FinanceFilters
+): number {
+  const filtered = filterRentRecords(rentRecords, filters)
+
+  return filtered
+    .filter(r => r.status === 'paid')
+    .reduce((sum, r) => sum + Number(r.amount) + (Number(r.late_fee) || 0), 0)
+}
+
+/**
+ * Calculate Outstanding / Unpaid Rent
+ *
+ * V1 Canon Implementation - Core KPI for tracking unpaid rent.
+ *
+ * Formula: SUM(amount + late_fee) WHERE status = 'overdue'
+ * Includes late fees in calculation (MVP requirement)
+ *
+ * @param rentRecords - All rent records
+ * @param filters - Optional filters (property, date range)
+ * @returns Total outstanding rent amount
+ */
+export function calculateUnpaidRent(
+  rentRecords: RentRecordWithRelations[],
+  filters?: FinanceFilters
+): number {
+  const filtered = filterRentRecords(rentRecords, filters)
+
+  return filtered
+    .filter(r => r.status === 'overdue')
+    .reduce((sum, r) => sum + Number(r.amount) + (Number(r.late_fee) || 0), 0)
+}
+
+/**
+ * Calculate Total Expenses
+ *
+ * Formula: SUM(amount)
+ *
+ * @param expenses - All expenses
+ * @param filters - Optional filters (property, date range)
+ * @returns Total expenses amount
+ */
+export function calculateTotalExpenses(expenses: Expense[], filters?: FinanceFilters): number {
+  const filtered = filterExpenses(expenses, filters)
+
+  return filtered.reduce((sum, e) => sum + Number(e.amount), 0)
+}
+
+/**
+ * Calculate Net Cash Flow
+ *
+ * V1 Canon Implementation - Primary profitability metric.
+ *
+ * Formula: rentCollected - totalExpenses
+ * This is the primary profitability metric for v1 canon.
+ *
+ * V1 Note: This is cash flow, not accounting profit. No tax, depreciation, or accrual adjustments.
+ *
+ * @param rentCollected - Total rent collected
+ * @param totalExpenses - Total expenses
+ * @returns Net cash flow (can be negative)
+ */
+export function calculateNetCashFlow(rentCollected: number, totalExpenses: number): number {
+  return rentCollected - totalExpenses
+}
+
+/**
+ * Calculate Active Properties
+ *
+ * V1 Canon Implementation - Core KPI for property portfolio tracking.
+ *
+ * Formula: COUNT(DISTINCT properties.id) WHERE EXISTS tenant
+ * An active property is one that has at least one tenant.
+ *
+ * @param properties - All properties
+ * @param tenants - All tenants
+ * @param filters - Optional filters (property - if specified, returns 1 or 0)
+ * @returns Count of active properties
+ */
+export function calculateActiveProperties(
+  properties: Property[],
+  tenants: Tenant[],
+  filters?: FinanceFilters
+): number {
+  // If filtering by specific property, check if it has tenants
+  if (filters?.propertyId) {
+    const hasTenants = tenants.some(t => t.property_id === filters.propertyId)
+    return hasTenants ? 1 : 0
+  }
+
+  // Count distinct properties that have tenants
+  const propertiesWithTenants = new Set(tenants.map(t => t.property_id))
+
+  return propertiesWithTenants.size
+}
+
+/**
+ * Calculate Occupancy Rate
+ *
+ * V1 Canon Implementation - Core KPI for property portfolio health.
+ *
+ * Formula: (activeProperties / totalProperties) * 100
+ * Returns percentage of properties that are occupied.
+ *
+ * @param properties - All properties
+ * @param tenants - All tenants
+ * @param filters - Optional filters (property - if specified, returns 100% or 0%)
+ * @returns Occupancy rate as percentage (0-100)
+ */
+export function calculateOccupancyRate(
+  properties: Property[],
+  tenants: Tenant[],
+  filters?: FinanceFilters
+): number {
+  if (properties.length === 0) return 0
+
+  // If filtering by specific property, return 100% if has tenants, 0% otherwise
+  if (filters?.propertyId) {
+    const hasTenants = tenants.some(t => t.property_id === filters.propertyId)
+    return hasTenants ? 100 : 0
+  }
+
+  const activeProperties = calculateActiveProperties(properties, tenants, filters)
+  return Math.round((activeProperties / properties.length) * 100)
+}
+
+/**
+ * Calculate Upcoming Rent (Pending)
+ *
+ * Formula: SUM(amount) WHERE status = 'pending'
+ * Does not include late fees (pending rent hasn't incurred late fees yet)
+ *
+ * @param rentRecords - All rent records
+ * @param filters - Optional filters (property, date range)
+ * @returns Total upcoming rent amount
+ */
+export function calculateUpcomingRent(
+  rentRecords: RentRecordWithRelations[],
+  filters?: FinanceFilters
+): number {
+  const filtered = filterRentRecords(rentRecords, filters)
+
+  return filtered.filter(r => r.status === 'pending').reduce((sum, r) => sum + Number(r.amount), 0)
+}
+
+/**
+ * Calculate date range based on time range type
+ *
+ * Helper function to convert time range strings to date ranges
+ */
+export function calculateDateRange(
+  timeRange: 'monthToDate' | 'yearToDate',
+  now: Date = new Date()
+): { start: Date; end: Date } {
+  switch (timeRange) {
+    case 'monthToDate':
+      return {
+        start: new Date(now.getFullYear(), now.getMonth(), 1),
+        end: now,
+      }
+    case 'yearToDate':
+      return {
+        start: new Date(now.getFullYear(), 0, 1), // Jan 1
+        end: now,
+      }
+    default:
+      return {
+        start: new Date(now.getFullYear(), now.getMonth(), 1),
+        end: now,
+      }
+  }
+}
+
+/**
+ * Calculate projected expenses from recurring expenses
+ *
+ * Projects recurring expenses for the next N days.
+ * Used for "Projected Net" calculation.
+ *
+ * @param expenses - All expenses
+ * @param days - Number of days to project
+ * @param filters - Optional filters (property)
+ * @returns Projected expense amount
+ */
+export function calculateProjectedExpenses(
+  expenses: Expense[],
+  days: number,
+  filters?: FinanceFilters
+): number {
+  const filtered = filterExpenses(expenses, filters)
+  const now = new Date()
+  const endDate = new Date(now)
+  endDate.setDate(endDate.getDate() + days)
+
+  let projected = 0
+
+  for (const expense of filtered) {
+    if (!expense.is_recurring || !expense.recurring_frequency || !expense.recurring_start_date) {
+      continue
+    }
+
+    const startDate = new Date(expense.recurring_start_date)
+    const endRecurringDate = expense.recurring_end_date
+      ? new Date(expense.recurring_end_date)
+      : null
+
+    // Check if recurring period is active
+    if (startDate > endDate) continue
+    if (endRecurringDate && endRecurringDate < now) continue
+
+    // Calculate how many occurrences in the projection period
+    const periodStart = startDate > now ? startDate : now
+    const periodEnd = endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
+
+    let occurrences = 0
+    const current = new Date(periodStart)
+
+    while (current <= periodEnd) {
+      occurrences++
+
+      switch (expense.recurring_frequency) {
+        case 'monthly':
+          current.setMonth(current.getMonth() + 1)
+          break
+        case 'quarterly':
+          current.setMonth(current.getMonth() + 3)
+          break
+        case 'yearly':
+          current.setFullYear(current.getFullYear() + 1)
+          break
+      }
+    }
+
+    projected += Number(expense.amount) * occurrences
+  }
+
+  return projected
+}

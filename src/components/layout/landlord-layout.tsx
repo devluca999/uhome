@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useAuth } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
+import { useScrollReset } from '@/hooks/use-scroll-reset'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 
@@ -27,6 +28,9 @@ export function LandlordLayout() {
   const [isMobile, setIsMobile] = useState(false)
   const prefersReducedMotion = useReducedMotion()
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
+
+  // Reset scroll on route changes
+  useScrollReset()
 
   // Detect mobile
   useEffect(() => {

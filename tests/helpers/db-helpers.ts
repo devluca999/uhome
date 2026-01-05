@@ -51,10 +51,7 @@ export async function deleteUserAndData(userId: string): Promise<void> {
   const supabase = getSupabaseClient()
 
   // Get user's properties first
-  const { data: properties } = await supabase
-    .from('properties')
-    .select('id')
-    .eq('owner_id', userId)
+  const { data: properties } = await supabase.from('properties').select('id').eq('owner_id', userId)
 
   if (properties) {
     const propertyIds = properties.map(p => p.id)
@@ -121,11 +118,7 @@ export async function verifyTenantExists(
   expectedData?: { property_id?: string; user_id?: string }
 ): Promise<boolean> {
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('tenants')
-    .select('*')
-    .eq('id', tenantId)
-    .single()
+  const { data, error } = await supabase.from('tenants').select('*').eq('id', tenantId).single()
 
   if (error || !data) return false
 
@@ -163,7 +156,10 @@ export async function verifyRentRecordExists(
     if (expectedData.property_id && data.property_id !== expectedData.property_id) return false
     if (expectedData.tenant_id && data.tenant_id !== expectedData.tenant_id) return false
     if (expectedData.status && data.status !== expectedData.status) return false
-    if (expectedData.payment_method_type && data.payment_method_type !== expectedData.payment_method_type)
+    if (
+      expectedData.payment_method_type &&
+      data.payment_method_type !== expectedData.payment_method_type
+    )
       return false
     if (
       expectedData.payment_method_label &&
@@ -199,4 +195,3 @@ export async function verifyMaintenanceRequestExists(
 
   return true
 }
-

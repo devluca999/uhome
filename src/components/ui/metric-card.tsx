@@ -65,7 +65,7 @@ export function MetricCard({
       }
     >
       <Card className={cn('glass-card', variantClasses[variant], className)}>
-        <CardHeader className="pb-3">
+        <CardHeader className={cn('pb-3', onClick && 'pr-12')}>
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
             {icon && <div className="text-muted-foreground">{icon}</div>}

@@ -4,6 +4,36 @@
 
 This guide outlines the User Acceptance Testing (UAT) process for uhome. UAT tests should run against a deployed staging instance using a separate Supabase staging project to ensure realistic testing conditions.
 
+## Adapter Architecture & E2E Testing
+
+E2E tests in uhome use the **adapter architecture** to enable reliable, fast, and rate-limit-free testing. This architecture separates data access and side effects from UI logic, enabling mock providers for testing.
+
+### Mock Providers in E2E Tests
+
+E2E tests **must** use mock providers to avoid rate limits:
+
+- **Data Provider**: `MockDataProvider` (deterministic, in-memory data, no Supabase calls)
+- **Side Effect Provider**: `MockSideEffectProvider` (records intents, doesn't execute emails/notifications)
+
+### Rate Limit Avoidance Strategy
+
+E2E tests avoid rate limits by design:
+
+- **No Supabase calls**: All data from `MockDataProvider` (in-memory, no rate limits)
+- **No email sending**: All emails recorded by `MockSideEffectProvider` (no email rate limits)
+- **No notifications**: All notifications recorded, not delivered (no notification rate limits)
+- **Deterministic**: Same data every run, no flakiness
+
+### Asserting Intent vs Delivery
+
+E2E tests assert **intent**, not **delivery**:
+
+- Tests verify "email intent recorded" (not "email delivered")
+- Tests verify "notification queued" (not "notification sent")
+- This approach avoids rate limits while still verifying business logic
+
+For detailed information about E2E testing with mock providers, see [E2E Testing Guide](../docs/e2e-testing.md). For architecture details, see [Adapter Architecture Guide](../docs/adapter-architecture.md).
+
 ## Prerequisites
 
 ### Staging Environment Setup
@@ -222,12 +252,17 @@ This guide outlines the User Acceptance Testing (UAT) process for uhome. UAT tes
 
 **Test Execution:**
 ```bash
-# Run UAT tests against staging
-npm run test:uat
+# Run E2E tests with mock providers (no rate limits)
+npm run test:e2e
 
-# Or with Playwright/Cypress
+# Run E2E tests headless
+npm run test:e2e:headless
+
+# Run against staging (with mock providers)
 npm run test:e2e:staging
 ```
+
+**Note**: E2E tests use mock providers by default to avoid rate limits. Tests verify intent (email queued, notification sent) not delivery (email delivered, notification received).
 
 **Test Cleanup:**
 - Automated cleanup between test runs
@@ -304,4 +339,5 @@ UAT is successful when:
 - Test on multiple browsers (Chrome, Firefox, Safari)
 - Test on multiple devices (desktop, tablet, mobile)
 - Document any issues found for follow-up
+- E2E tests use mock providers to avoid rate limits (see [E2E Testing Guide](../docs/e2e-testing.md))
 

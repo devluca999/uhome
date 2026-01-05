@@ -11,38 +11,46 @@ import { Skeleton } from '@/components/ui/skeleton-loader'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { KPIStrip } from '@/components/landlord/kpi-strip'
-import { FinancialGraphEnhanced } from '@/components/landlord/financial-graph-enhanced'
-import { RentSummaryCards } from '@/components/landlord/rent-summary-cards'
-import { ExpensesStream } from '@/components/landlord/expenses-stream'
-import { IncomeStream } from '@/components/landlord/income-stream'
+import { FinancialInsightsModule } from '@/components/landlord/financial-insights-module'
+import { FinancesFilterBar, type TimePeriod } from '@/components/landlord/finances-filter-bar'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import { FinancesOnboarding } from '@/components/landlord/finances-onboarding'
 import { SmartInsights } from '@/components/landlord/smart-insights'
+import { RentSummaryModal } from '@/components/landlord/rent-summary-modal'
+import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useLandlordRentRecords, type RentRecordFilter } from '@/hooks/use-landlord-rent-records'
 import { useProperties } from '@/hooks/use-properties'
+import { useTenants } from '@/hooks/use-tenants'
 import { useExpenses } from '@/hooks/use-expenses'
 import { useFinancialMetrics } from '@/hooks/use-financial-metrics'
+import { calculateActiveProperties, calculateOccupancyRate } from '@/lib/finance-calculations'
 import { exportLedgerToCSV } from '@/utils/export-csv'
 import { FileText, Plus, Download, X, Edit } from 'lucide-react'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import type { Database } from '@/types/database'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
-type DateRangePreset = 'thisMonth' | 'lastMonth' | 'custom' | 'all'
 type RentRecordWithRelations = import('@/hooks/use-landlord-rent-records').RentRecordWithRelations
 
 // Generate fallback mock rent records for demo purposes (power-user simulation)
 // IMPORTANT: Uses actual property IDs from properties array to ensure property filter works
-function generateFallbackRentRecords(properties: Array<{ id: string; name: string; address?: string | null }>): RentRecordWithRelations[] {
+function generateFallbackRentRecords(
+  properties: Array<{ id: string; name: string; address?: string | null }>
+): RentRecordWithRelations[] {
   const today = new Date()
   const records: RentRecordWithRelations[] = []
   const amounts = [2400, 2800, 3200]
   const paymentMethods = ['Zelle', 'Cash', 'Check', 'Venmo', 'Bank Transfer']
-  
+
   // Use actual properties, or fallback to 3 if none exist
-  const propsToUse = properties.length > 0 ? properties : [
-    { id: 'fallback-property-0', name: 'Property 1', address: '123 Demo St' },
-    { id: 'fallback-property-1', name: 'Property 2', address: '456 Demo St' },
-    { id: 'fallback-property-2', name: 'Property 3', address: '789 Demo St' },
-  ]
+  const propsToUse =
+    properties.length > 0
+      ? properties
+      : [
+          { id: 'fallback-property-0', name: 'Property 1', address: '123 Demo St' },
+          { id: 'fallback-property-1', name: 'Property 2', address: '456 Demo St' },
+          { id: 'fallback-property-2', name: 'Property 3', address: '789 Demo St' },
+        ]
 
   // Generate 12 months of data (enhanced for realistic power-user simulation)
   for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
@@ -141,13 +149,16 @@ function generateFallbackExpenses(properties: Array<{ id: string; name: string }
     insurance: ['Property insurance', 'Liability insurance'],
     taxes: ['Property tax', 'Quarterly tax'],
   }
-  
+
   // Use actual properties, or fallback to 3 if none exist
-  const propsToUse = properties.length > 0 ? properties : [
-    { id: 'fallback-property-0', name: 'Property 1' },
-    { id: 'fallback-property-1', name: 'Property 2' },
-    { id: 'fallback-property-2', name: 'Property 3' },
-  ]
+  const propsToUse =
+    properties.length > 0
+      ? properties
+      : [
+          { id: 'fallback-property-0', name: 'Property 1' },
+          { id: 'fallback-property-1', name: 'Property 2' },
+          { id: 'fallback-property-2', name: 'Property 3' },
+        ]
 
   // Generate 12 months of expenses (enhanced for realistic simulation)
   for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
@@ -197,18 +208,33 @@ function generateFallbackExpenses(properties: Array<{ id: string; name: string }
 
 export function LandlordFinances() {
   const { properties } = useProperties()
+  const { tenants } = useTenants()
   const { expenses, createExpense, updateExpense, deleteExpense, getProjectedExpenses } =
     useExpenses()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [datePreset, setDatePreset] = useState<DateRangePreset>('thisMonth')
+  // Page-level filter state
+  // These two filters control ALL financial data on the page: KPIs, Ledger, Graph (default state)
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthToDate')
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
+  // Legacy filter state (for ledger section)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [customStartDate, setCustomStartDate] = useState('')
-  const [customEndDate, setCustomEndDate] = useState('')
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set())
+  const [kpiModalOpen, setKpiModalOpen] = useState(false)
+  const [kpiModalType, setKpiModalType] = useState<
+    | 'collected'
+    | 'outstanding'
+    | 'expenses'
+    | 'net'
+    | 'projected'
+    | 'activeProperties'
+    | 'occupancy'
+  >('collected')
   const cardSpring = createSpring('card')
+
+  // Fetch work orders for timeline view
+  const { requests: workOrders } = useMaintenanceRequests(selectedPropertyId || undefined)
 
   // Check for expense creation from URL params (from work order prompt)
   useEffect(() => {
@@ -224,31 +250,58 @@ export function LandlordFinances() {
     }
   }, [searchParams, setSearchParams])
 
-  const dateRange = useMemo(() => {
+  // Map timePeriod to dateGranularity, timeRange, and dateRange for backward compatibility
+  // These derived values are used by FinancialInsightsModule and other components
+  const { dateGranularity, timeRange, dateRange } = useMemo(() => {
     const now = new Date()
-    switch (datePreset) {
-      case 'thisMonth':
+    switch (timePeriod) {
+      case 'monthly':
         return {
-          start: new Date(now.getFullYear(), now.getMonth(), 1),
-          end: new Date(now.getFullYear(), now.getMonth() + 1, 0),
+          dateGranularity: 'monthly' as const,
+          timeRange: undefined,
+          dateRange: undefined, // Show all data with monthly aggregation
         }
-      case 'lastMonth':
+      case 'quarterly':
         return {
-          start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-          end: new Date(now.getFullYear(), now.getMonth(), 0),
+          dateGranularity: 'quarterly' as const,
+          timeRange: undefined,
+          dateRange: undefined, // Show all data with quarterly aggregation
         }
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return {
-            start: new Date(customStartDate),
-            end: new Date(customEndDate),
-          }
+      case 'yearly':
+        return {
+          dateGranularity: 'yearly' as const,
+          timeRange: undefined,
+          dateRange: undefined, // Show all data with yearly aggregation
         }
-        return undefined
+      case 'monthToDate':
+        return {
+          dateGranularity: 'monthly' as const,
+          timeRange: 'monthToDate' as const,
+          dateRange: {
+            start: new Date(now.getFullYear(), now.getMonth(), 1),
+            end: now,
+          },
+        }
+      case 'yearToDate':
+        return {
+          dateGranularity: 'yearly' as const,
+          timeRange: 'yearToDate' as const,
+          dateRange: {
+            start: new Date(now.getFullYear(), 0, 1), // Jan 1
+            end: now,
+          },
+        }
       default:
-        return undefined
+        return {
+          dateGranularity: 'monthly' as const,
+          timeRange: 'monthToDate' as const,
+          dateRange: {
+            start: new Date(now.getFullYear(), now.getMonth(), 1),
+            end: now,
+          },
+        }
     }
-  }, [datePreset, customStartDate, customEndDate])
+  }, [timePeriod])
 
   const filter: RentRecordFilter = useMemo(() => {
     const filter: RentRecordFilter = {}
@@ -263,7 +316,20 @@ export function LandlordFinances() {
   }, [selectedPropertyId, dateRange])
 
   const { records: realRecords, loading, refetch } = useLandlordRentRecords(filter)
-  const [graphTimeRange, setGraphTimeRange] = useState<'month' | 'quarter' | 'year'>('month')
+
+  // Map dateGranularity to graphTimeRange (derived from timePeriod)
+  const graphTimeRange = useMemo(() => {
+    switch (dateGranularity) {
+      case 'monthly':
+        return 'month' as const
+      case 'quarterly':
+        return 'quarter' as const
+      case 'yearly':
+        return 'year' as const
+      default:
+        return 'month' as const
+    }
+  }, [dateGranularity])
 
   // Use fallback data if no real data exists (for mock mode / power-user simulation)
   // IMPORTANT: Pass properties so fallback data uses real property IDs
@@ -293,8 +359,22 @@ export function LandlordFinances() {
     expensesWithFallback,
     12,
     propertyFilter,
-    graphTimeRange
+    graphTimeRange,
+    dateRange
   )
+
+  // Calculate v1 canon KPIs using centralized calculations
+  const activeProperties = useMemo(() => {
+    return calculateActiveProperties(properties, tenants, {
+      propertyId: propertyFilter,
+    })
+  }, [properties, tenants, propertyFilter])
+
+  const occupancyRate = useMemo(() => {
+    return calculateOccupancyRate(properties, tenants, {
+      propertyId: propertyFilter,
+    })
+  }, [properties, tenants, propertyFilter])
 
   // Filter expenses by category if selected
   const filteredExpenses = useMemo(() => {
@@ -409,32 +489,17 @@ export function LandlordFinances() {
     return categoryData
   }, [filteredExpenses])
 
-  // Prepare stream data
-  const expensesStreamData = useMemo(() => {
-    return metrics.expenseAveragesByCategory.map(cat => ({
-      category: cat.category,
-      monthlyAverage: cat.monthlyAverage,
-      trend: cat.trend,
-      trendPercentage: cat.trendPercentage,
+  // Prepare work orders for timeline (map to expected format)
+  const workOrdersForTimeline = useMemo(() => {
+    return workOrders.map(wo => ({
+      id: wo.id,
+      property_id: wo.property_id,
+      created_at: wo.created_at,
+      status: wo.status,
+      description: wo.description || wo.category || 'Work order',
+      property: wo.property,
     }))
-  }, [metrics.expenseAveragesByCategory])
-
-  const incomeStreamData = useMemo(() => {
-    return [
-      {
-        type: 'rent' as const,
-        label: 'Rent (Tracked)',
-        value: metrics.rentCollected,
-        subtext: `${records.filter(r => r.status === 'paid').length} payments`,
-      },
-      {
-        type: 'vacancy' as const,
-        label: 'Vacancy Impact',
-        value: metrics.rentOutstanding,
-        subtext: 'Read-only insight',
-      },
-    ]
-  }, [metrics, records])
+  }, [workOrders])
 
   // Generate smart insights
   const insights = useMemo(() => {
@@ -571,103 +636,110 @@ export function LandlordFinances() {
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 
-      {/* Section A: Sticky KPI Strip */}
+      {/* Section A: Page-Level Filter Bar (Authoritative Scope) - ABOVE KPI Strip */}
+      {/* Page-wide filters define the base scope for all financial data on the page */}
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-sm border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <FinancesFilterBar
+            timePeriod={timePeriod}
+            onTimePeriodChange={setTimePeriod}
+            selectedPropertyId={selectedPropertyId}
+            onPropertyChange={setSelectedPropertyId}
+            properties={properties}
+            data-onboarding="filter-bar"
+          />
+        </div>
+      </div>
+
+      {/* Section B: KPI Strip */}
       <KPIStrip
         totalCollected={metrics.rentCollected}
+        outstandingRent={metrics.rentOutstanding}
         totalExpenses={metrics.totalExpenses}
         netProfit={metrics.netProfit}
         projectedNet={metrics.projectedNet}
+        activeProperties={activeProperties}
+        occupancyRate={occupancyRate}
         collectedChange={kpiChanges.collectedChange}
         expensesChange={kpiChanges.expensesChange}
         netChange={kpiChanges.netChange}
         projectedChange={kpiChanges.projectedChange}
+        timePeriod={timePeriod}
+        selectedPropertyId={selectedPropertyId}
+        properties={properties}
+        onCardClick={metric => {
+          setKpiModalType(metric)
+          setKpiModalOpen(true)
+        }}
+      />
+
+      {/* KPI Modal */}
+      <RentSummaryModal
+        isOpen={kpiModalOpen}
+        onClose={() => setKpiModalOpen(false)}
+        metricType={
+          kpiModalType as
+            | 'collected'
+            | 'outstanding'
+            | 'expenses'
+            | 'net'
+            | 'projected'
+            | 'activeProperties'
+            | 'occupancy'
+        }
+        dateRange={dateRange}
+        propertyId={selectedPropertyId || undefined}
+        properties={properties}
+        rentRecords={records}
+        expenses={expensesWithFallback}
       />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Section B: Rent Summary Cards */}
-        <RentSummaryCards
-          totalCollected={metrics.rentCollected}
-          outstanding={metrics.rentOutstanding}
-          expenses={metrics.totalExpenses}
-          netCashFlow={metrics.netProfit}
-          dateRange={dateRange}
-          propertyId={selectedPropertyId || undefined}
-          properties={properties}
-        />
+        {/* Onboarding Tooltips */}
+        <FinancesOnboarding />
 
-        {/* Section C: Primary Financial Visualization */}
-        <motion.div
-          initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
-          animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-          transition={{
-            duration: durationToSeconds(motionTokens.duration.base),
-            ease: motionTokens.ease.standard,
-          }}
-          className="mb-8"
-        >
-          <FinancialGraphEnhanced
-            lineData={lineChartData}
-            barData={barChartData}
-            rentCollectedData={metrics.monthlyRentCollected.map(item => ({
-              month: item.month,
-              amount: item.amount,
-            }))}
-            outstandingRentData={[]} // TODO: Calculate outstanding rent by month
-            expensesData={metrics.monthlyExpenses.map(item => ({
-              month: item.month,
-              amount: item.amount,
-            }))}
-            netCashFlowData={metrics.monthlyNet.map(item => ({
-              month: item.month,
-              amount: item.net,
-            }))}
-            properties={properties}
-            selectedPropertyId={selectedPropertyId || 'all'}
-            onPropertyChange={propertyId =>
-              setSelectedPropertyId(propertyId === 'all' ? '' : propertyId)
-            }
-          />
-        </motion.div>
-
-        {/* Section C: Streams */}
-        <div className="space-y-6 mb-8">
-          {/* Expenses Stream */}
-          {expensesStreamData.length > 0 && (
-            <motion.div
-              initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-              animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-              transition={{
-                duration: motionTokens.duration.normal,
-                ease: motionTokens.easing.standard,
-              }}
-            >
-              <div className="mb-2">
-                <h2 className="text-lg font-semibold text-foreground">Expenses Stream</h2>
-                <p className="text-sm text-muted-foreground">Click a category to filter ledger</p>
-              </div>
-              <ExpensesStream
-                categories={expensesStreamData}
-                onCategoryClick={handleCategoryClick}
-              />
-            </motion.div>
-          )}
-
-          {/* Income Stream */}
+        {/* Section C: Graph (Collapsible) */}
+        <CollapsibleSection id="graph" title="Graph" defaultExpanded={true} className="mb-8">
           <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+            initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
             animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
             transition={{
-              duration: motionTokens.duration.normal,
-              ease: motionTokens.easing.standard,
-              delay: 0.1,
+              duration: durationToSeconds(motionTokens.duration.base),
+              ease: motionTokens.ease.standard,
             }}
+            data-onboarding="view-modes"
           >
-            <div className="mb-2">
-              <h2 className="text-lg font-semibold text-foreground">Income Stream</h2>
+            <div data-onboarding="expand-icon">
+              <FinancialInsightsModule
+                lineData={lineChartData}
+                barData={barChartData}
+                rentCollectedData={metrics.monthlyRentCollected.map(item => ({
+                  month: item.month,
+                  amount: item.amount,
+                }))}
+                outstandingRentData={[]} // TODO: Calculate outstanding rent by month
+                expensesData={metrics.monthlyExpenses.map(item => ({
+                  month: item.month,
+                  amount: item.amount,
+                }))}
+                netCashFlowData={metrics.monthlyNet.map(item => ({
+                  month: item.month,
+                  amount: item.net,
+                }))}
+                rentRecords={records}
+                expenses={expensesWithFallback}
+                workOrders={workOrdersForTimeline}
+                dateGranularity={dateGranularity}
+                timeRange={timeRange}
+                selectedPropertyId={selectedPropertyId || 'all'}
+                properties={properties}
+                onPropertyChange={propertyId =>
+                  setSelectedPropertyId(propertyId === 'all' ? '' : propertyId)
+                }
+              />
             </div>
-            <IncomeStream cards={incomeStreamData} onCardClick={handleRentClick} />
           </motion.div>
-        </div>
+        </CollapsibleSection>
 
         {/* Smart Insights */}
         {insights.length > 0 && (
@@ -684,116 +756,170 @@ export function LandlordFinances() {
           </motion.div>
         )}
 
-        {/* Section D: Ledger */}
-        <Card className="glass-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Ledger</CardTitle>
-                <CardDescription>
-                  {records.length + filteredExpenses.length} total entries
-                  {selectedCategory && ` • Filtered by ${selectedCategory}`}
-                </CardDescription>
+        {/* Section D: Rent Ledger (Collapsible) */}
+        <CollapsibleSection
+          id="rent-ledger"
+          title="Rent Ledger"
+          defaultExpanded={true}
+          className="mb-8"
+        >
+          <Card className="glass-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardDescription>
+                    {records.length} rent record{records.length !== 1 ? 's' : ''}
+                    {selectedCategory && ` • Filtered by ${selectedCategory}`}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportCSV}
+                    disabled={ledgerDataForExport.length === 0}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportCSV}
-                  disabled={ledgerDataForExport.length === 0}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowExpenseForm(!showExpenseForm)}
-                >
-                  {showExpenseForm ? (
-                    <>
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Expense
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
+            </CardHeader>
 
-          {/* Expense Form Modal */}
-          {(showExpenseForm || editingExpense) && (
-            <CardContent className="border-b border-border pb-6">
-              <motion.div
-                initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-                animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-                exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
-                transition={{
-                  duration: motionTokens.duration.normal,
-                  ease: motionTokens.easing.standard,
-                }}
-              >
-                <ExpenseForm
-                  onSubmit={async data => {
-                    if (editingExpense) {
-                      const result = await updateExpense(editingExpense.id, data)
-                      if (!result.error) {
-                        setEditingExpense(null)
-                        setShowExpenseForm(false)
-                      }
-                      return { error: result.error }
-                    } else {
-                      const result = await createExpense(data)
-                      if (!result.error) {
-                        setShowExpenseForm(false)
-                      }
-                      return { error: result.error }
-                    }
-                  }}
-                  onCancel={() => {
-                    setShowExpenseForm(false)
-                    setEditingExpense(null)
-                  }}
-                  initialData={
-                    editingExpense
-                      ? { ...editingExpense, id: editingExpense.id }
-                      : selectedPropertyId
-                        ? { property_id: selectedPropertyId }
-                        : undefined
-                  }
-                />
-              </motion.div>
-            </CardContent>
-          )}
-
-          {/* Ledger Filters */}
-          <CardContent className={showExpenseForm || editingExpense ? 'border-b border-border pb-6' : 'pb-6'}>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Property</label>
-                <select
-                  value={selectedPropertyId}
-                  onChange={e => setSelectedPropertyId(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="" className="text-foreground">
-                    All Properties
-                  </option>
-                  {properties.map(prop => (
-                    <option key={prop.id} value={prop.id} className="text-foreground">
-                      {prop.name}
-                    </option>
+            {/* Ledger Entries */}
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="p-6 space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
                   ))}
-                </select>
-              </div>
+                </div>
+              ) : records.length === 0 ? (
+                <div className="p-6">
+                  <EmptyState
+                    icon={<FileText className="h-8 w-8" />}
+                    title="No rent records found"
+                    description="No rent records match your current filters."
+                  />
+                </div>
+              ) : (
+                <AnimatePresence initial={false}>
+                  <div className="divide-y divide-border">
+                    {records.map(record => (
+                      <motion.div
+                        key={`rent-${record.id}`}
+                        initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+                        animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+                        exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
+                        transition={{
+                          duration: durationToSeconds(motionTokens.duration.base),
+                          ease: motionTokens.ease.standard,
+                        }}
+                        layout={false}
+                      >
+                        <RentLedgerRow
+                          record={record}
+                          onReceiptGenerated={refetch}
+                          onLateFeeUpdated={refetch}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatePresence>
+              )}
+            </CardContent>
+          </Card>
+        </CollapsibleSection>
 
+        {/* Section E: Expense Table (Collapsible) */}
+        <CollapsibleSection
+          id="expense-table"
+          title="Expenses"
+          defaultExpanded={true}
+          className="mb-8"
+        >
+          <Card className="glass-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardDescription>
+                    {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
+                    {selectedCategory && ` • Filtered by ${selectedCategory}`}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowExpenseForm(!showExpenseForm)}
+                  >
+                    {showExpenseForm ? (
+                      <>
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Expense
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+
+            {/* Expense Form */}
+            {(showExpenseForm || editingExpense) && (
+              <CardContent className="border-b border-border pb-6">
+                <motion.div
+                  initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+                  animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+                  exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
+                  transition={{
+                    duration: motionTokens.duration.normal,
+                    ease: motionTokens.easing.standard,
+                  }}
+                >
+                  <ExpenseForm
+                    onSubmit={async data => {
+                      if (editingExpense) {
+                        const result = await updateExpense(editingExpense.id, data)
+                        if (!result.error) {
+                          setEditingExpense(null)
+                          setShowExpenseForm(false)
+                        }
+                        return { error: result.error }
+                      } else {
+                        const result = await createExpense(data)
+                        if (!result.error) {
+                          setShowExpenseForm(false)
+                        }
+                        return { error: result.error }
+                      }
+                    }}
+                    onCancel={() => {
+                      setShowExpenseForm(false)
+                      setEditingExpense(null)
+                    }}
+                    initialData={
+                      editingExpense
+                        ? { ...editingExpense, id: editingExpense.id }
+                        : selectedPropertyId
+                          ? { property_id: selectedPropertyId }
+                          : undefined
+                    }
+                  />
+                </motion.div>
+              </CardContent>
+            )}
+
+            {/* Category Filter (for expenses only) */}
+            <CardContent
+              className={showExpenseForm || editingExpense ? 'border-b border-border pb-6' : 'pb-6'}
+            >
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Category</label>
+                <label className="text-sm font-medium text-foreground">Category Filter</label>
                 <select
                   value={selectedCategory}
                   onChange={e => setSelectedCategory(e.target.value)}
@@ -813,155 +939,85 @@ export function LandlordFinances() {
                   </option>
                 </select>
               </div>
+            </CardContent>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Date Range</label>
-                <select
-                  value={datePreset}
-                  onChange={e => setDatePreset(e.target.value as DateRangePreset)}
-                  className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="thisMonth" className="text-foreground">
-                    This Month
-                  </option>
-                  <option value="lastMonth" className="text-foreground">
-                    Last Month
-                  </option>
-                  <option value="custom" className="text-foreground">
-                    Custom Range
-                  </option>
-                  <option value="all" className="text-foreground">
-                    All Time
-                  </option>
-                </select>
-              </div>
-
-              {datePreset === 'custom' && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Custom Dates</label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="date"
-                      value={customStartDate}
-                      onChange={e => setCustomStartDate(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Input
-                      type="date"
-                      value={customEndDate}
-                      onChange={e => setCustomEndDate(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
+            {/* Expense Entries */}
+            <CardContent className="p-0">
+              {filteredExpenses.length === 0 ? (
+                <div className="p-6">
+                  <EmptyState
+                    icon={<FileText className="h-8 w-8" />}
+                    title="No expenses found"
+                    description="No expenses match your current filters."
+                  />
                 </div>
-              )}
-            </div>
-          </CardContent>
-
-          {/* Ledger Entries */}
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-6 space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : records.length === 0 && filteredExpenses.length === 0 ? (
-              <div className="p-6">
-                <EmptyState
-                  icon={<FileText className="h-8 w-8" />}
-                  title="No ledger entries found"
-                  description="No entries match your current filters."
-                />
-              </div>
-            ) : (
-              <AnimatePresence initial={false}>
-                <div className="divide-y divide-border">
-                  {/* Rent Records */}
-                  {records.map(record => (
-                    <motion.div
-                      key={`rent-${record.id}`}
-                      initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-                      animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-                      exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
-                      transition={{
-                        duration: durationToSeconds(motionTokens.duration.base),
-                        ease: motionTokens.ease.standard,
-                      }}
-                      layout={false}
-                    >
-                      <RentLedgerRow
-                        record={record}
-                        onReceiptGenerated={refetch}
-                        onLateFeeUpdated={refetch}
-                      />
-                    </motion.div>
-                  ))}
-
-                  {/* Expenses */}
-                  {filteredExpenses.map(expense => (
-                    <motion.div
-                      key={`expense-${expense.id}`}
-                      initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-                      animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-                      exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
-                      transition={{
-                        duration: durationToSeconds(motionTokens.duration.base),
-                        ease: motionTokens.ease.standard,
-                      }}
-                      layout={false}
-                      className="border-b border-border last:border-b-0"
-                    >
-                      <div className="px-4 py-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-foreground">{expense.name}</span>
-                              {expense.category && (
-                                <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground capitalize">
-                                  {expense.category}
-                                </span>
-                              )}
-                              {expense.is_recurring && (
-                                <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-                                  Recurring
-                                </span>
-                              )}
+              ) : (
+                <AnimatePresence initial={false}>
+                  <div className="divide-y divide-border">
+                    {filteredExpenses.map(expense => (
+                      <motion.div
+                        key={`expense-${expense.id}`}
+                        initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+                        animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+                        exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
+                        transition={{
+                          duration: durationToSeconds(motionTokens.duration.base),
+                          ease: motionTokens.ease.standard,
+                        }}
+                        layout={false}
+                        className="border-b border-border last:border-b-0"
+                      >
+                        <div className="px-4 py-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-foreground">{expense.name}</span>
+                                {expense.category && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground capitalize">
+                                    {expense.category}
+                                  </span>
+                                )}
+                                {expense.is_recurring && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                                    Recurring
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {properties.find(p => p.id === expense.property_id)?.name ||
+                                  'Unknown Property'}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(expense.date).toLocaleDateString()}
+                              </p>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              {properties.find(p => p.id === expense.property_id)?.name ||
-                                'Unknown Property'}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(expense.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-4 ml-4">
-                            <span className="text-lg font-semibold text-foreground">
-                              ${Number(expense.amount).toLocaleString()}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingExpense(expense)
-                                setShowExpenseForm(true)
-                              }}
-                              className="h-8 w-8 p-0"
-                              title="Edit expense"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-4 ml-4">
+                              <span className="text-lg font-semibold text-foreground">
+                                ${Number(expense.amount).toLocaleString()}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingExpense(expense)
+                                  setShowExpenseForm(true)
+                                }}
+                                className="h-8 w-8 p-0"
+                                title="Edit expense"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </AnimatePresence>
-            )}
-          </CardContent>
-        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatePresence>
+              )}
+            </CardContent>
+          </Card>
+        </CollapsibleSection>
       </div>
     </div>
   )

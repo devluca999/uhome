@@ -45,7 +45,10 @@ export class BasePage {
   /**
    * Get element by role
    */
-  getByRole(role: 'button' | 'link' | 'textbox' | 'heading' | 'cell', name: string | RegExp): Locator {
+  getByRole(
+    role: 'button' | 'link' | 'textbox' | 'heading' | 'cell',
+    name: string | RegExp
+  ): Locator {
     return this.page.getByRole(role, { name })
   }
 
@@ -127,4 +130,3 @@ export class BasePage {
     }
   }
 }
-

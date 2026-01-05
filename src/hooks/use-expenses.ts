@@ -55,6 +55,19 @@ export function useExpenses(propertyId?: string) {
 
   async function updateExpense(id: string, data: ExpenseUpdate) {
     try {
+      // Skip update for fallback expenses (they don't exist in database)
+      if (id.startsWith('fallback-')) {
+        // For fallback expenses, just update local state
+        let updatedExpense: Expense | null = null
+        setExpenses(prev => {
+          const expense = prev.find(e => e.id === id)
+          if (!expense) return prev
+          updatedExpense = { ...expense, ...data } as Expense
+          return prev.map(exp => (exp.id === id ? updatedExpense! : exp))
+        })
+        return { data: updatedExpense, error: null }
+      }
+
       const { data: updatedExpense, error: updateError } = await supabase
         .from('expenses')
         .update(data)
@@ -74,6 +87,13 @@ export function useExpenses(propertyId?: string) {
 
   async function deleteExpense(id: string) {
     try {
+      // Skip delete for fallback expenses (they don't exist in database)
+      if (id.startsWith('fallback-')) {
+        // For fallback expenses, just update local state
+        setExpenses(prev => prev.filter(exp => exp.id !== id))
+        return { error: null }
+      }
+
       const { error: deleteError } = await supabase.from('expenses').delete().eq('id', id)
 
       if (deleteError) throw deleteError

@@ -32,17 +32,17 @@ export class PropertiesPage extends BasePage {
     rules?: string
   }): Promise<void> {
     await this.fill('input[name="name"], input[placeholder*="name" i]', data.name)
-    
+
     if (data.address) {
       await this.fill('input[name="address"], input[placeholder*="address" i]', data.address)
     }
-    
+
     await this.fill('input[name="rent_amount"], input[type="number"]', data.rentAmount)
-    
+
     if (data.rentDueDate) {
       await this.fill('input[name="rent_due_date"]', data.rentDueDate)
     }
-    
+
     if (data.rules) {
       await this.fill('textarea[name="rules"], textarea[placeholder*="rules" i]', data.rules)
     }
@@ -76,4 +76,3 @@ export class PropertiesPage extends BasePage {
     await expect(this.getByText(/no properties/i)).toBeVisible()
   }
 }
-

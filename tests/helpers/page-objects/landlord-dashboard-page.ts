@@ -20,4 +20,3 @@ export class LandlordDashboardPage extends BasePage {
     await this.waitForVisible('h1:has-text("Dashboard")', { timeout: 10000 })
   }
 }
-

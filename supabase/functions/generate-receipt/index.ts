@@ -10,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async req => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -30,13 +30,10 @@ serve(async (req) => {
     const { rent_record_id } = await req.json()
 
     if (!rent_record_id) {
-      return new Response(
-        JSON.stringify({ error: 'rent_record_id is required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'rent_record_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Verify user is authenticated
@@ -46,64 +43,56 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser()
 
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Fetch rent record with relations
     const { data: rentRecord, error: recordError } = await supabaseClient
       .from('rent_records')
-      .select(`
+      .select(
+        `
         *,
         property:properties(id, name, address, owner_id),
         tenant:tenants(
           id,
           user:users(email, id)
         )
-      `)
+      `
+      )
       .eq('id', rent_record_id)
       .single()
 
     if (recordError || !rentRecord) {
-      return new Response(
-        JSON.stringify({ error: 'Rent record not found' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'Rent record not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Verify user has access to this rent record (landlord or tenant)
-    const property = Array.isArray(rentRecord.property) ? rentRecord.property[0] : rentRecord.property
+    const property = Array.isArray(rentRecord.property)
+      ? rentRecord.property[0]
+      : rentRecord.property
     const tenant = Array.isArray(rentRecord.tenant) ? rentRecord.tenant[0] : rentRecord.tenant
-    
+
     if (!property) {
-      return new Response(
-        JSON.stringify({ error: 'Property not found' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'Property not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const isLandlord = property.owner_id === user.id
     const isTenant = tenant?.user?.id === user.id
 
     if (!isLandlord && !isTenant) {
-      return new Response(
-        JSON.stringify({ error: 'Access denied' }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Fetch receipt settings (for landlord customization)
@@ -132,7 +121,7 @@ serve(async (req) => {
     const formatDate = (dateString: string) => {
       const date = new Date(dateString)
       const format = receiptSettings.date_format || 'MM/DD/YYYY'
-      
+
       if (format === 'MM/DD/YYYY') {
         const month = String(date.getMonth() + 1).padStart(2, '0')
         const day = String(date.getDate()).padStart(2, '0')
@@ -309,7 +298,7 @@ serve(async (req) => {
     }
 
     // Payment Method
-    const paymentMethodText = 
+    const paymentMethodText =
       rentRecord.payment_method_type === 'external' && rentRecord.payment_method_label
         ? rentRecord.payment_method_label
         : rentRecord.payment_method_type === 'manual'
@@ -434,9 +423,9 @@ serve(async (req) => {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabaseClient.storage
-      .from('receipts')
-      .getPublicUrl(fileName)
+    const {
+      data: { publicUrl },
+    } = supabaseClient.storage.from('receipts').getPublicUrl(fileName)
 
     // Update rent record with receipt URL
     const { error: updateError } = await supabaseClient
@@ -450,21 +439,15 @@ serve(async (req) => {
     }
 
     // Return the receipt URL
-    return new Response(
-      JSON.stringify({ receipt_url: publicUrl }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return new Response(JSON.stringify({ receipt_url: publicUrl }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error) {
     console.error('Receipt generation error:', error)
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

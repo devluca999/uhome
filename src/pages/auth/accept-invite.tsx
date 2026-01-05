@@ -175,7 +175,7 @@ export function AcceptInvite() {
                   <CardTitle>Invite Accepted!</CardTitle>
                 </div>
                 <CardDescription>
-                  You've been successfully added to {invite?.property?.name || 'the property'}.
+                  You&apos;ve been successfully added to {invite?.property?.name || 'the property'}.
                   Redirecting to your dashboard...
                 </CardDescription>
               </CardHeader>
@@ -203,7 +203,7 @@ export function AcceptInvite() {
             <CardHeader>
               <CardTitle>Accept Invitation</CardTitle>
               <CardDescription>
-                You've been invited to join {invite?.property?.name || 'a property'}
+                You&apos;ve been invited to join {invite?.property?.name || 'a property'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

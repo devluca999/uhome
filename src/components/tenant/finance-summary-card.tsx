@@ -14,7 +14,7 @@ interface FinanceSummaryCardProps {
 
 /**
  * Tenant Finance Summary Card
- * 
+ *
  * Shows on tenant dashboard:
  * - Current balance (outstanding + pending)
  * - Due date (next pending)
@@ -72,7 +72,9 @@ export function FinanceSummaryCard({ rentRecords, className }: FinanceSummaryCar
             <span
               className={cn(
                 'text-xl font-semibold',
-                currentBalance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                currentBalance > 0
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-green-600 dark:text-green-400'
               )}
             >
               ${currentBalance.toLocaleString()}
@@ -117,4 +119,3 @@ export function FinanceSummaryCard({ rentRecords, className }: FinanceSummaryCar
     </motion.div>
   )
 }
-

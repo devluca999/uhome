@@ -7,13 +7,7 @@ import { BarChart } from '@/components/ui/bar-chart'
 import { ModalIndicator } from '@/components/ui/modal-indicator'
 import { FullscreenGraphModal } from '@/components/ui/fullscreen-graph-modal'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import {
-  LineChart as LineChartIcon,
-  BarChart3,
-  Download,
-  FileDown,
-  Image,
-} from 'lucide-react'
+import { LineChart as LineChartIcon, BarChart3, Download, FileDown, Image } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { exportGraphToCSV, exportGraphToPNG, type GraphDataPoint } from '@/utils/export-graph'
 
@@ -38,7 +32,7 @@ interface FinancialGraphEnhancedProps {
 
 /**
  * Enhanced Financial Graph Component
- * 
+ *
  * MVP Features:
  * - Time ranges: Month to date, Year to date (Jan 1 – Today)
  *   MVP-only: Calendar year YTD (Jan 1 to today), not fiscal year
@@ -161,7 +155,10 @@ export function FinancialGraphEnhanced({
       const elementId = `financial-graph-${Date.now()}`
       if (graphContainerRef.current) {
         graphContainerRef.current.id = elementId
-        await exportGraphToPNG(elementId, `financial-graph-${new Date().toISOString().split('T')[0]}.png`)
+        await exportGraphToPNG(
+          elementId,
+          `financial-graph-${new Date().toISOString().split('T')[0]}.png`
+        )
       }
     } catch (error) {
       console.error('Failed to export PNG:', error)
@@ -333,9 +330,7 @@ export function FinancialGraphEnhanced({
               <input
                 type="checkbox"
                 checked={activeDatasets.expenses}
-                onChange={e =>
-                  setActiveDatasets(prev => ({ ...prev, expenses: e.target.checked }))
-                }
+                onChange={e => setActiveDatasets(prev => ({ ...prev, expenses: e.target.checked }))}
                 className="w-4 h-4 rounded border-input"
               />
               <span className="text-muted-foreground">Expenses</span>
@@ -414,4 +409,3 @@ export function FinancialGraphEnhanced({
     </>
   )
 }
-

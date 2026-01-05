@@ -26,7 +26,10 @@ export class FinancesPage extends BasePage {
    */
   async verifyRentRecordInLedger(propertyName: string, amount: string): Promise<void> {
     // Look for the property name and amount in the ledger
-    const ledgerRow = this.page.locator('text=' + propertyName).locator('..').locator('..')
+    const ledgerRow = this.page
+      .locator('text=' + propertyName)
+      .locator('..')
+      .locator('..')
     await expect(ledgerRow).toBeVisible()
     await expect(ledgerRow.locator('text=' + amount)).toBeVisible()
   }
@@ -36,9 +39,9 @@ export class FinancesPage extends BasePage {
    */
   async expandRentRecordRow(recordIndex: number = 0): Promise<void> {
     // Find rent record rows and click the first one (or specified index)
-    const rows = this.page.locator('[data-testid="rent-ledger-row"], .rent-record-row').or(
-      this.page.locator('text=/rent/i').locator('..').locator('..').first()
-    )
+    const rows = this.page
+      .locator('[data-testid="rent-ledger-row"], .rent-record-row')
+      .or(this.page.locator('text=/rent/i').locator('..').locator('..').first())
     await rows.nth(recordIndex).click()
   }
 
@@ -53,7 +56,10 @@ export class FinancesPage extends BasePage {
    * Verify receipt link is visible
    */
   async verifyReceiptLink(): Promise<void> {
-    await this.waitForVisible('a:has-text(/receipt/i), button:has-text(/view receipt/i), a[href*="receipt"]', { timeout: 10000 })
+    await this.waitForVisible(
+      'a:has-text(/receipt/i), button:has-text(/view receipt/i), a[href*="receipt"]',
+      { timeout: 10000 }
+    )
   }
 
   /**
@@ -64,4 +70,3 @@ export class FinancesPage extends BasePage {
     await expect(this.page.locator('text=/collected|income/i')).toBeVisible()
   }
 }
-

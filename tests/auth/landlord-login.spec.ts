@@ -18,17 +18,17 @@ test.describe('Landlord Login', () => {
 
     // Create test user
     const { userId: createdUserId, error } = await createTestLandlord(testEmail, password)
-    
+
     // Log error details for debugging
     if (error) {
       console.error('Failed to create test landlord:', error)
       throw new Error(`Failed to create test landlord: ${JSON.stringify(error)}`)
     }
-    
+
     expect(error).toBeNull()
     expect(createdUserId).toBeTruthy()
     userId = createdUserId
-    
+
     // Verify user was actually created by checking database
     const supabase = getSupabaseClient()
     const { data: userRecord, error: fetchError } = await supabase
@@ -36,11 +36,13 @@ test.describe('Landlord Login', () => {
       .select('id, email, role')
       .eq('id', userId)
       .single()
-    
+
     if (fetchError || !userRecord) {
-      throw new Error(`User was not created in database. Error: ${fetchError?.message || 'User not found'}`)
+      throw new Error(
+        `User was not created in database. Error: ${fetchError?.message || 'User not found'}`
+      )
     }
-    
+
     // Small delay to ensure auth state is ready
     await new Promise(resolve => setTimeout(resolve, 500))
   })
@@ -80,4 +82,3 @@ test.describe('Landlord Login', () => {
     await expect(page).toHaveURL(/\/login/)
   })
 })
-

@@ -113,13 +113,17 @@ test.describe('Rent Logging', () => {
 
     // Verify rent record appears in ledger
     // The property name should be visible
-    const propertyName = (await supabase.from('properties').select('name').eq('id', propertyId!).single()).data?.name
+    const propertyName = (
+      await supabase.from('properties').select('name').eq('id', propertyId!).single()
+    ).data?.name
     if (propertyName) {
       await expect(page.getByText(propertyName)).toBeVisible({ timeout: 5000 })
     }
 
     // Verify amount is displayed
-    await expect(page.getByText(`$${amount.toLocaleString()}`).or(page.getByText(`$${amount}`))).toBeVisible()
+    await expect(
+      page.getByText(`$${amount.toLocaleString()}`).or(page.getByText(`$${amount}`))
+    ).toBeVisible()
 
     // Verify status shows as paid
     await expect(page.getByText(/paid/i)).toBeVisible()
@@ -167,7 +171,10 @@ test.describe('Rent Logging', () => {
 
     // Expand the rent record row to see details
     // Look for the rent record row and click to expand
-    const rentRow = page.locator('text=/rent/i').or(page.locator('[data-testid="rent-ledger-row"]')).first()
+    const rentRow = page
+      .locator('text=/rent/i')
+      .or(page.locator('[data-testid="rent-ledger-row"]'))
+      .first()
     if (await rentRow.isVisible()) {
       await rentRow.click()
       await page.waitForTimeout(500)
@@ -177,4 +184,3 @@ test.describe('Rent Logging', () => {
     }
   })
 })
-

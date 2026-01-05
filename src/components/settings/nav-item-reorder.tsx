@@ -38,8 +38,12 @@ export function NavItemReorder({
           .concat(items.filter(item => !itemOrder.includes(item.path)))
       : items
 
-  const handleDragStart = (index: number) => {
+  const handleDragStart = (index: number, element: HTMLElement) => {
     setDraggedIndex(index)
+    // Scroll item into view if it's near the bottom
+    setTimeout(() => {
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    }, 0)
   }
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -76,7 +80,7 @@ export function NavItemReorder({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="max-h-[400px] overflow-y-auto space-y-2 scroll-m-2">
       {orderedItems.map((item, index) => {
         const isHidden = hiddenItems.includes(item.path)
         const isRequired = item.required || item.path.includes('dashboard')
@@ -85,18 +89,20 @@ export function NavItemReorder({
           <motion.div
             key={item.path}
             draggable={!isRequired}
-            onDragStart={() => handleDragStart(index)}
+            onDragStart={e => {
+              handleDragStart(index, e.currentTarget)
+            }}
             onDragOver={e => handleDragOver(e, index)}
             onDragLeave={handleDragLeave}
             onDrop={e => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
             initial={{ opacity: motionTokens.opacity.visible }}
             animate={{
-              opacity: draggedIndex === index ? 0.5 : motionTokens.opacity.visible,
+              opacity: draggedIndex === index ? 0.7 : motionTokens.opacity.visible,
             }}
             className={cn(
-              'flex items-center gap-3 p-3 rounded-md border border-border bg-card',
-              draggedIndex === index && 'cursor-grabbing',
+              'flex items-center gap-3 p-3 rounded-md border border-border bg-card scroll-m-2',
+              draggedIndex === index && 'cursor-grabbing z-10',
               dragOverIndex === index && draggedIndex !== index && 'border-primary bg-primary/5',
               isHidden && 'opacity-60'
             )}

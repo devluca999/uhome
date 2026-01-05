@@ -185,4 +185,3 @@ test.describe('Property Creation', () => {
     await propertiesPage.verifyEmptyState()
   })
 })
-

@@ -193,4 +193,3 @@ test.describe('Tenant Rent History', () => {
     }
   })
 })
-

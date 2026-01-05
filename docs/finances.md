@@ -4,56 +4,70 @@
 
 The Finances page provides landlords with a comprehensive view of their rental property finances, including interactive graphs, rent tracking, expense management, and financial summaries. This document outlines MVP features and post-MVP expansion paths.
 
+**V1 Canon Alignment:** This page now fully aligns with the Landlord Finance v1 Canon. See `/docs/finance/finance-v1-canon.md` for detailed requirements and implementation status.
+
 ## MVP Features
 
-### Interactive Financial Graph
+### Page-Level Filter Bar (Authoritative Scope)
 
-The financial graph is the centerpiece of the Finances page, providing visual insights into financial performance.
+The filter bar controls all financial data on the page, placed directly below the KPI strip at the very top of the page.
 
-**Time Ranges:**
-- **Month to date** (default): Current month from day 1 to today
-- **Year to date (Jan 1 – Today)**: Calendar year from January 1st to today
-  - MVP: Calendar year only, not fiscal year
-  - Post-MVP: Support for fiscal year and rolling 12-month ranges
+**Placement:** Directly below the Global KPI Strip, before any other content.
 
-**Dataset Toggles:**
-- Rent collected (show/hide)
-- Outstanding rent (show/hide)
-- Expenses (show/hide)
-- Net cash flow (show/hide)
+**Filters:**
+- **Date Granularity**: Monthly, Quarterly, Yearly
+- **Time Range**: Month to date, Year to date (Jan 1 – Today), All Time, Custom Range
+- **Property**: All properties or specific property
 
-**Style Controls:**
-- Line ↔ Bar chart toggle
-- Smooth ↔ Sharp curves (for line charts)
-- Light animation transitions
+**Behavior:**
+- **Page-wide filters define the base scope** for all financial data on the page
+- Filters update: Financial Insights module, Rent Ledger, Expense Table
+- Filters are owned by the page, not individual components
+- Shared state ensures consistency across all financial views
+- Example: Quarterly + Pine Oak Drive → all financial data reflects quarterly data for Pine Oak Drive
 
-**Export Functionality:**
-- **PNG Export**: Captures current graph view as image
-- **CSV Export**: Exports filtered underlying data
-- Exports respect:
-  - Active date range
-  - Active datasets
-  - Current style configuration
+**Filter Hierarchy:**
+- Page-wide filters are the source of truth
+- Graph may have local-only filter overrides (scoped to graph only)
+- Graph provides "Reset to page filters" option when local overrides are active
 
-**Fullscreen Modal:**
-- Expand icon (⤢) in graph card top-right corner
-- Opens fullscreen modal with same graph state
-- Escape key + close button support
-- Retains all filters, toggles, and styles
+### Financial Insights Module
 
-### Rent Summary Cards
+Unified component combining Chart and Timeline views for comprehensive financial analysis.
 
-Four clickable cards displaying key financial metrics:
-- **Total Collected**: Rent payments received in current period
-- **Outstanding**: Unpaid rent amounts
-- **Expenses**: Total expenses in current period
-- **Net Cash Flow**: Net income (income minus expenses)
+**View Modes:**
+- **Chart View** (default):
+  - **Graph Type**: Line, Bar, Area, Pie (controlled via pill + dropdown, not simple toggles)
+  - Current graph type displayed as pill indicator
+  - Dropdown for switching graph types
+  - Dataset toggles: Rent collected, Outstanding rent, Expenses, Net cash flow
+  - Export: PNG (visual), CSV (data)
+  - Smooth/Sharp curves (for line/area charts)
+  - **Local Filter Overrides** (optional): Graph may have local-only filters that override page-wide filters within the graph only. 
+    - Local property filter: Override page property filter for graph view only
+    - Local time range filter: Override page time range filter for graph view only
+    - "Reset" button appears when local overrides are active
+    - Local overrides do NOT affect other page data (Rent Ledger, Expense Table)
+    - Page-wide filters remain the source of truth
+- **Timeline View**:
+  - Chronological list of events:
+    - Rent paid
+    - Rent due/overdue
+    - Late fees applied
+    - Expenses added
+    - Work orders (if applicable)
+  - Shows: Past events, Current day, Upcoming near-term events
+  - Same filters as chart view
 
-Each card:
-- Shows current period value
-- Has modal indicator icon (⤢)
-- Opens modal with filtered details when clicked
-- Respects current date range and property filters
+**Full-Screen Expansion:**
+- Expand icon (⤢) opens **true full-screen analytics view** (not a modal overlay)
+- Graph occupies full viewport width and height
+- Background page scroll is disabled (body scroll lock)
+- Supports both Chart (Line, Bar, Area, Pie) and Timeline views
+- Retains all filters, graph type, datasets, and state
+- Graph type controlled via pill + dropdown in full-screen mode
+- Close via close icon or Escape key
+- This is an "analysis mode," not navigation
 
 ### Manual Late Fee Handling
 
@@ -200,17 +214,34 @@ Inline comments mark MVP-only logic throughout the codebase:
 src/components/
 ├── ui/
 │   ├── modal-indicator.tsx (reusable expand icon)
+│   ├── collapsible-section.tsx (global collapsible pattern)
 │   └── fullscreen-graph-modal.tsx (graph modal)
 ├── landlord/
-│   ├── rent-summary-cards.tsx
-│   ├── rent-summary-modal.tsx
-│   ├── financial-graph-enhanced.tsx (replaces financial-graph-switcher)
+│   ├── finances-filter-bar.tsx (page-level filters)
+│   ├── financial-insights-module.tsx (unified chart + timeline)
+│   ├── finances-onboarding.tsx (lightweight tooltips)
 │   ├── rent-ledger-row.tsx (enhanced with late fees)
-│   └── expense-form.tsx (enhanced with editing)
+│   └── expense-form.tsx (enhanced with editing, original vs updated)
 └── tenant/
     ├── finance-summary-card.tsx
     └── finances-page.tsx
 ```
+
+### Page Layout Hierarchy
+
+1. **Global KPI Strip** (sticky, unchanged)
+2. **Page-Level Filter Bar** (new, below KPI strip)
+3. **Financial Insights Module** (unified graph + timeline)
+4. **Rent Ledger** (collapsible section)
+5. **Expense Table** (collapsible section)
+
+### Collapsible Sections
+
+Both Rent Ledger and Expense Table are collapsible:
+- Default: Expanded
+- Collapse state persisted in localStorage
+- Critical alerts remain visible when collapsed
+- Chevron indicator in front of section header
 
 ## Future Enhancements
 

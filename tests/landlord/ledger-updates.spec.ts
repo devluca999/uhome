@@ -166,4 +166,3 @@ test.describe('Ledger Updates and Charts', () => {
     expect(chartCount).toBeGreaterThan(0)
   })
 })
-
