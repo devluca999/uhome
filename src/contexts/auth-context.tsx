@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
+import { isDevModeAvailable, shouldActivateDevMode } from '@/lib/tenant-dev-mode'
 
 type UserRole = 'landlord' | 'tenant' | null
 
@@ -81,6 +82,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       })
+
+      // Auto-activate dev mode if demo account
+      if (!error && isDevModeAvailable()) {
+        const devModeRole = shouldActivateDevMode(email)
+        if (devModeRole && typeof window !== 'undefined') {
+          const currentUrl = new URL(window.location.href)
+          if (!currentUrl.searchParams.has('dev')) {
+            currentUrl.searchParams.set('dev', devModeRole)
+            window.history.replaceState({}, '', currentUrl.toString())
+          }
+        }
+      }
+
       return { error }
     } catch (error) {
       return { error: error as Error }

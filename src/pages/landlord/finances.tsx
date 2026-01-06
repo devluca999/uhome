@@ -234,7 +234,10 @@ export function LandlordFinances() {
   const cardSpring = createSpring('card')
 
   // Fetch work orders for timeline view
-  const { requests: workOrders } = useMaintenanceRequests(selectedPropertyId || undefined)
+  const { requests: workOrders } = useMaintenanceRequests(
+    selectedPropertyId || undefined,
+    !!selectedPropertyId
+  ) // true if property ID provided
 
   // Check for expense creation from URL params (from work order prompt)
   useEffect(() => {

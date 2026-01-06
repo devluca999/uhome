@@ -1,20 +1,116 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useProperties } from '@/hooks/use-properties'
+import { useTenants } from '@/hooks/use-tenants'
 import { PropertyCard } from '@/components/landlord/property-card'
 import { PropertyForm } from '@/components/landlord/property-form'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorAlert } from '@/components/error-alert'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
-import { Plus, Home } from 'lucide-react'
+import { Plus, Home, Filter, X } from 'lucide-react'
+
+type PropertyTypeFilter = string | 'all'
+type OccupancyFilter = 'occupied' | 'vacant' | 'all'
+type RentRangeFilter = 'all' | 'low' | 'medium' | 'high'
+type SortFilter = 'newest' | 'oldest' | 'rent_high' | 'rent_low' | 'name_az' | 'name_za'
 
 export function LandlordProperties() {
   const { properties, loading, error, createProperty, deleteProperty } = useProperties()
+  const { tenants } = useTenants()
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+
+  // Filter states
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeFilter>('all')
+  const [occupancyFilter, setOccupancyFilter] = useState<OccupancyFilter>('all')
+  const [rentRangeFilter, setRentRangeFilter] = useState<RentRangeFilter>('all')
+  const [sortFilter, setSortFilter] = useState<SortFilter>('newest')
+
+  // Get unique property types
+  const propertyTypes = useMemo(() => {
+    const types = new Set<string>()
+    properties.forEach(p => {
+      if (p.property_type) types.add(p.property_type)
+    })
+    return Array.from(types).sort()
+  }, [properties])
+
+  // Calculate rent ranges
+  const rentRanges = useMemo(() => {
+    if (properties.length === 0) return { low: 0, medium: 0, high: 0 }
+    const rents = properties.map(p => p.rent_amount).filter(r => r > 0)
+    if (rents.length === 0) return { low: 0, medium: 0, high: 0 }
+    rents.sort((a, b) => a - b)
+    const low = rents[Math.floor(rents.length / 3)]
+    const medium = rents[Math.floor((rents.length * 2) / 3)]
+    return { low, medium, high: rents[rents.length - 1] }
+  }, [properties])
+
+  // Check if property is occupied
+  const isPropertyOccupied = (propertyId: string): boolean => {
+    return tenants.some(
+      t =>
+        t.property_id === propertyId &&
+        (!t.lease_end_date || new Date(t.lease_end_date) > new Date())
+    )
+  }
+
+  // Apply all filters
+  const filteredProperties = useMemo(() => {
+    let filtered = [...properties]
+
+    // Property type filter
+    if (propertyTypeFilter !== 'all') {
+      filtered = filtered.filter(p => p.property_type === propertyTypeFilter)
+    }
+
+    // Occupancy filter
+    if (occupancyFilter === 'occupied') {
+      filtered = filtered.filter(p => isPropertyOccupied(p.id))
+    } else if (occupancyFilter === 'vacant') {
+      filtered = filtered.filter(p => !isPropertyOccupied(p.id))
+    }
+
+    // Rent range filter
+    if (rentRangeFilter === 'low') {
+      filtered = filtered.filter(p => p.rent_amount > 0 && p.rent_amount <= rentRanges.low)
+    } else if (rentRangeFilter === 'medium') {
+      filtered = filtered.filter(
+        p => p.rent_amount > rentRanges.low && p.rent_amount <= rentRanges.high
+      )
+    } else if (rentRangeFilter === 'high') {
+      filtered = filtered.filter(p => p.rent_amount > rentRanges.medium)
+    }
+
+    // Sort filter
+    if (sortFilter === 'newest') {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    } else if (sortFilter === 'oldest') {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    } else if (sortFilter === 'rent_high') {
+      filtered.sort((a, b) => b.rent_amount - a.rent_amount)
+    } else if (sortFilter === 'rent_low') {
+      filtered.sort((a, b) => a.rent_amount - b.rent_amount)
+    } else if (sortFilter === 'name_az') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sortFilter === 'name_za') {
+      filtered.sort((a, b) => b.name.localeCompare(a.name))
+    }
+
+    return filtered
+  }, [
+    properties,
+    propertyTypeFilter,
+    occupancyFilter,
+    rentRangeFilter,
+    sortFilter,
+    tenants,
+    rentRanges,
+  ])
 
   async function handleCreate(data: Parameters<typeof createProperty>[0]) {
     setSubmitting(true)
@@ -81,6 +177,110 @@ export function LandlordProperties() {
 
         {error && <ErrorAlert error={error} className="mb-6" />}
 
+        {/* Filter Bar */}
+        {properties.length > 0 && (
+          <Card className="glass-card mb-6 max-w-4xl">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Filters:</span>
+                </div>
+
+                {/* Property Type Filter */}
+                {propertyTypes.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Type:</label>
+                    <select
+                      value={propertyTypeFilter}
+                      onChange={e => setPropertyTypeFilter(e.target.value)}
+                      className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Types</option>
+                      {propertyTypes.map(type => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Occupancy Filter */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">
+                    Occupancy:
+                  </label>
+                  <select
+                    value={occupancyFilter}
+                    onChange={e => setOccupancyFilter(e.target.value as OccupancyFilter)}
+                    className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All</option>
+                    <option value="occupied">Occupied</option>
+                    <option value="vacant">Vacant</option>
+                  </select>
+                </div>
+
+                {/* Rent Range Filter */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">Rent:</label>
+                  <select
+                    value={rentRangeFilter}
+                    onChange={e => setRentRangeFilter(e.target.value as RentRangeFilter)}
+                    className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All Ranges</option>
+                    <option value="low">Low (≤ ${rentRanges.low.toLocaleString()})</option>
+                    <option value="medium">
+                      Med (${rentRanges.low.toLocaleString()}-${rentRanges.high.toLocaleString()})
+                    </option>
+                    <option value="high">High (≥ ${rentRanges.medium.toLocaleString()})</option>
+                  </select>
+                </div>
+
+                {/* Sort Filter */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">Sort:</label>
+                  <select
+                    value={sortFilter}
+                    onChange={e => setSortFilter(e.target.value as SortFilter)}
+                    className="flex h-8 min-w-[130px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="rent_high">Rent: High→Low</option>
+                    <option value="rent_low">Rent: Low→High</option>
+                    <option value="name_az">Name: A-Z</option>
+                    <option value="name_za">Name: Z-A</option>
+                  </select>
+                </div>
+
+                {/* Clear All Filters */}
+                {(propertyTypeFilter !== 'all' ||
+                  occupancyFilter !== 'all' ||
+                  rentRangeFilter !== 'all' ||
+                  sortFilter !== 'newest') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPropertyTypeFilter('all')
+                      setOccupancyFilter('all')
+                      setRentRangeFilter('all')
+                      setSortFilter('newest')
+                    }}
+                    className="ml-auto h-8 text-xs"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading properties...</p>
@@ -95,10 +295,25 @@ export function LandlordProperties() {
               onClick: () => setShowForm(true),
             }}
           />
+        ) : filteredProperties.length === 0 ? (
+          <EmptyState
+            icon={<Home className="h-8 w-8" />}
+            title="No properties match filters"
+            description="Try adjusting your filters to see more results."
+            action={{
+              label: 'Clear All Filters',
+              onClick: () => {
+                setPropertyTypeFilter('all')
+                setOccupancyFilter('all')
+                setRentRangeFilter('all')
+                setSortFilter('newest')
+              },
+            }}
+          />
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence initial={false}>
-              {properties.map(property => (
+              {filteredProperties.map(property => (
                 <PropertyCard key={property.id} property={property} onDelete={handleDelete} />
               ))}
             </AnimatePresence>

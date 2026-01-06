@@ -165,6 +165,42 @@ export function useExpenses(propertyId?: string) {
     return projected
   }
 
+  // Get average monthly utility expenses for a property
+  const getAverageMonthlyUtilities = (propertyId: string): number => {
+    const utilitiesExpenses = expenses.filter(
+      e => e.property_id === propertyId && e.category === 'utilities'
+    )
+
+    if (utilitiesExpenses.length === 0) return 0
+
+    // Group expenses by month
+    const expensesByMonth = new Map<string, number>()
+
+    for (const expense of utilitiesExpenses) {
+      const expenseDate = new Date(expense.date)
+      const monthKey = `${expenseDate.getFullYear()}-${expenseDate.getMonth()}`
+
+      if (expense.is_recurring && expense.recurring_frequency === 'monthly') {
+        // For recurring monthly expenses, use the amount directly
+        const existing = expensesByMonth.get(monthKey) || 0
+        expensesByMonth.set(monthKey, existing + Number(expense.amount))
+      } else {
+        // For one-time expenses, add to the month they occurred
+        const existing = expensesByMonth.get(monthKey) || 0
+        expensesByMonth.set(monthKey, existing + Number(expense.amount))
+      }
+    }
+
+    // Calculate average
+    const totalAmount = Array.from(expensesByMonth.values()).reduce(
+      (sum, amount) => sum + amount,
+      0
+    )
+    const monthCount = expensesByMonth.size
+
+    return monthCount > 0 ? totalAmount / monthCount : 0
+  }
+
   return {
     expenses,
     recurringExpenses,
@@ -175,6 +211,7 @@ export function useExpenses(propertyId?: string) {
     deleteExpense,
     expensesByCategory,
     getProjectedExpenses,
+    getAverageMonthlyUtilities,
     refetch: fetchExpenses,
   }
 }

@@ -37,9 +37,20 @@ export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) 
           <div className="p-4 border-b border-border">
             <Link
               to={`${basePath}/dashboard`}
-              className="text-xl font-semibold text-foreground hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 text-xl font-semibold text-foreground hover:opacity-80 transition-opacity"
             >
-              uhome
+              <img
+                src="/logo.png"
+                alt="uhome"
+                className="h-8 w-8 object-contain flex-shrink-0"
+                style={{ imageRendering: 'auto' }}
+                onError={e => {
+                  console.error('Failed to load logo image from /logo.png')
+                  // Hide image if it fails to load
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+              <span>uhome</span>
             </Link>
           </div>
 

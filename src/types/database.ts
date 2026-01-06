@@ -38,6 +38,11 @@ export type Database = {
           rules: string | null
           property_type: string | null
           rules_visible_to_tenants: boolean
+          late_fee_rules: {
+            amount?: number
+            grace_period_days?: number
+            applies_after?: 'due_date' | 'grace_period_end'
+          } | null
           created_at: string
           updated_at: string
         }
@@ -51,6 +56,11 @@ export type Database = {
           rules?: string | null
           property_type?: string | null
           rules_visible_to_tenants?: boolean
+          late_fee_rules?: {
+            amount?: number
+            grace_period_days?: number
+            applies_after?: 'due_date' | 'grace_period_end'
+          } | null
           created_at?: string
           updated_at?: string
         }
@@ -64,6 +74,11 @@ export type Database = {
           rules?: string | null
           property_type?: string | null
           rules_visible_to_tenants?: boolean
+          late_fee_rules?: {
+            amount?: number
+            grace_period_days?: number
+            applies_after?: 'due_date' | 'grace_period_end'
+          } | null
           created_at?: string
           updated_at?: string
         }
@@ -129,7 +144,7 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          property_id: string
+          property_id: string | null
           move_in_date: string
           lease_end_date: string | null
           phone: string | null
@@ -140,7 +155,7 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
-          property_id: string
+          property_id?: string | null
           move_in_date: string
           lease_end_date?: string | null
           phone?: string | null
@@ -151,7 +166,7 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
-          property_id?: string
+          property_id?: string | null
           move_in_date?: string
           lease_end_date?: string | null
           phone?: string | null
@@ -163,31 +178,52 @@ export type Database = {
       maintenance_requests: {
         Row: {
           id: string
-          property_id: string
-          tenant_id: string
-          status: 'pending' | 'in_progress' | 'completed'
+          property_id: string | null
+          tenant_id: string | null
+          lease_id: string | null
+          status: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
           category: string | null
           description: string
+          created_by: string | null
+          created_by_role: 'landlord' | 'tenant'
+          scheduled_date: string | null
+          visibility_to_tenants: boolean
+          internal_notes: string | null
+          public_description: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          property_id: string
-          tenant_id: string
-          status?: 'pending' | 'in_progress' | 'completed'
+          property_id?: string | null
+          tenant_id?: string | null
+          lease_id?: string | null
+          status?: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
           category?: string | null
-          description: string
+          description?: string
+          created_by?: string | null
+          created_by_role: 'landlord' | 'tenant'
+          scheduled_date?: string | null
+          visibility_to_tenants?: boolean
+          internal_notes?: string | null
+          public_description?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          property_id?: string
-          tenant_id?: string
-          status?: 'pending' | 'in_progress' | 'completed'
+          property_id?: string | null
+          tenant_id?: string | null
+          lease_id?: string | null
+          status?: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
           category?: string | null
           description?: string
+          created_by?: string | null
+          created_by_role?: 'landlord' | 'tenant'
+          scheduled_date?: string | null
+          visibility_to_tenants?: boolean
+          internal_notes?: string | null
+          public_description?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -195,8 +231,9 @@ export type Database = {
       rent_records: {
         Row: {
           id: string
-          property_id: string
-          tenant_id: string
+          property_id: string | null
+          tenant_id: string | null
+          lease_id: string | null
           amount: number
           due_date: string
           status: 'pending' | 'paid' | 'overdue'
@@ -212,8 +249,9 @@ export type Database = {
         }
         Insert: {
           id?: string
-          property_id: string
-          tenant_id: string
+          property_id?: string | null
+          tenant_id?: string | null
+          lease_id?: string | null
           amount: number
           due_date: string
           status?: 'pending' | 'paid' | 'overdue'
@@ -229,8 +267,9 @@ export type Database = {
         }
         Update: {
           id?: string
-          property_id?: string
-          tenant_id?: string
+          property_id?: string | null
+          tenant_id?: string | null
+          lease_id?: string | null
           amount?: number
           due_date?: string
           status?: 'pending' | 'paid' | 'overdue'
@@ -293,11 +332,12 @@ export type Database = {
         Row: {
           id: string
           property_id: string
-          tenant_id: string
-          lease_start_date: string
+          tenant_id: string | null
+          status: 'draft' | 'active' | 'ended'
+          lease_start_date: string | null
           lease_end_date: string | null
           lease_type: 'short-term' | 'long-term'
-          rent_amount: number
+          rent_amount: number | null
           rent_frequency: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
           security_deposit: number | null
           created_at: string
@@ -306,11 +346,12 @@ export type Database = {
         Insert: {
           id?: string
           property_id: string
-          tenant_id: string
-          lease_start_date: string
+          tenant_id?: string | null
+          status?: 'draft' | 'active' | 'ended'
+          lease_start_date?: string | null
           lease_end_date?: string | null
           lease_type?: 'short-term' | 'long-term'
-          rent_amount: number
+          rent_amount?: number | null
           rent_frequency?: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
           security_deposit?: number | null
           created_at?: string
@@ -319,15 +360,77 @@ export type Database = {
         Update: {
           id?: string
           property_id?: string
-          tenant_id?: string
-          lease_start_date?: string
+          tenant_id?: string | null
+          status?: 'draft' | 'active' | 'ended'
+          lease_start_date?: string | null
           lease_end_date?: string | null
           lease_type?: 'short-term' | 'long-term'
-          rent_amount?: number
+          rent_amount?: number | null
           rent_frequency?: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
           security_deposit?: number | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          lease_id: string
+          sender_id: string | null
+          sender_role: 'tenant' | 'landlord' | 'system'
+          body: string
+          intent: 'general' | 'maintenance' | 'billing' | 'notice'
+          status: 'open' | 'acknowledged' | 'resolved' | null
+          created_at: string
+          soft_deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          lease_id: string
+          sender_id?: string | null
+          sender_role: 'tenant' | 'landlord' | 'system'
+          body: string
+          intent?: 'general' | 'maintenance' | 'billing' | 'notice'
+          status?: 'open' | 'acknowledged' | 'resolved' | null
+          created_at?: string
+          soft_deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          lease_id?: string
+          sender_id?: string | null
+          sender_role?: 'tenant' | 'landlord' | 'system'
+          body?: string
+          intent?: 'general' | 'maintenance' | 'billing' | 'notice'
+          status?: 'open' | 'acknowledged' | 'resolved' | null
+          created_at?: string
+          soft_deleted_at?: string | null
+        }
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          lease_id: string
+          type: 'message' | 'system'
+          read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lease_id: string
+          type?: 'message' | 'system'
+          read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          lease_id?: string
+          type?: 'message' | 'system'
+          read?: boolean
+          created_at?: string
         }
       }
       receipt_settings: {
@@ -483,6 +586,38 @@ export type Database = {
           created_by?: string
           created_at?: string
           updated_at?: string
+        }
+      }
+      documents: {
+        Row: {
+          id: string
+          property_id: string
+          lease_id: string | null
+          uploaded_by: string
+          file_url: string
+          file_name: string
+          file_type: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          lease_id?: string | null
+          uploaded_by: string
+          file_url: string
+          file_name: string
+          file_type?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          lease_id?: string | null
+          uploaded_by?: string
+          file_url?: string
+          file_name?: string
+          file_type?: string | null
+          created_at?: string
         }
       }
     }

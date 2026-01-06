@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { NotificationBadge } from '@/components/ui/notification-badge'
 import { useAuth } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
@@ -17,6 +18,7 @@ const ALL_NAV_ITEMS = [
   { path: '/landlord/tenants', label: 'Tenants', required: false },
   { path: '/landlord/operations', label: 'Operations', required: false },
   { path: '/landlord/documents', label: 'Documents', required: false },
+  { path: '/landlord/messages', label: 'Messages', required: false },
   { path: '/landlord/settings', label: 'Settings', required: false },
 ]
 
@@ -89,11 +91,25 @@ export function LandlordLayout() {
       <nav className="glass-nav sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-8">
-              <Link to="/landlord/dashboard" className="text-xl font-semibold text-foreground">
-                uhome
+            <div className="flex items-center gap-4">
+              <Link
+                to="/landlord/dashboard"
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/logo.png"
+                  alt="uhome"
+                  className="h-8 w-8 object-contain flex-shrink-0"
+                  style={{ imageRendering: 'auto' }}
+                  onError={e => {
+                    console.error('Failed to load logo image from /logo.png')
+                    // Hide image if it fails to load
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+                <span className="text-xl font-semibold text-foreground">uhome</span>
               </Link>
-              <nav className="flex gap-1" aria-label="Main navigation">
+              <nav className="flex gap-1 ml-8" aria-label="Main navigation">
                 {visibleNavItems.map(item => (
                   <Button
                     key={item.path}

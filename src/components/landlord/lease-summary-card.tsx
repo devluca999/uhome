@@ -1,7 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
+import { MessageSquare } from 'lucide-react'
 import type { Database } from '@/types/database'
 
 type Lease = Database['public']['Tables']['leases']['Row']
@@ -85,6 +88,14 @@ export function LeaseSummaryCard({ lease, index = 0 }: LeaseSummaryCardProps) {
                   </p>
                 </div>
               )}
+            </div>
+            <div className="pt-3 border-t border-border mt-3">
+              <Button variant="outline" size="sm" asChild className="w-full">
+                <Link to={`/landlord/messages/${lease.id}`}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  View Messages
+                </Link>
+              </Button>
             </div>
           </div>
         </CardContent>

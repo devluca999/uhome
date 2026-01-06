@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useTenantDevMode } from '@/contexts/tenant-dev-mode-context'
 
 type TenantData = {
   tenant: {
@@ -16,12 +17,24 @@ type TenantData = {
     rent_due_date?: number
     rules?: string
   }
+  leases?: Array<{
+    id: string
+    property_id: string
+    tenant_id: string
+    lease_start_date: string
+    lease_end_date: string | null
+    lease_type: 'short-term' | 'long-term'
+    rent_amount: number
+    rent_frequency: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
+    security_deposit: number | null
+  }>
 }
 
 export function useTenantData() {
   const [data, setData] = useState<TenantData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const devMode = useTenantDevMode()
 
   useEffect(() => {
     fetchTenantData()
@@ -30,6 +43,16 @@ export function useTenantData() {
   async function fetchTenantData() {
     try {
       setLoading(true)
+
+      // Check if Tenant Dev Mode is active
+      if (devMode?.isActive && devMode.state) {
+        // Return mock data from dev mode context
+        setData(devMode.state.tenantData)
+        setLoading(false)
+        return
+      }
+
+      // Production flow: fetch from Supabase
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -65,6 +88,13 @@ export function useTenantData() {
         ? tenantData.property[0]
         : tenantData.property
 
+      // Fetch leases for this tenant
+      const { data: leasesData } = await supabase
+        .from('leases')
+        .select('*')
+        .eq('tenant_id', tenantData.id)
+        .order('lease_start_date', { ascending: false })
+
       setData({
         tenant: {
           id: tenantData.id,
@@ -73,6 +103,7 @@ export function useTenantData() {
           lease_end_date: tenantData.lease_end_date,
         },
         property: property as TenantData['property'],
+        leases: leasesData || [],
       })
     } catch (err) {
       setError(err as Error)

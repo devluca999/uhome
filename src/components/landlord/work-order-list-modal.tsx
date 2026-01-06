@@ -9,6 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Wrench, Calendar, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  getStatusDisplayName,
+  getStatusBadgeVariant,
+  type WorkOrderStatus,
+} from '@/lib/work-order-status'
 
 interface WorkOrderListModalProps {
   isOpen: boolean
@@ -19,7 +24,7 @@ interface WorkOrderListModalProps {
 export function WorkOrderListModal({ isOpen, onClose, propertyId }: WorkOrderListModalProps) {
   const navigate = useNavigate()
   const { setFilterParam } = useUrlParams()
-  const { requests } = useMaintenanceRequests(propertyId)
+  const { requests } = useMaintenanceRequests(propertyId, true) // true = isPropertyId
   const { properties } = useProperties()
 
   const property = useMemo(() => {
@@ -28,26 +33,14 @@ export function WorkOrderListModal({ isOpen, onClose, propertyId }: WorkOrderLis
 
   const statusCounts = useMemo(() => {
     return {
-      pending: requests.filter(r => r.status === 'pending').length,
+      submitted: requests.filter(r => r.status === 'submitted').length,
+      seen: requests.filter(r => r.status === 'seen').length,
+      scheduled: requests.filter(r => r.status === 'scheduled').length,
       in_progress: requests.filter(r => r.status === 'in_progress').length,
-      completed: requests.filter(r => r.status === 'completed').length,
+      resolved: requests.filter(r => r.status === 'resolved').length,
+      closed: requests.filter(r => r.status === 'closed').length,
     }
   }, [requests])
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      pending:
-        'bg-yellow-500/30 text-yellow-100 dark:text-yellow-50 border-yellow-500/50 dark:border-yellow-500/40 font-semibold',
-      in_progress:
-        'bg-blue-500/30 text-blue-100 dark:text-blue-50 border-blue-500/50 dark:border-blue-500/40 font-semibold',
-      completed:
-        'bg-green-500/30 text-green-100 dark:text-green-50 border-green-500/50 dark:border-green-500/40 font-semibold',
-    }
-    return (
-      variants[status as keyof typeof variants] ||
-      'bg-stone-500/30 text-stone-100 dark:text-stone-50 border-stone-500/50 dark:border-stone-500/40 font-semibold'
-    )
-  }
 
   return (
     <Drawer
@@ -63,8 +56,10 @@ export function WorkOrderListModal({ isOpen, onClose, propertyId }: WorkOrderLis
           <Card className="bg-yellow-500/10 border-yellow-500/30">
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-2xl font-semibold text-foreground">{statusCounts.pending}</div>
-                <div className="text-xs text-muted-foreground mt-1">Pending</div>
+                <div className="text-2xl font-semibold text-foreground">
+                  {statusCounts.submitted}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Submitted</div>
               </div>
             </CardContent>
           </Card>
@@ -82,9 +77,9 @@ export function WorkOrderListModal({ isOpen, onClose, propertyId }: WorkOrderLis
             <CardContent className="pt-4">
               <div className="text-center">
                 <div className="text-2xl font-semibold text-foreground">
-                  {statusCounts.completed}
+                  {statusCounts.resolved + statusCounts.closed}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Completed</div>
+                <div className="text-xs text-muted-foreground mt-1">Resolved/Closed</div>
               </div>
             </CardContent>
           </Card>
@@ -129,14 +124,19 @@ export function WorkOrderListModal({ isOpen, onClose, propertyId }: WorkOrderLis
                             {updatedDate && <span>• Updated: {updatedDate}</span>}
                           </CardDescription>
                         </div>
-                        <Badge className={cn('text-xs', getStatusBadge(request.status))}>
-                          {request.status.replace('_', ' ')}
+                        <Badge
+                          className={cn(
+                            'text-xs',
+                            getStatusBadgeVariant(request.status as WorkOrderStatus)
+                          )}
+                        >
+                          {getStatusDisplayName(request.status as WorkOrderStatus, 'landlord')}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-foreground mb-3 whitespace-pre-wrap">
-                        {request.description}
+                        {request.public_description || request.description}
                       </p>
                       {request.tenant?.user?.email && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">

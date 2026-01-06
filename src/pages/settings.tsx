@@ -50,7 +50,8 @@ export function SettingsPage() {
   // Update settings when local state changes
   useEffect(() => {
     updateSettings({ userName, organizationName })
-  }, [userName, organizationName, updateSettings])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userName, organizationName])
 
   const handleThemeChange = (preference: ThemePreference) => {
     setThemePreference(preference)

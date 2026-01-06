@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, User, Building } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
+import {
+  isDevModeAvailable,
+  DEMO_TENANT_CREDENTIALS,
+  DEMO_LANDLORD_CREDENTIALS,
+} from '@/lib/tenant-dev-mode'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -48,6 +53,34 @@ export function LoginPage() {
       setLoading(false)
     }
     // OAuth redirect will handle navigation
+  }
+
+  async function handleQuickLogin(role: 'tenant' | 'landlord') {
+    setError(null)
+    setLoading(true)
+
+    const credentials = role === 'tenant' ? DEMO_TENANT_CREDENTIALS : DEMO_LANDLORD_CREDENTIALS
+
+    // Auto-fill credentials
+    setEmail(credentials.email)
+
+    // Add dev mode URL parameter
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.set('dev', role)
+    window.history.replaceState({}, '', currentUrl.toString())
+
+    // Sign in
+    const { error } = await signIn(credentials.email, credentials.password)
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else {
+      // Navigation handled by auth context, but ensure we go to correct dashboard with dev param
+      const redirectPath =
+        role === 'tenant' ? `/tenant/dashboard?dev=${role}` : `/landlord/dashboard?dev=${role}`
+      navigate(redirectPath, { replace: true })
+    }
   }
 
   return (
@@ -115,27 +148,31 @@ export function LoginPage() {
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
-            {import.meta.env.DEV && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-2 text-center">Dev Quick Access</p>
-                <div className="flex gap-2">
+            {isDevModeAvailable() && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <p className="text-sm text-muted-foreground mb-3 text-center">
+                  Quick Demo Access (Development Only)
+                </p>
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 text-xs"
-                    onClick={() => (window.location.href = '/dev/bypass?role=landlord')}
+                    onClick={() => handleQuickLogin('tenant')}
                     disabled={loading}
+                    className="flex items-center justify-center"
                   >
-                    Dev: Landlord
+                    <User className="w-4 h-4 mr-2" />
+                    Demo Tenant
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 text-xs"
-                    onClick={() => (window.location.href = '/dev/bypass?role=tenant')}
+                    onClick={() => handleQuickLogin('landlord')}
                     disabled={loading}
+                    className="flex items-center justify-center"
                   >
-                    Dev: Tenant
+                    <Building className="w-4 h-4 mr-2" />
+                    Demo Landlord
                   </Button>
                 </div>
               </div>

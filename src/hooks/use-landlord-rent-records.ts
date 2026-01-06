@@ -32,6 +32,7 @@ export type RentRecordWithRelations = {
 }
 
 export type RentRecordFilter = {
+  leaseId?: string
   propertyId?: string
   status?: 'pending' | 'paid' | 'overdue'
   dateRange?: {
@@ -53,6 +54,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     user,
+    filter?.leaseId,
     filter?.propertyId,
     filter?.status,
     filter?.dateRange?.start?.toISOString(),
@@ -81,10 +83,8 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
       const propertyIds = properties.map(p => p.id)
 
       // Build query
-      let query = supabase
-        .from('rent_records')
-        .select(
-          `
+      let query = supabase.from('rent_records').select(
+        `
           *,
           property:properties(id, name, address),
           tenant:tenants(
@@ -92,12 +92,18 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
             user:users(email)
           )
         `
-        )
-        .in('property_id', propertyIds)
+      )
 
-      // Apply filters
-      if (filter?.propertyId) {
+      // Apply filters - prioritize lease_id, fallback to property_id
+      if (filter?.leaseId) {
+        query = query.eq('lease_id', filter.leaseId)
+      } else if (filter?.propertyId) {
+        // For backward compatibility, also check property_id
         query = query.eq('property_id', filter.propertyId)
+      } else {
+        // If no specific filter, get all records for landlord's properties
+        // RLS will handle access control
+        query = query.or(`property_id.in.(${propertyIds.join(',')})`)
       }
 
       if (filter?.status) {

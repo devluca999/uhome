@@ -22,7 +22,10 @@ import { MatteLayer } from '@/components/ui/matte-layer'
 export function TenantDashboard() {
   const { data: tenantData, loading: tenantLoading } = useTenantData()
   const { records: rentRecords, loading: rentLoading } = useRentRecords(tenantData?.tenant.id)
-  const { requests, loading: maintenanceLoading } = useMaintenanceRequests(tenantData?.property.id)
+  const { requests, loading: maintenanceLoading } = useMaintenanceRequests(
+    tenantData?.property.id,
+    true
+  ) // true = isPropertyId
   const {
     tasks,
     loading: tasksLoading,
@@ -54,7 +57,14 @@ export function TenantDashboard() {
   const pendingRent = rentRecords.filter(
     r => r.status === 'pending' || r.status === 'overdue'
   ).length
-  const pendingMaintenance = requests.filter(r => r.status === 'pending').length
+  const pendingMaintenance = requests.filter(
+    r =>
+      r.status === 'submitted' ||
+      r.status === 'seen' ||
+      r.status === 'scheduled' ||
+      r.status === 'in_progress' ||
+      r.status === 'resolved'
+  ).length
   const nextRentRecord = rentRecords.find(r => r.status === 'pending')
   const overdueRent = rentRecords.filter(r => r.status === 'overdue').length
 
@@ -131,7 +141,12 @@ export function TenantDashboard() {
                 ) : (
                   <div className="space-y-3">
                     <div className="pt-2">
-                      <p className="text-3xl font-semibold text-foreground">{pendingMaintenance}</p>
+                      <p
+                        className="text-3xl font-semibold text-foreground"
+                        data-testid="pending-work-orders-count"
+                      >
+                        {pendingMaintenance}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">Pending requests</p>
                     </div>
                     <Button variant="outline" asChild className="w-full">
@@ -175,7 +190,12 @@ export function TenantDashboard() {
                       </div>
                     )}
                     <div className="pt-2">
-                      <p className="text-3xl font-semibold text-foreground">{pendingRent}</p>
+                      <p
+                        className="text-3xl font-semibold text-foreground"
+                        data-testid="rent-status"
+                      >
+                        {pendingRent}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">Pending/Overdue</p>
                     </div>
                   </div>
@@ -266,50 +286,14 @@ export function TenantDashboard() {
             delay: 0.2,
             ease: motionTokens.easing.standard,
           }}
-        >
-          <Card className="glass-card relative overflow-hidden mb-6">
-            <GrainOverlay />
-            <MatteLayer intensity="subtle" />
-            <CardHeader>
-              <button
-                onClick={() => setAnnouncementsOpen(!announcementsOpen)}
-                className="flex items-center justify-between w-full text-left"
-              >
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Messages / Announcements
-                </CardTitle>
-                {announcementsOpen ? (
-                  <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                )}
-              </button>
-            </CardHeader>
-            <motion.div
-              initial={false}
-              animate={{
-                height: announcementsOpen ? 'auto' : 0,
-                opacity: announcementsOpen ? 1 : 0,
-              }}
-              transition={{
-                type: 'spring',
-                ...cardSpring,
-              }}
-              style={{ overflow: 'hidden' }}
-            >
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  No new messages or announcements at this time.
-                </p>
-              </CardContent>
-            </motion.div>
-          </Card>
-        </motion.div>
+        ></motion.div>
 
         <div className="flex gap-4">
           <Button asChild>
             <Link to="/tenant/maintenance">Submit Request</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/tenant/messages">Messages</Link>
           </Button>
           <Button variant="outline" asChild>
             <Link to="/tenant/documents">View Documents</Link>

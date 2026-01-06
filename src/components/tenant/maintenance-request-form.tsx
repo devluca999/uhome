@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
 
 interface MaintenanceRequestFormProps {
-  propertyId: string
-  tenantId: string
+  propertyId?: string
+  tenantId?: string
+  leaseId?: string
   onSubmit: () => void
   onCancel: () => void
 }
@@ -14,11 +16,13 @@ interface MaintenanceRequestFormProps {
 export function MaintenanceRequestForm({
   propertyId,
   tenantId,
+  leaseId,
   onSubmit,
   onCancel,
 }: MaintenanceRequestFormProps) {
+  const { user } = useAuth()
   const [category, setCategory] = useState('')
-  const [description, setDescription] = useState('')
+  const [publicDescription, setPublicDescription] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -26,19 +30,29 @@ export function MaintenanceRequestForm({
     e.preventDefault()
     setError(null)
 
-    if (!description.trim()) {
+    if (!publicDescription.trim()) {
       setError('Description is required')
+      return
+    }
+
+    if (!user) {
+      setError('You must be logged in')
       return
     }
 
     try {
       setLoading(true)
       const { error } = await supabase.from('maintenance_requests').insert({
-        property_id: propertyId,
-        tenant_id: tenantId,
+        lease_id: leaseId || null,
+        property_id: propertyId || null,
+        tenant_id: tenantId || null,
         category: category.trim() || null,
-        description: description.trim(),
-        status: 'pending',
+        public_description: publicDescription.trim(),
+        description: publicDescription.trim(), // Keep for backward compatibility
+        status: 'submitted', // Tenant-created work orders start as submitted
+        created_by: user.id,
+        created_by_role: 'tenant',
+        visibility_to_tenants: true, // Tenant-created requests are always visible
       })
 
       if (error) throw error
@@ -77,13 +91,13 @@ export function MaintenanceRequestForm({
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium text-stone-700">
+            <label htmlFor="publicDescription" className="text-sm font-medium text-stone-700">
               Description *
             </label>
             <textarea
-              id="description"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
+              id="publicDescription"
+              value={publicDescription}
+              onChange={e => setPublicDescription(e.target.value)}
               placeholder="Describe the issue or maintenance needed..."
               rows={6}
               required

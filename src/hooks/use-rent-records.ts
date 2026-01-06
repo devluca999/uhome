@@ -3,8 +3,9 @@ import { supabase } from '@/lib/supabase/client'
 
 type RentRecord = {
   id: string
-  property_id: string
-  tenant_id: string
+  property_id: string | null
+  tenant_id: string | null
+  lease_id: string | null
   amount: number
   due_date: string
   status: 'pending' | 'paid' | 'overdue'
@@ -13,26 +14,26 @@ type RentRecord = {
   updated_at: string
 }
 
-export function useRentRecords(tenantId?: string) {
+export function useRentRecords(leaseId?: string) {
   const [records, setRecords] = useState<RentRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    if (tenantId) {
+    if (leaseId) {
       fetchRecords()
     }
-  }, [tenantId])
+  }, [leaseId])
 
   async function fetchRecords() {
-    if (!tenantId) return
+    if (!leaseId) return
 
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('rent_records')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('lease_id', leaseId)
         .order('due_date', { ascending: false })
 
       if (error) throw error

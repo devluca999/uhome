@@ -119,6 +119,28 @@ Mock mode is successful when:
 - **Seed Documentation**: `scripts/README.md` — How to run and refresh mock data
 - **Fallback Data**: `src/pages/landlord/finances.tsx` — Client-side fallback generation
 
+## Tenant Dev Mode
+
+In addition to the landlord mock mode described above, uhome includes **Tenant Dev Mode** — a separate mock system for simulating tenant experiences.
+
+### Distinction
+
+- **Landlord Mock Mode** (this document): Simulates landlord power-user accounts with properties, tenants, rent records, expenses
+- **Tenant Dev Mode** (separate system): Simulates tenant experience with work orders, notifications, and lease info
+
+### When to Use Each
+
+- **Landlord Mock Mode:** Testing landlord UI, finances, property management, E2E landlord workflows
+- **Tenant Dev Mode:** Testing tenant UI, maintenance requests, notifications, E2E tenant workflows
+
+### Documentation
+
+See [`tenant-dev-mode.md`](tenant-dev-mode.md) for complete Tenant Dev Mode documentation, including:
+- How to enable tenant dev mode
+- Mock work order scenarios
+- State persistence
+- E2E testing helpers
+
 ## Philosophy Summary
 
 > **Mock mode = Realistic simulation of an active account**

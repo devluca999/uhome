@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useTasks, type TaskInsert, type TaskUpdate } from '@/hooks/use-tasks'
@@ -15,9 +15,15 @@ import { TaskForm } from '@/components/landlord/task-form'
 import { NotesPanel } from '@/components/landlord/notes-panel'
 import { WorkOrderExpensePrompt } from '@/components/landlord/work-order-expense-prompt'
 import { WorkOrderForm } from '@/components/landlord/work-order-form'
-import { Wrench, Plus, X } from 'lucide-react'
+import { Wrench, Plus, X, Filter, AlertTriangle, ChevronDown } from 'lucide-react'
 import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import {
+  getStatusDisplayName,
+  getStatusBadgeVariant,
+  getValidNextStatuses,
+  type WorkOrderStatus,
+} from '@/lib/work-order-status'
 import type { Database } from '@/types/database'
 
 // Use the type from the hook, but convert to database type when needed
@@ -25,9 +31,14 @@ type MaintenanceRequestFromHook = {
   id: string
   property_id: string
   tenant_id: string | null
-  status: 'pending' | 'in_progress' | 'completed'
+  status: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
   category?: string
   description: string
+  public_description?: string | null
+  internal_notes?: string | null
+  scheduled_date?: string | null
+  created_by_role: 'landlord' | 'tenant'
+  visibility_to_tenants: boolean
   created_at: string
   updated_at: string
   created_by?: string
@@ -49,13 +60,24 @@ type MaintenanceRequestForPrompt = Omit<
   property?: { id: string; name: string } | null
 }
 
+type RecencyFilter = 'newest' | 'oldest' | 'last7days' | 'last30days' | 'all'
+type UrgencyFilter = 'urgent' | 'normal' | 'all'
+type StatusFilter =
+  | 'submitted'
+  | 'seen'
+  | 'scheduled'
+  | 'in_progress'
+  | 'resolved'
+  | 'closed'
+  | 'all'
+type CategoryFilter = string | 'all'
+
 export function LandlordOperations() {
-  const { getFilterParam, clearFilterParam } = useUrlParams()
+  const { getFilterParam, clearFilterParam, setFilterParam } = useUrlParams()
   const { properties } = useProperties()
   const propertyIdFilter = getFilterParam('propertyId')
-  const { requests, loading, updateRequestStatus, refetch } = useMaintenanceRequests(
-    propertyIdFilter || undefined
-  )
+  const { requests, loading, updateRequestStatus, getNextValidStatuses, refetch } =
+    useMaintenanceRequests(propertyIdFilter || undefined, !!propertyIdFilter)
   const { tasks, createTask, toggleTaskStatus, updateChecklistItem } = useTasks('work_order')
   const [updating, setUpdating] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null)
@@ -64,21 +86,94 @@ export function LandlordOperations() {
   const [expensePromptWorkOrder, setExpensePromptWorkOrder] =
     useState<MaintenanceRequestForPrompt | null>(null)
 
+  // Filter states
+  const [recencyFilter, setRecencyFilter] = useState<RecencyFilter>('newest')
+  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
+
   const filteredProperty = propertyIdFilter
     ? properties.find((p: { id: string }) => p.id === propertyIdFilter)
     : null
 
-  const pendingRequests = requests.filter(r => r.status === 'pending')
-  const inProgressRequests = requests.filter(r => r.status === 'in_progress')
-  const completedRequests = requests.filter(r => r.status === 'completed')
+  // Get unique categories from requests
+  const categories = useMemo(() => {
+    const cats = new Set<string>()
+    requests.forEach(r => {
+      if (r.category) cats.add(r.category)
+    })
+    return Array.from(cats).sort()
+  }, [requests])
 
-  async function handleStatusUpdate(id: string, status: 'pending' | 'in_progress' | 'completed') {
+  // Calculate urgency based on age of pending requests
+  const getUrgency = (request: MaintenanceRequestFromHook): 'urgent' | 'normal' => {
+    if (request.status !== 'pending') return 'normal'
+    const daysSinceCreation = Math.floor(
+      (Date.now() - new Date(request.created_at).getTime()) / (1000 * 60 * 60 * 24)
+    )
+    return daysSinceCreation >= 7 ? 'urgent' : 'normal'
+  }
+
+  // Apply all filters
+  const filteredRequests = useMemo(() => {
+    let filtered = [...requests]
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(r => r.status === statusFilter)
+    }
+
+    // Property filter (already applied via hook, but keep for consistency)
+    if (propertyIdFilter) {
+      filtered = filtered.filter(r => r.property_id === propertyIdFilter)
+    }
+
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(r => r.category === categoryFilter)
+    }
+
+    // Urgency filter
+    if (urgencyFilter !== 'all') {
+      filtered = filtered.filter(r => getUrgency(r) === urgencyFilter)
+    }
+
+    // Recency filter
+    if (recencyFilter === 'newest') {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    } else if (recencyFilter === 'oldest') {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    } else if (recencyFilter === 'last7days') {
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+      filtered = filtered.filter(r => new Date(r.created_at).getTime() >= sevenDaysAgo)
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    } else if (recencyFilter === 'last30days') {
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+      filtered = filtered.filter(r => new Date(r.created_at).getTime() >= thirtyDaysAgo)
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    }
+
+    return filtered
+  }, [requests, statusFilter, propertyIdFilter, categoryFilter, urgencyFilter, recencyFilter])
+
+  const submittedRequests = filteredRequests.filter(r => r.status === 'submitted')
+  const seenRequests = filteredRequests.filter(r => r.status === 'seen')
+  const scheduledRequests = filteredRequests.filter(r => r.status === 'scheduled')
+  const inProgressRequests = filteredRequests.filter(r => r.status === 'in_progress')
+  const resolvedRequests = filteredRequests.filter(r => r.status === 'resolved')
+  const closedRequests = filteredRequests.filter(r => r.status === 'closed')
+
+  async function handleStatusUpdate(
+    id: string,
+    status: WorkOrderStatus,
+    scheduledDate?: string | null
+  ) {
     setUpdating(id)
     try {
-      await updateRequestStatus(id, status)
+      await updateRequestStatus(id, status, scheduledDate)
 
-      // Show expense prompt when work order is completed
-      if (status === 'completed') {
+      // Show expense prompt when work order is closed
+      if (status === 'closed') {
         const workOrder = requests.find(r => r.id === id)
         if (workOrder) {
           // Convert hook type to prompt type
@@ -117,18 +212,7 @@ export function LandlordOperations() {
   }
 
   function getStatusBadge(status: string) {
-    const variants = {
-      pending:
-        'bg-yellow-500/30 text-yellow-100 dark:text-yellow-50 border-yellow-500/50 dark:border-yellow-500/40 font-semibold',
-      in_progress:
-        'bg-blue-500/30 text-blue-100 dark:text-blue-50 border-blue-500/50 dark:border-blue-500/40 font-semibold',
-      completed:
-        'bg-green-500/30 text-green-100 dark:text-green-50 border-green-500/50 dark:border-green-500/40 font-semibold',
-    }
-    return (
-      variants[status as keyof typeof variants] ||
-      'bg-stone-500/30 text-stone-100 dark:text-stone-50 border-stone-500/50 dark:border-stone-500/40 font-semibold'
-    )
+    return getStatusBadgeVariant(status as WorkOrderStatus)
   }
 
   function WorkOrderCard({ request }: { request: MaintenanceRequestFromHook }) {
@@ -149,9 +233,17 @@ export function LandlordOperations() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <CardTitle className="text-lg" id={`request-${request.id}-title`}>
-                  {request.property?.name || 'Unknown Property'}
-                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg" id={`request-${request.id}-title`}>
+                    {request.property?.name || 'Unknown Property'}
+                  </CardTitle>
+                  {getUrgency(request) === 'urgent' && request.status === 'submitted' && (
+                    <Badge variant="destructive" className="text-xs">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      Urgent
+                    </Badge>
+                  )}
+                </div>
                 <CardDescription className="mt-1">
                   {request.tenant?.user?.email || request.tenant_id
                     ? 'Unknown Tenant'
@@ -159,7 +251,7 @@ export function LandlordOperations() {
                 </CardDescription>
               </div>
               <Badge className={getStatusBadge(request.status)}>
-                {request.status.replace('_', ' ')}
+                {getStatusDisplayName(request.status, 'landlord')}
               </Badge>
             </div>
           </CardHeader>
@@ -173,10 +265,32 @@ export function LandlordOperations() {
               )}
               <div>
                 <span className="text-xs text-muted-foreground">Description</span>
-                <p className="text-sm text-foreground mt-1">{request.description}</p>
+                <p className="text-sm text-foreground mt-1">
+                  {request.public_description || request.description}
+                </p>
               </div>
+              {request.scheduled_date && (
+                <div>
+                  <span className="text-xs text-muted-foreground">Scheduled Date</span>
+                  <p className="text-sm font-medium text-foreground mt-1">
+                    {new Date(request.scheduled_date).toLocaleString()}
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Submitted {new Date(request.created_at).toLocaleDateString()}</span>
+                <span>Created {new Date(request.created_at).toLocaleDateString()}</span>
+                {request.status === 'submitted' && (
+                  <span
+                    className={cn(
+                      getUrgency(request) === 'urgent' && 'text-destructive font-medium'
+                    )}
+                  >
+                    {Math.floor(
+                      (Date.now() - new Date(request.created_at).getTime()) / (1000 * 60 * 60 * 24)
+                    )}{' '}
+                    days ago
+                  </span>
+                )}
               </div>
 
               {/* Tasks Section */}
@@ -203,47 +317,38 @@ export function LandlordOperations() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                {request.status === 'pending' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleStatusUpdate(request.id, 'in_progress')}
-                      disabled={updating === request.id}
-                      className="flex-1"
-                      aria-label={`Mark work order as in progress`}
-                    >
-                      Mark In Progress
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStatusUpdate(request.id, 'completed')}
-                      disabled={updating === request.id}
-                      className="flex-1"
-                      aria-label={`Mark work order as completed`}
-                    >
-                      Complete
-                    </Button>
-                  </>
-                )}
-                {request.status === 'in_progress' && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleStatusUpdate(request.id, 'completed')}
-                    disabled={updating === request.id}
-                    className="w-full"
-                    aria-label={`Mark work order as completed`}
-                  >
-                    <motion.span
-                      animate={updating === request.id ? {} : {}}
-                      transition={{
-                        type: 'spring',
-                        ...motionTokens.spring.soft,
+                {request.status !== 'closed' && (
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      Update Status
+                    </label>
+                    <select
+                      value={request.status}
+                      onChange={e => {
+                        const newStatus = e.target.value as WorkOrderStatus
+                        if (newStatus === 'scheduled') {
+                          // Prompt for scheduled date
+                          const date = prompt('Enter scheduled date/time (YYYY-MM-DDTHH:mm):')
+                          if (date) {
+                            handleStatusUpdate(request.id, newStatus, date)
+                          }
+                        } else {
+                          handleStatusUpdate(request.id, newStatus)
+                        }
                       }}
+                      disabled={updating === request.id}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Mark Complete
-                    </motion.span>
-                  </Button>
+                      <option value={request.status}>
+                        {getStatusDisplayName(request.status, 'landlord')}
+                      </option>
+                      {getNextValidStatuses(request.id).map(nextStatus => (
+                        <option key={nextStatus} value={nextStatus}>
+                          → {getStatusDisplayName(nextStatus, 'landlord')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
                 <Button
                   size="sm"
@@ -291,6 +396,13 @@ export function LandlordOperations() {
                         />
                       </div>
                     )}
+                    {/* Internal Notes Section */}
+                    {request.internal_notes && (
+                      <div className="pt-4 border-t border-border">
+                        <h4 className="text-sm font-medium text-foreground mb-2">Internal Notes</h4>
+                        <p className="text-sm text-muted-foreground">{request.internal_notes}</p>
+                      </div>
+                    )}
                     {/* Notes Section */}
                     <div className="pt-4 border-t border-border">
                       <NotesPanel entityType="work_order" entityId={request.id} />
@@ -319,7 +431,7 @@ export function LandlordOperations() {
           }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-4xl font-semibold text-foreground mb-2">Operations</h1>
               <p className="text-muted-foreground">
@@ -327,24 +439,145 @@ export function LandlordOperations() {
                   ? `Work orders for ${filteredProperty.name}`
                   : 'Manage work orders, tasks, and execution'}
               </p>
-              {filteredProperty && (
-                <div className="mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => clearFilterParam('propertyId')}
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Clear filter
-                  </Button>
-                </div>
-              )}
             </div>
             <Button onClick={() => setShowWorkOrderForm(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Create Work Order
             </Button>
           </div>
+
+          {/* Filter Bar */}
+          <Card className="glass-card mb-6 max-w-4xl mx-auto">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Filters:</span>
+                </div>
+
+                {/* Property Filter */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">
+                    Property:
+                  </label>
+                  <select
+                    value={propertyIdFilter || 'all'}
+                    onChange={e => {
+                      if (e.target.value === 'all') {
+                        clearFilterParam('propertyId')
+                      } else {
+                        setFilterParam('propertyId', e.target.value)
+                      }
+                    }}
+                    className="flex h-8 min-w-[120px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All Properties</option>
+                    {properties.map(prop => (
+                      <option key={prop.id} value={prop.id}>
+                        {prop.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Status Filter */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">Status:</label>
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                    className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="seen">Seen</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+
+                {/* Category Filter */}
+                {categories.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Category:
+                    </label>
+                    <select
+                      value={categoryFilter}
+                      onChange={e => setCategoryFilter(e.target.value)}
+                      className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Categories</option>
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Urgency Filter */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">
+                    Urgency:
+                  </label>
+                  <select
+                    value={urgencyFilter}
+                    onChange={e => setUrgencyFilter(e.target.value as UrgencyFilter)}
+                    className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All</option>
+                    <option value="urgent">Urgent (7+ days)</option>
+                    <option value="normal">Normal</option>
+                  </select>
+                </div>
+
+                {/* Recency Filter */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">
+                    Sort by:
+                  </label>
+                  <select
+                    value={recencyFilter}
+                    onChange={e => setRecencyFilter(e.target.value as RecencyFilter)}
+                    className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="last7days">Last 7 Days</option>
+                    <option value="last30days">Last 30 Days</option>
+                    <option value="all">All Time</option>
+                  </select>
+                </div>
+
+                {/* Clear All Filters */}
+                {(propertyIdFilter ||
+                  statusFilter !== 'all' ||
+                  categoryFilter !== 'all' ||
+                  urgencyFilter !== 'all' ||
+                  recencyFilter !== 'newest') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      clearFilterParam('propertyId')
+                      setStatusFilter('all')
+                      setCategoryFilter('all')
+                      setUrgencyFilter('all')
+                      setRecencyFilter('newest')
+                    }}
+                    className="ml-auto h-8 text-xs"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear All
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {showWorkOrderForm && (
@@ -369,22 +602,77 @@ export function LandlordOperations() {
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading work orders...</p>
           </div>
-        ) : requests.length === 0 ? (
+        ) : filteredRequests.length === 0 ? (
           <EmptyState
             icon={<Wrench className="h-8 w-8" />}
-            title="No work orders"
-            description="Work orders from tenants will appear here once submitted."
+            title="No work orders match filters"
+            description={
+              requests.length === 0
+                ? 'Work orders from tenants will appear here once submitted.'
+                : 'Try adjusting your filters to see more results.'
+            }
           />
+        ) : statusFilter !== 'all' ? (
+          // When status filter is active, show single filtered list
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-4">
+              {statusFilter === 'submitted' && `Submitted Work Orders (${filteredRequests.length})`}
+              {statusFilter === 'seen' && `Seen Work Orders (${filteredRequests.length})`}
+              {statusFilter === 'scheduled' && `Scheduled Work Orders (${filteredRequests.length})`}
+              {statusFilter === 'in_progress' &&
+                `In Progress Work Orders (${filteredRequests.length})`}
+              {statusFilter === 'resolved' && `Resolved Work Orders (${filteredRequests.length})`}
+              {statusFilter === 'closed' && `Closed Work Orders (${filteredRequests.length})`}
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <AnimatePresence initial={false}>
+                {filteredRequests.map(request => (
+                  <WorkOrderCard key={request.id} request={request} />
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
         ) : (
+          // When status filter is 'all', show grouped by status
           <div className="space-y-8">
-            {pendingRequests.length > 0 && (
+            {submittedRequests.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">
-                  Pending ({pendingRequests.length})
+                  Submitted ({submittedRequests.length})
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <AnimatePresence initial={false}>
-                    {pendingRequests.map(request => (
+                    {submittedRequests.map(request => (
+                      <WorkOrderCard key={request.id} request={request} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {seenRequests.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Seen ({seenRequests.length})
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <AnimatePresence initial={false}>
+                    {seenRequests.map(request => (
+                      <WorkOrderCard key={request.id} request={request} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {scheduledRequests.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Scheduled ({scheduledRequests.length})
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <AnimatePresence initial={false}>
+                    {scheduledRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
                     ))}
                   </AnimatePresence>
@@ -407,14 +695,29 @@ export function LandlordOperations() {
               </div>
             )}
 
-            {completedRequests.length > 0 && (
+            {resolvedRequests.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">
-                  Completed ({completedRequests.length})
+                  Resolved ({resolvedRequests.length})
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <AnimatePresence initial={false}>
-                    {completedRequests.map(request => (
+                    {resolvedRequests.map(request => (
+                      <WorkOrderCard key={request.id} request={request} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {closedRequests.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Closed ({closedRequests.length})
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <AnimatePresence initial={false}>
+                    {closedRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
                     ))}
                   </AnimatePresence>

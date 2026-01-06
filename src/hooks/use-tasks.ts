@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 export type TaskAssignedToType = 'tenant' | 'household' | 'unit'
 export type TaskContextType = 'work_order' | 'move_in' | 'property' | 'rent_record'
@@ -78,6 +79,40 @@ export function useTasks(contextType?: TaskContextType, contextId?: string) {
       setLoading(false)
     }
   }
+
+  // Set up realtime subscription for multi-tab sync (dev mode only)
+  useRealtimeSubscription({
+    table: 'tasks',
+    filter:
+      contextType && contextId
+        ? {
+            linked_context_type: contextType,
+            linked_context_id: contextId,
+          }
+        : undefined,
+    events: ['INSERT', 'UPDATE', 'DELETE'],
+    onInsert: payload => {
+      if (payload.new) {
+        setTasks(prev => {
+          // Check if already exists
+          if (prev.some(t => t.id === payload.new.id)) {
+            return prev
+          }
+          return [payload.new as Task, ...prev]
+        })
+      }
+    },
+    onUpdate: payload => {
+      if (payload.new) {
+        setTasks(prev => prev.map(t => (t.id === payload.new.id ? (payload.new as Task) : t)))
+      }
+    },
+    onDelete: payload => {
+      if (payload.old) {
+        setTasks(prev => prev.filter(t => t.id !== payload.old.id))
+      }
+    },
+  })
 
   async function createTask(task: TaskInsert) {
     if (!user) return { data: null, error: new Error('User not authenticated') }

@@ -70,6 +70,29 @@ export function AcceptInvite() {
         return
       }
 
+      // Verify lease exists and is not ended
+      if (!invite.lease_id) {
+        throw new Error('Invalid invite: no lease associated')
+      }
+
+      const { data: lease, error: leaseFetchError } = await supabase
+        .from('leases')
+        .select('*')
+        .eq('id', invite.lease_id)
+        .single()
+
+      if (leaseFetchError) throw leaseFetchError
+
+      if (lease.status === 'ended') {
+        throw new Error(
+          'This lease has ended and cannot be accepted. Please contact your landlord for a new invite.'
+        )
+      }
+
+      if (lease.status !== 'draft') {
+        throw new Error('This invite is no longer valid. Please contact your landlord.')
+      }
+
       // Update user role to tenant if needed
       const { error: roleError } = await supabase
         .from('users')
@@ -78,14 +101,49 @@ export function AcceptInvite() {
 
       if (roleError) throw roleError
 
-      // Create tenant record
-      const { error: tenantError } = await supabase.from('tenants').insert({
-        user_id: user.id,
-        property_id: invite.property_id,
-        move_in_date: new Date().toISOString().split('T')[0],
-      })
+      // Get or create tenant record
+      let tenantId: string
+      const { data: existingTenant } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-      if (tenantError) throw tenantError
+      if (existingTenant) {
+        tenantId = existingTenant.id
+      } else {
+        const { data: newTenant, error: tenantError } = await supabase
+          .from('tenants')
+          .insert({
+            user_id: user.id,
+            email: user.email || invite.email,
+            move_in_date: new Date().toISOString().split('T')[0],
+          })
+          .select('id')
+          .single()
+
+        if (tenantError) throw tenantError
+        tenantId = newTenant.id
+      }
+
+      // Determine lease start date
+      const today = new Date().toISOString().split('T')[0]
+      const leaseStartDate = lease.lease_start_date || today
+      const startDate = new Date(leaseStartDate)
+      const isStartDateTodayOrPast = startDate <= new Date()
+
+      // Link tenant to draft lease and activate
+      const { error: leaseUpdateError } = await supabase
+        .from('leases')
+        .update({
+          tenant_id: tenantId,
+          status: isStartDateTodayOrPast ? 'active' : 'draft',
+          lease_start_date: leaseStartDate,
+          rent_amount: lease.rent_amount || null, // Keep existing or null
+        })
+        .eq('id', invite.lease_id)
+
+      if (leaseUpdateError) throw leaseUpdateError
 
       // Mark invite as accepted
       const { error: acceptError } = await supabase
@@ -176,7 +234,8 @@ export function AcceptInvite() {
                 </div>
                 <CardDescription>
                   You&apos;ve been successfully added to {invite?.property?.name || 'the property'}.
-                  Redirecting to your dashboard...
+                  You can now message your landlord and access your lease information. Redirecting
+                  to your dashboard...
                 </CardDescription>
               </CardHeader>
             </Card>

@@ -84,14 +84,40 @@ export function useProperties() {
   async function updateProperty(id: string, updates: Partial<Property & { group_ids?: string[] }>) {
     const { group_ids, ...propertyUpdates } = updates
 
+    // Filter out undefined values and null values for optional fields that might not exist in schema
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(propertyUpdates).filter(([_, value]) => value !== undefined)
+    )
+
     const { data, error } = await supabase
       .from('properties')
-      .update(propertyUpdates)
+      .update(cleanUpdates)
       .eq('id', id)
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      // If error is due to unknown column (e.g., late_fee_rules not migrated),
+      // filter it out and retry
+      if (error.code === '42703' && 'late_fee_rules' in cleanUpdates) {
+        const { late_fee_rules, ...updatesWithoutLateFee } = cleanUpdates
+        const { data: retryData, error: retryError } = await supabase
+          .from('properties')
+          .update(updatesWithoutLateFee)
+          .eq('id', id)
+          .select()
+          .single()
+
+        if (retryError) throw retryError
+        // Update successful without late_fee_rules - log warning
+        console.warn(
+          'late_fee_rules column not found - update completed without it. Run migration add_late_fee_rules_to_properties.sql'
+        )
+        setProperties(properties.map(p => (p.id === id ? retryData : p)))
+        return retryData
+      }
+      throw error
+    }
 
     // Handle group assignments if provided
     if (group_ids !== undefined) {

@@ -1,37 +1,60 @@
-import { useParams, Link } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { PropertyForm } from '@/components/landlord/property-form'
-import { LeaseForm } from '@/components/landlord/lease-form'
-import { LeaseSummaryCard } from '@/components/landlord/lease-summary-card'
-import { NotesPanel } from '@/components/landlord/notes-panel'
+import { PropertyRulesEditor } from '@/components/landlord/property-rules-editor'
+import { TenantInviteForm } from '@/components/landlord/tenant-invite-form'
+import { PropertyDocuments } from '@/components/landlord/property-documents'
+import { WorkOrderForm } from '@/components/landlord/work-order-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useLeases } from '@/hooks/use-leases'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { useTenants } from '@/hooks/use-tenants'
+import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useProperties } from '@/hooks/use-properties'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { useLeases } from '@/hooks/use-leases'
+import { ArrowLeft, Plus, Users, Wrench, FileText, Calendar, User, Trash2 } from 'lucide-react'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
+import { useNavigate } from 'react-router-dom'
 import type { Database } from '@/types/database'
+import { cn } from '@/lib/utils'
 
-type Property = Database['public']['Tables']['properties']['Row']
+type Property = Database['public']['Tables']['properties']['Row'] & {
+  late_fee_rules?: {
+    amount?: number
+    grace_period_days?: number
+    applies_after?: 'due_date' | 'grace_period_end'
+  } | null
+}
 
 export function PropertyDetail() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { updateProperty } = useProperties()
-  const { leases, createLease, updateLease, deleteLease } = useLeases(id)
+  const { tenants, unlinkTenant: unlinkTenantFromHook } = useTenants()
+  const { requests: workOrders, refetch: refetchWorkOrders } = useMaintenanceRequests(id, true) // true = isPropertyId
+  const { leases } = useLeases(id)
   const [property, setProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [showLeaseForm, setShowLeaseForm] = useState(false)
-  const [editingLease, setEditingLease] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview')
+  const [showInviteForm, setShowInviteForm] = useState(false)
+  const [showWorkOrderForm, setShowWorkOrderForm] = useState(false)
+  const [tenantView, setTenantView] = useState<'active' | 'all'>('active')
 
   useEffect(() => {
     if (id) {
       fetchProperty()
     }
   }, [id])
+
+  useEffect(() => {
+    setSearchParams({ tab: activeTab }, { replace: true })
+  }, [activeTab, setSearchParams])
 
   async function fetchProperty() {
     if (!id) return
@@ -72,19 +95,60 @@ export function PropertyDetail() {
     }
   }
 
-  async function handleCreateLease(data: Parameters<typeof createLease>[0]) {
-    const result = await createLease(data)
-    if (!result.error) {
-      setShowLeaseForm(false)
+  async function handleSaveRules(rules: string | null, visibleToTenants: boolean) {
+    if (!id) return
+    await updateProperty(id, {
+      rules: rules || null,
+      rules_visible_to_tenants: visibleToTenants,
+    })
+    await fetchProperty()
+  }
+
+  async function handleUnlinkTenant(tenantId: string) {
+    if (
+      !confirm(
+        'Are you sure you want to remove this tenant from the property? The tenant record will be preserved.'
+      )
+    ) {
+      return
+    }
+
+    try {
+      await unlinkTenantFromHook(tenantId)
+    } catch (error) {
+      console.error('Error unlinking tenant:', error)
+      alert('Failed to remove tenant. Please try again.')
     }
   }
 
-  async function handleUpdateLease(leaseId: string, data: Parameters<typeof updateLease>[1]) {
-    const result = await updateLease(leaseId, data)
-    if (!result.error) {
-      setEditingLease(null)
+  // Filter tenants for this property
+  const propertyTenants = useMemo(() => {
+    if (!id) return []
+    return tenants.filter(t => t.property_id === id)
+  }, [tenants, id])
+
+  // Filter active vs all tenants
+  const displayedTenants = useMemo(() => {
+    if (tenantView === 'active') {
+      return propertyTenants.filter(t => {
+        if (!t.lease_end_date) return true
+        return new Date(t.lease_end_date) > new Date()
+      })
     }
-  }
+    return propertyTenants
+  }, [propertyTenants, tenantView])
+
+  // Work order counts
+  const workOrderCounts = useMemo(() => {
+    return {
+      submitted: workOrders.filter(r => r.status === 'submitted').length,
+      seen: workOrders.filter(r => r.status === 'seen').length,
+      scheduled: workOrders.filter(r => r.status === 'scheduled').length,
+      in_progress: workOrders.filter(r => r.status === 'in_progress').length,
+      resolved: workOrders.filter(r => r.status === 'resolved').length,
+      closed: workOrders.filter(r => r.status === 'closed').length,
+    }
+  }, [workOrders])
 
   if (loading) {
     return (
@@ -132,10 +196,11 @@ export function PropertyDetail() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl relative">
+    <div className="container mx-auto px-4 py-8 max-w-6xl relative">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">
+        {/* Persistent Header */}
         <div className="mb-6">
           <Button variant="ghost" asChild className="mb-4">
             <Link to="/landlord/properties">
@@ -147,127 +212,406 @@ export function PropertyDetail() {
             <div>
               <h1 className="text-3xl font-semibold text-foreground">{property.name}</h1>
               {property.address && <p className="text-muted-foreground mt-1">{property.address}</p>}
+              <div className="flex items-center gap-2 mt-2">
+                {property.property_type && (
+                  <Badge variant="outline">{property.property_type}</Badge>
+                )}
+              </div>
             </div>
             <Button onClick={() => setEditing(true)}>Edit Property</Button>
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Rent Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Monthly Rent</span>
-                <span className="text-xl font-semibold text-foreground">
-                  ${property.rent_amount.toLocaleString()}
-                </span>
-              </div>
-              {property.rent_due_date && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Due Date</span>
-                  <span className="font-medium text-foreground">
-                    {property.rent_due_date}
-                    {property.rent_due_date === 1
-                      ? 'st'
-                      : property.rent_due_date === 2
-                        ? 'nd'
-                        : property.rent_due_date === 3
-                          ? 'rd'
-                          : 'th'}{' '}
-                    of month
-                  </span>
-                </div>
-              )}
-              {property.property_type && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Type</span>
-                  <span className="font-medium text-foreground">{property.property_type}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="tenants">Tenants</TabsTrigger>
+            <TabsTrigger value="work-orders">Work Orders</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
+          </TabsList>
 
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Property Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div>
-                <span className="text-sm text-muted-foreground">Created</span>
-                <p className="text-sm font-medium text-foreground">
-                  {new Date(property.created_at).toLocaleDateString()}
-                </p>
-              </div>
-              {property.updated_at !== property.created_at && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Last Updated</span>
-                  <p className="text-sm font-medium text-foreground">
-                    {new Date(property.updated_at).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="mt-6">
+            <div className="space-y-6">
+              {/* Rent Information */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Rent Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Monthly Rent</span>
+                    <span className="text-xl font-semibold text-foreground">
+                      ${property.rent_amount.toLocaleString()}
+                    </span>
+                  </div>
+                  {property.rent_due_date && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Due Date</span>
+                      <span className="font-medium text-foreground">
+                        {property.rent_due_date}
+                        {property.rent_due_date === 1
+                          ? 'st'
+                          : property.rent_due_date === 2
+                            ? 'nd'
+                            : property.rent_due_date === 3
+                              ? 'rd'
+                              : 'th'}{' '}
+                        of month
+                      </span>
+                    </div>
+                  )}
+                  {property.late_fee_rules && (
+                    <div className="pt-2 border-t border-border">
+                      <span className="text-sm text-muted-foreground">Late Fee Rules</span>
+                      <div className="mt-2 space-y-1 text-sm">
+                        {property.late_fee_rules.amount && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Amount:</span>
+                            <span className="font-medium">${property.late_fee_rules.amount}</span>
+                          </div>
+                        )}
+                        {property.late_fee_rules.grace_period_days && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Grace Period:</span>
+                            <span className="font-medium">
+                              {property.late_fee_rules.grace_period_days} days
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-        {property.rules && (
-          <Card className="glass-card mt-6">
-            <CardHeader>
-              <CardTitle>House Rules / Considerations</CardTitle>
-              <CardDescription>Visible to tenants</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-foreground whitespace-pre-wrap">{property.rules}</p>
-            </CardContent>
-          </Card>
-        )}
+              {/* Occupancy Summary */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Occupancy Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className="text-2xl font-semibold text-foreground">
+                        {propertyTenants.length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {propertyTenants.length === 1 ? 'Tenant' : 'Tenants'}
+                      </div>
+                    </div>
+                    <Button variant="outline" onClick={() => setActiveTab('tenants')}>
+                      View Tenants
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-semibold text-foreground">Lease History</h2>
-              <p className="text-muted-foreground">Lease metadata for this property</p>
-            </div>
-            {!showLeaseForm && (
-              <Button onClick={() => setShowLeaseForm(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Lease
-              </Button>
-            )}
-          </div>
+              {/* Work Order Summary */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Work Order Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-semibold text-foreground">
+                        {workOrderCounts.pending}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Pending</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-semibold text-foreground">
+                        {workOrderCounts.in_progress}
+                      </div>
+                      <div className="text-xs text-muted-foreground">In Progress</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-semibold text-foreground">
+                        {workOrderCounts.completed}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Completed</div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setActiveTab('work-orders')}
+                  >
+                    View Work Orders
+                  </Button>
+                </CardContent>
+              </Card>
 
-          {showLeaseForm && (
-            <div className="mb-6">
-              <LeaseForm
-                propertyId={id}
-                onSubmit={handleCreateLease}
-                onCancel={() => setShowLeaseForm(false)}
+              {/* House Rules */}
+              <PropertyRulesEditor
+                rules={property.rules}
+                rulesVisibleToTenants={property.rules_visible_to_tenants ?? false}
+                onSave={handleSaveRules}
               />
-            </div>
-          )}
 
-          {leases.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {leases.map((lease, index) => (
-                <LeaseSummaryCard key={lease.id} lease={lease} index={index} />
-              ))}
+              {/* Property Metadata */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Property Metadata</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div>
+                    <span className="text-sm text-muted-foreground">Date Created</span>
+                    <p className="text-sm font-medium text-foreground">
+                      {new Date(property.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {property.property_type && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Residence Type</span>
+                      <p className="text-sm font-medium text-foreground">
+                        {property.property_type}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          ) : (
-            <Card className="glass-card">
-              <CardContent className="py-6 text-center text-muted-foreground">
-                No leases recorded yet.
-              </CardContent>
-            </Card>
-          )}
-        </div>
+          </TabsContent>
 
-        {id && (
-          <div className="mt-6">
-            <NotesPanel entityType="property" entityId={id} />
-          </div>
-        )}
+          {/* Tenants Tab */}
+          <TabsContent value="tenants" className="mt-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-foreground">Tenants</h2>
+                  <p className="text-muted-foreground">Manage tenants for this property</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 border border-border rounded-md p-1">
+                    <Button
+                      variant={tenantView === 'active' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setTenantView('active')}
+                    >
+                      Active
+                    </Button>
+                    <Button
+                      variant={tenantView === 'all' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setTenantView('all')}
+                    >
+                      All
+                    </Button>
+                  </div>
+                  {!showInviteForm && (
+                    <Button onClick={() => setShowInviteForm(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Invite Tenant
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {showInviteForm && (
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>Invite Tenant</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TenantInviteForm
+                      propertyId={id}
+                      onCancel={() => setShowInviteForm(false)}
+                      onSuccess={() => setShowInviteForm(false)}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {displayedTenants.length === 0 ? (
+                <Card className="glass-card">
+                  <CardContent className="py-12 text-center">
+                    <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground">
+                      {tenantView === 'active' ? 'No active tenants' : 'No tenants'}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {displayedTenants.map(tenant => {
+                    const isFormer =
+                      tenant.lease_end_date && new Date(tenant.lease_end_date) < new Date()
+                    const tenantName = tenant.user?.email?.split('@')[0] || 'Tenant'
+                    const initials = tenantName.charAt(0).toUpperCase()
+
+                    return (
+                      <Card key={tenant.id} className={cn('glass-card', isFormer && 'opacity-60')}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            {/* Profile Photo Placeholder */}
+                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-lg font-semibold text-foreground shrink-0">
+                              {initials}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold text-foreground">
+                                  {tenant.user?.email || 'Unknown Tenant'}
+                                </h3>
+                                {isFormer && <Badge variant="outline">Former</Badge>}
+                              </div>
+                              <div className="space-y-1 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>
+                                    Move-in: {new Date(tenant.move_in_date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                {tenant.lease_end_date && (
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4" />
+                                    <span>
+                                      Lease ends:{' '}
+                                      {new Date(tenant.lease_end_date).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex gap-2 mt-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => navigate('/landlord/tenants')}
+                                >
+                                  View Details
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUnlinkTenant(tenant.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Work Orders Tab */}
+          <TabsContent value="work-orders" className="mt-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-foreground">Work Orders</h2>
+                  <p className="text-muted-foreground">Maintenance requests for this property</p>
+                </div>
+                {!showWorkOrderForm && (
+                  <Button onClick={() => setShowWorkOrderForm(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Work Order
+                  </Button>
+                )}
+              </div>
+
+              {showWorkOrderForm && (
+                <WorkOrderForm
+                  propertyId={id}
+                  onSubmit={() => {
+                    setShowWorkOrderForm(false)
+                    refetchWorkOrders()
+                  }}
+                  onCancel={() => setShowWorkOrderForm(false)}
+                />
+              )}
+
+              {workOrders.length === 0 && !showWorkOrderForm ? (
+                <Card className="glass-card">
+                  <CardContent className="py-12 text-center">
+                    <Wrench className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground mb-4">No work orders for this property</p>
+                    <Button variant="outline" onClick={() => setShowWorkOrderForm(true)}>
+                      Create Work Order
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : workOrders.length > 0 ? (
+                <div className="space-y-3">
+                  {workOrders.map(request => {
+                    const statusColors = {
+                      pending:
+                        'bg-yellow-500/30 text-yellow-100 dark:text-yellow-50 border-yellow-500/50',
+                      in_progress:
+                        'bg-blue-500/30 text-blue-100 dark:text-blue-50 border-blue-500/50',
+                      completed:
+                        'bg-green-500/30 text-green-100 dark:text-green-50 border-green-500/50',
+                    }
+
+                    return (
+                      <Card key={request.id} className="glass-card">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-base">
+                                {request.category || 'Maintenance Request'}
+                              </CardTitle>
+                              <CardDescription className="mt-1 flex items-center gap-2">
+                                <Calendar className="w-3 h-3" />
+                                <span>
+                                  Created: {new Date(request.created_at).toLocaleDateString()}
+                                </span>
+                              </CardDescription>
+                            </div>
+                            <Badge
+                              className={cn(
+                                'text-xs',
+                                statusColors[request.status as keyof typeof statusColors] ||
+                                  'bg-stone-500/30 text-stone-100'
+                              )}
+                            >
+                              {request.status.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-foreground mb-3 whitespace-pre-wrap">
+                            {request.description}
+                          </p>
+                          {request.tenant?.user?.email && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <User className="w-3 h-3" />
+                              <span>Created by: {request.tenant.user.email}</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              ) : null}
+
+              <div className="pt-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/landlord/operations')}
+                >
+                  View All Work Orders
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="mt-6">
+            {id && <PropertyDocuments propertyId={id} />}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

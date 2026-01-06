@@ -155,6 +155,33 @@ export function useTenants() {
     setTenants(tenants.filter(t => t.id !== id))
   }
 
+  async function unlinkTenant(id: string) {
+    // Set property_id to null to unlink tenant from property
+    // Tenant record persists (per tenant lifecycle docs)
+    const { data, error } = await supabase
+      .from('tenants')
+      .update({ property_id: null })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+
+    // Fetch related data for updated tenant
+    const [userData] = await Promise.all([
+      supabase.from('users').select('email, role').eq('id', data.user_id).single(),
+    ])
+
+    const tenantWithRelations = {
+      ...data,
+      user: userData.data || undefined,
+      property: undefined, // No property after unlink
+    }
+
+    // Update local state
+    setTenants(tenants.map(t => (t.id === id ? tenantWithRelations : t)))
+  }
+
   return {
     tenants,
     loading,
@@ -162,6 +189,7 @@ export function useTenants() {
     createTenant,
     updateTenant,
     deleteTenant,
+    unlinkTenant,
     refetch: fetchTenants,
   }
 }

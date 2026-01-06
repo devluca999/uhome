@@ -386,9 +386,116 @@ const testUser = { email: 'test@example.com', id: 'user-123' }
 const testUser = { email: generateRandomEmail(), id: generateRandomId() }
 ```
 
+## Testing with Tenant Dev Mode
+
+Tenant Dev Mode provides a separate mock system specifically for testing tenant experiences. It operates differently from the adapter-based mock providers described above.
+
+### When to Use Tenant Dev Mode
+
+Use Tenant Dev Mode for:
+- **Tenant UI testing:** Testing maintenance request flows, notifications, work order status changes
+- **Visual UAT:** Capturing tenant UI snapshots with realistic data
+- **Demo environments:** Showing tenant features without real accounts
+- **Developer onboarding:** New developers can see tenant UX immediately
+
+### How Tenant Dev Mode Works
+
+Unlike adapter-based mocks, Tenant Dev Mode:
+- Injects mock data at the **React hook layer**
+- Uses **hybrid persistence** (localStorage + in-memory state)
+- Requires **dual-gate activation** (env var + URL parameter)
+- Provides **production-parity behavior** (same state machines, same UI logic)
+
+### Enabling Tenant Dev Mode in Tests
+
+```typescript
+import {
+  setupTenantDevMode,
+  teardownTenantDevMode,
+  verifyMockDataLoaded,
+} from '../helpers/tenant-dev-mode-helpers'
+
+test('tenant can view work orders', async ({ page }) => {
+  // Setup: Enable dev mode and reset state
+  await setupTenantDevMode(page)
+  
+  // Navigate to tenant maintenance page
+  await page.goto('http://localhost:5173/tenant/maintenance?dev=tenant')
+  
+  // Verify mock data loaded
+  await verifyMockDataLoaded(page)
+  
+  // Test logic...
+  
+  // Teardown: Clean up
+  await teardownTenantDevMode(page)
+})
+```
+
+### Helper Functions
+
+See `tests/helpers/tenant-dev-mode-helpers.ts` for:
+- `setupTenantDevMode(page)` — Reset state, enable dev mode
+- `teardownTenantDevMode(page)` — Clean up after test
+- `getMockWorkOrders(page)` — Get work orders from localStorage
+- `getMockNotifications(page)` — Get notifications from localStorage
+- `clickConfirmResolution(page, id)` — Click "Confirm Resolved" button
+- `verifyWorkOrderStatus(page, id, status)` — Assert status badge text
+- `resetTenantDevModeState(page)` — Clear localStorage
+
+### Example Test
+
+```typescript
+test('tenant can confirm work order resolution', async ({ page }) => {
+  await setupTenantDevMode(page)
+  
+  // Navigate to maintenance page
+  await page.goto('http://localhost:5173/tenant/maintenance?dev=tenant')
+  await waitForMockDataLoad(page)
+  
+  // Get resolved work order
+  const mockWorkOrders = await getMockWorkOrders(page)
+  const resolvedWorkOrder = mockWorkOrders.find(wo => wo.status === 'resolved')
+  
+  // Verify initial status
+  await verifyWorkOrderStatus(page, resolvedWorkOrder.id, 'Awaiting your confirmation')
+  
+  // Confirm resolution
+  await clickConfirmResolution(page, resolvedWorkOrder.id)
+  
+  // Verify status changed to closed
+  await verifyWorkOrderStatus(page, resolvedWorkOrder.id, 'Closed')
+  
+  await teardownTenantDevMode(page)
+})
+```
+
+### Tenant Dev Mode vs Adapter Mocks
+
+| Feature | Adapter Mocks | Tenant Dev Mode |
+|---------|---------------|-----------------|
+| **Target** | Landlord workflows | Tenant workflows |
+| **Activation** | `?mock=true` | `?dev=tenant` + env var |
+| **Data Source** | Mock providers | localStorage + seed |
+| **Persistence** | In-memory only | localStorage (persists) |
+| **Use Case** | E2E testing, CI/CD | E2E + Visual UAT + Demos |
+| **State Transitions** | Full production logic | Full production logic |
+
+### When to Use Each
+
+- **Adapter Mocks:** Testing landlord features (properties, tenants, finances, work order management)
+- **Tenant Dev Mode:** Testing tenant features (viewing work orders, confirming resolutions, notifications)
+
+**Both systems maintain production parity** — they use the same state machines, validation logic, and UI components.
+
+### Documentation
+
+For complete Tenant Dev Mode documentation, see [`tenant-dev-mode.md`](tenant-dev-mode.md).
+
 ## Related Documentation
 
 - [Adapter Architecture Guide](adapter-architecture.md) - Architecture details
+- [Tenant Dev Mode Guide](tenant-dev-mode.md) - Tenant mock system
 - [Visual UAT Guide](visual_uat.md) - Visual testing strategy
 - [UAT Guide](../tests/UAT_GUIDE.md) - Manual UAT process
 

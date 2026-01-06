@@ -33,11 +33,17 @@ export function LandlordMaintenance() {
   const { requests, loading, updateRequestStatus } = useMaintenanceRequests()
   const [updating, setUpdating] = useState<string | null>(null)
 
-  const pendingRequests = requests.filter(r => r.status === 'pending')
+  const submittedRequests = requests.filter(r => r.status === 'submitted')
+  const seenRequests = requests.filter(r => r.status === 'seen')
+  const scheduledRequests = requests.filter(r => r.status === 'scheduled')
   const inProgressRequests = requests.filter(r => r.status === 'in_progress')
-  const completedRequests = requests.filter(r => r.status === 'completed')
+  const resolvedRequests = requests.filter(r => r.status === 'resolved')
+  const closedRequests = requests.filter(r => r.status === 'closed')
 
-  async function handleStatusUpdate(id: string, status: 'pending' | 'in_progress' | 'completed') {
+  async function handleStatusUpdate(
+    id: string,
+    status: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
+  ) {
     setUpdating(id)
     try {
       await updateRequestStatus(id, status)
@@ -49,12 +55,8 @@ export function LandlordMaintenance() {
   }
 
   function getStatusBadge(status: string) {
-    const variants = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
-      completed: 'bg-green-100 text-green-800 border-green-200',
-    }
-    return variants[status as keyof typeof variants] || 'bg-stone-100 text-stone-800'
+    const { getStatusBadgeVariant } = require('@/lib/work-order-status')
+    return getStatusBadgeVariant(status as any)
   }
 
   function RequestCard({ request }: { request: MaintenanceRequest }) {
@@ -102,42 +104,33 @@ export function LandlordMaintenance() {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Submitted {new Date(request.created_at).toLocaleDateString()}</span>
               </div>
-              <div className="flex gap-2 pt-2">
-                {request.status === 'pending' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleStatusUpdate(request.id, 'in_progress')}
+              {request.status !== 'closed' && (
+                <div className="flex gap-2 pt-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      Update Status
+                    </label>
+                    <select
+                      value={request.status}
+                      onChange={e => {
+                        const newStatus = e.target.value as any
+                        handleStatusUpdate(request.id, newStatus)
+                      }}
                       disabled={updating === request.id}
-                      className="flex-1"
-                      aria-label={`Mark maintenance request as in progress`}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Mark In Progress
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStatusUpdate(request.id, 'completed')}
-                      disabled={updating === request.id}
-                      className="flex-1"
-                      aria-label={`Mark maintenance request as completed`}
-                    >
-                      Complete
-                    </Button>
-                  </>
-                )}
-                {request.status === 'in_progress' && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleStatusUpdate(request.id, 'completed')}
-                    disabled={updating === request.id}
-                    className="w-full"
-                    aria-label={`Mark maintenance request as completed`}
-                  >
-                    Mark Complete
-                  </Button>
-                )}
-              </div>
+                      <option value={request.status}>{request.status.replace('_', ' ')}</option>
+                      {['seen', 'scheduled', 'in_progress', 'resolved', 'closed']
+                        .filter(s => s !== request.status)
+                        .map(nextStatus => (
+                          <option key={nextStatus} value={nextStatus}>
+                            → {nextStatus.replace('_', ' ')}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -167,14 +160,44 @@ export function LandlordMaintenance() {
           />
         ) : (
           <div className="space-y-8">
-            {pendingRequests.length > 0 && (
+            {submittedRequests.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">
-                  Pending ({pendingRequests.length})
+                  Submitted ({submittedRequests.length})
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <AnimatePresence initial={false}>
-                    {pendingRequests.map(request => (
+                    {submittedRequests.map(request => (
+                      <RequestCard key={request.id} request={request} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {seenRequests.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Seen ({seenRequests.length})
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <AnimatePresence initial={false}>
+                    {seenRequests.map(request => (
+                      <RequestCard key={request.id} request={request} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {scheduledRequests.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Scheduled ({scheduledRequests.length})
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <AnimatePresence initial={false}>
+                    {scheduledRequests.map(request => (
                       <RequestCard key={request.id} request={request} />
                     ))}
                   </AnimatePresence>
@@ -197,14 +220,29 @@ export function LandlordMaintenance() {
               </div>
             )}
 
-            {completedRequests.length > 0 && (
+            {resolvedRequests.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">
-                  Completed ({completedRequests.length})
+                  Resolved ({resolvedRequests.length})
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <AnimatePresence initial={false}>
-                    {completedRequests.map(request => (
+                    {resolvedRequests.map(request => (
+                      <RequestCard key={request.id} request={request} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {closedRequests.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Closed ({closedRequests.length})
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <AnimatePresence initial={false}>
+                    {closedRequests.map(request => (
                       <RequestCard key={request.id} request={request} />
                     ))}
                   </AnimatePresence>

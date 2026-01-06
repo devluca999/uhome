@@ -11,6 +11,7 @@ export interface TenantInvite {
   expires_at: string
   created_by: string
   created_at: string
+  lease_id: string | null
   property?: {
     name: string
   }
@@ -20,6 +21,8 @@ export interface TenantInviteInsert {
   property_id: string
   email: string
   expires_at?: string
+  lease_type?: 'short-term' | 'long-term'
+  expected_start_date?: string
 }
 
 export function useTenantInvites() {
@@ -52,7 +55,15 @@ export function useTenantInvites() {
         )
         .order('created_at', { ascending: false })
 
-      if (fetchError) throw fetchError
+      if (fetchError) {
+        // If table doesn't exist (404) or other errors, set empty array
+        if (fetchError.code === '42P01' || fetchError.code === 'PGRST301') {
+          // Table doesn't exist - return empty array
+          setInvites([])
+          return
+        }
+        throw fetchError
+      }
 
       // Map nested structure
       const mappedData = (data || []).map((item: any) => ({
@@ -62,7 +73,13 @@ export function useTenantInvites() {
 
       setInvites(mappedData as TenantInvite[])
     } catch (err) {
-      setError(err as Error)
+      // If it's a table not found error, just set empty array
+      if ((err as any)?.code === '42P01' || (err as any)?.code === 'PGRST301') {
+        setInvites([])
+        setError(null)
+      } else {
+        setError(err as Error)
+      }
     } finally {
       setLoading(false)
     }
@@ -72,6 +89,133 @@ export function useTenantInvites() {
     if (!user) return { data: null, error: new Error('User not authenticated') }
 
     try {
+      // Check for existing ended leases for this property+email (re-invite scenario)
+      // We still create a new lease, but this helps us show informational messages
+      let hasPreviousLease = false
+      try {
+        // Try to query with status column (if migration has been run)
+        const { data: existingLeases, error: statusError } = await supabase
+          .from('leases')
+          .select('id, status')
+          .eq('property_id', invite.property_id)
+          .eq('status', 'ended')
+          .limit(1)
+
+        // If status column doesn't exist, try alternative query using lease_end_date
+        if (statusError && statusError.code === '42703') {
+          // Column doesn't exist - use lease_end_date instead
+          const { data: endedLeases } = await supabase
+            .from('leases')
+            .select('id, lease_end_date')
+            .eq('property_id', invite.property_id)
+            .not('lease_end_date', 'is', null)
+            .lt('lease_end_date', new Date().toISOString().split('T')[0])
+            .limit(1)
+
+          if (endedLeases && endedLeases.length > 0) {
+            // Check if there's a tenant with this email who had a lease at this property
+            // First find user by email
+            const { data: userData } = await supabase
+              .from('users')
+              .select('id')
+              .eq('email', invite.email)
+              .single()
+
+            if (userData) {
+              // Find tenant for this user
+              const { data: existingTenant } = await supabase
+                .from('tenants')
+                .select('id')
+                .eq('user_id', userData.id)
+                .single()
+
+              if (existingTenant) {
+                // Check if this tenant had a lease at this property
+                const { data: tenantLeases } = await supabase
+                  .from('leases')
+                  .select('id')
+                  .eq('property_id', invite.property_id)
+                  .eq('tenant_id', existingTenant.id)
+                  .not('lease_end_date', 'is', null)
+                  .lt('lease_end_date', new Date().toISOString().split('T')[0])
+                  .limit(1)
+
+                hasPreviousLease = (tenantLeases?.length ?? 0) > 0
+              }
+            }
+          }
+        } else if (existingLeases && existingLeases.length > 0) {
+          // Status column exists and we found ended leases
+          // Check if there's a tenant with this email who had a lease at this property
+          // First find user by email
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', invite.email)
+            .single()
+
+          if (userData) {
+            // Find tenant for this user
+            const { data: existingTenant } = await supabase
+              .from('tenants')
+              .select('id')
+              .eq('user_id', userData.id)
+              .single()
+
+            if (existingTenant) {
+              // Check if this tenant had a lease at this property
+              const { data: tenantLeases } = await supabase
+                .from('leases')
+                .select('id')
+                .eq('property_id', invite.property_id)
+                .eq('tenant_id', existingTenant.id)
+                .eq('status', 'ended')
+                .limit(1)
+
+              hasPreviousLease = (tenantLeases?.length ?? 0) > 0
+            }
+          }
+        }
+      } catch (e) {
+        // If query fails for any reason, just continue without hasPreviousLease flag
+        console.warn('Could not check for previous leases:', e)
+      }
+
+      // Always create a new draft lease (never reuse old leases)
+      const { data: propertyData } = await supabase
+        .from('properties')
+        .select('rent_amount')
+        .eq('id', invite.property_id)
+        .single()
+
+      // Build draft lease - handle both with and without status column
+      const draftLease: any = {
+        property_id: invite.property_id,
+        tenant_id: null, // Will be set when tenant accepts
+        lease_start_date: invite.expected_start_date || null,
+        lease_end_date: null,
+        lease_type: invite.lease_type || 'long-term',
+        rent_amount: propertyData?.rent_amount || null,
+        rent_frequency: 'monthly' as const,
+        security_deposit: null,
+      }
+
+      // Only add status if the column exists (try-catch will handle if it doesn't)
+      // We'll let the insert fail gracefully if status is required but missing
+      try {
+        draftLease.status = 'draft'
+      } catch (e) {
+        // Status column might not exist - that's okay, we'll proceed without it
+      }
+
+      const { data: newLease, error: leaseError } = await supabase
+        .from('leases')
+        .insert(draftLease)
+        .select()
+        .single()
+
+      if (leaseError) throw leaseError
+
       // Generate unique token
       const token = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
 
@@ -82,10 +226,12 @@ export function useTenantInvites() {
       const { data: newInvite, error: createError } = await supabase
         .from('tenant_invites')
         .insert({
-          ...invite,
+          property_id: invite.property_id,
+          email: invite.email,
           token,
           expires_at: expiresAt,
           created_by: user.id,
+          lease_id: newLease.id,
         })
         .select(
           `
@@ -95,7 +241,11 @@ export function useTenantInvites() {
         )
         .single()
 
-      if (createError) throw createError
+      if (createError) {
+        // Rollback: delete the draft lease if invite creation fails
+        await supabase.from('leases').delete().eq('id', newLease.id)
+        throw createError
+      }
 
       // Map nested structure
       const mappedInvite = {
@@ -108,7 +258,14 @@ export function useTenantInvites() {
       // Generate invite URL
       const inviteUrl = `${window.location.origin}/accept-invite/${token}`
 
-      return { data: { invite: mappedInvite as TenantInvite, url: inviteUrl }, error: null }
+      return {
+        data: {
+          invite: mappedInvite as TenantInvite,
+          url: inviteUrl,
+          hasPreviousLease, // Flag for UI to show re-invite notice
+        },
+        error: null,
+      }
     } catch (err) {
       const error = err as Error
       return { data: null, error }

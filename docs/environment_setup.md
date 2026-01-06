@@ -22,6 +22,53 @@
 - `NODE_ENV` - Handled automatically by Vite and hosting providers
 - `VITE_APP_URL` - App URL for OAuth callbacks (optional, defaults to current origin)
 
+### Dev Mode (Development/Staging Only)
+
+**⚠️ CRITICAL: Never enable in production!**
+
+- `VITE_TENANT_DEV_MODE_ENABLED` - Enable Tenant Dev Mode for testing and demos (default: `false`)
+- `VITE_LANDLORD_DEV_MODE_ENABLED` - Enable Landlord Dev Mode for testing and demos (default: `false`)
+
+**What is Dev Mode?**
+Dev Mode provides realistic mock experiences for both tenants and landlords with complete data (properties, leases, work orders, notifications, messages) for:
+- End-to-End (E2E) testing with Playwright
+- Visual User Acceptance Testing (UAT)
+- Demo and QA environments
+- Developer onboarding
+- Multi-tab real-time sync testing
+
+**How to Enable:**
+
+**Option 1: Quick Login Buttons (Recommended)**
+1. Set environment variables: `VITE_TENANT_DEV_MODE_ENABLED=true` and/or `VITE_LANDLORD_DEV_MODE_ENABLED=true` in `.env.local`
+2. Visit login page (`/login`)
+3. Click "Demo Tenant" or "Demo Landlord" button
+4. Automatically logged in with dev mode active
+
+**Option 2: URL Parameter**
+1. Set environment variables as above
+2. Add URL parameter `?dev=tenant` or `?dev=landlord` when visiting the app
+3. Log in with demo accounts (see Dev Mode documentation)
+
+**Security Model:**
+- **Primary Gate**: Environment variable must be `true` (prevents production accidents)
+- **Secondary Trigger**: URL parameter `?dev=tenant` or `?dev=landlord` (allows runtime toggling)
+- Both must be true for dev mode to activate
+
+**When to Use:**
+- ✅ Local development
+- ✅ Staging environments
+- ✅ Demo environments
+- ✅ E2E test runs
+- ✅ Multi-tab testing (landlord in one tab, tenant in another)
+- ❌ **NEVER in production** - Keep all dev mode env vars `false` or unset
+
+**Demo Account Credentials:**
+- Tenant: `demo-tenant@uhome.internal` / `DemoTenant2024!`
+- Landlord: `demo-landlord@uhome.internal` / `DemoLandlord2024!`
+
+See [`docs/tenant-dev-mode.md`](tenant-dev-mode.md) for complete documentation.
+
 ## Getting Supabase Keys
 
 1. Go to your Supabase project dashboard

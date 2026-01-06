@@ -6,6 +6,7 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useRentRecords } from '@/hooks/use-rent-records'
+import { useLeases } from '@/hooks/use-leases'
 import { useNotes } from '@/hooks/use-notes'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Download, FileText, DollarSign, Calendar } from 'lucide-react'
@@ -25,7 +26,12 @@ import { cn } from '@/lib/utils'
  */
 export function TenantFinances() {
   const { data: tenantData, loading: tenantLoading } = useTenantData()
-  const { records: rentRecords, loading: rentLoading } = useRentRecords(tenantData?.tenant.id)
+  const { leases } = useLeases(undefined, tenantData?.tenant.id)
+  // Get first active lease for the tenant (tenants typically have one active lease)
+  const activeLease = leases?.find(
+    l => !l.lease_end_date || new Date(l.lease_end_date) > new Date()
+  )
+  const { records: rentRecords, loading: rentLoading } = useRentRecords(activeLease?.id)
 
   // Calculate summary
   const summary = useMemo(() => {

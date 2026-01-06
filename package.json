@@ -12,6 +12,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css}\"",
     "type-check": "tsc --noEmit",
     "seed:mock": "tsx scripts/seed-mock-data.ts",
+    "seed:tenant-dev": "tsx scripts/seed-mock-data.ts --tenant-dev-mode",
+    "seed:full-dev": "tsx scripts/seed-mock-data.ts --full-dev-mode",
     "test:e2e": "playwright test --headed",
     "test:e2e:headless": "playwright test",
     "test:e2e:ui": "playwright test --ui",

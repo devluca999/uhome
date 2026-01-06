@@ -63,6 +63,33 @@ export function useLeases(propertyId?: string, tenantId?: string) {
 
   async function updateLease(id: string, data: LeaseUpdate) {
     try {
+      // Check if lease is ended before attempting update (if status column exists)
+      try {
+        const { data: existingLease, error: fetchError } = await supabase
+          .from('leases')
+          .select('status')
+          .eq('id', id)
+          .single()
+
+        if (!fetchError && existingLease?.status === 'ended') {
+          return {
+            data: null,
+            error: new Error(
+              'This lease has ended and cannot be modified. Ended leases are immutable.'
+            ),
+          }
+        }
+        // If status column doesn't exist (42703), continue without the check
+        if (fetchError && fetchError.code !== '42703') {
+          throw fetchError
+        }
+      } catch (e) {
+        // If status column doesn't exist, continue without the check
+        if ((e as any)?.code !== '42703') {
+          throw e
+        }
+      }
+
       const { data: updatedLease, error: updateError } = await supabase
         .from('leases')
         .update(data)
@@ -82,6 +109,32 @@ export function useLeases(propertyId?: string, tenantId?: string) {
 
   async function deleteLease(id: string) {
     try {
+      // Check if lease is ended before attempting delete (if status column exists)
+      try {
+        const { data: existingLease, error: fetchError } = await supabase
+          .from('leases')
+          .select('status')
+          .eq('id', id)
+          .single()
+
+        if (!fetchError && existingLease?.status === 'ended') {
+          return {
+            error: new Error(
+              'This lease has ended and cannot be deleted. Ended leases are immutable for historical record preservation.'
+            ),
+          }
+        }
+        // If status column doesn't exist (42703), continue without the check
+        if (fetchError && fetchError.code !== '42703') {
+          throw fetchError
+        }
+      } catch (e) {
+        // If status column doesn't exist, continue without the check
+        if ((e as any)?.code !== '42703') {
+          throw e
+        }
+      }
+
       const { error: deleteError } = await supabase.from('leases').delete().eq('id', id)
 
       if (deleteError) throw deleteError

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useDocuments } from '@/hooks/use-documents'
+import { useLeases } from '@/hooks/use-leases'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,12 @@ import { motion as motionTokens, createSpring } from '@/lib/motion'
 
 export function TenantDocuments() {
   const { data: tenantData, loading: tenantLoading } = useTenantData()
-  const { documents, loading: documentsLoading } = useDocuments(tenantData?.property.id)
+  const { leases } = useLeases(undefined, tenantData?.tenant.id)
+  // Get first active lease for the tenant (tenants typically have one active lease)
+  const activeLease = leases?.find(
+    l => !l.lease_end_date || new Date(l.lease_end_date) > new Date()
+  )
+  const { documents, loading: documentsLoading } = useDocuments(activeLease?.id)
 
   const cardSpring = createSpring('card')
 
@@ -32,7 +38,9 @@ export function TenantDocuments() {
         <GrainOverlay />
         <Card className="relative z-10">
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No property assigned</p>
+            <p className="text-muted-foreground">
+              You'll be able to access documents once your landlord adds you to a lease.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -53,7 +61,7 @@ export function TenantDocuments() {
           <EmptyState
             icon={<File className="h-8 w-8" />}
             title="No documents available"
-            description="Documents will appear here when your landlord uploads them for your property."
+            description="Documents will appear here when your landlord uploads them for your lease."
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

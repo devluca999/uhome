@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
 import { supabase } from '@/lib/supabase/client'
@@ -23,7 +24,10 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
   const [selectedPropertyId, setSelectedPropertyId] = useState(propertyId || '')
   const [selectedTenantId, setSelectedTenantId] = useState('')
   const [category, setCategory] = useState('')
-  const [description, setDescription] = useState('')
+  const [publicDescription, setPublicDescription] = useState('')
+  const [internalNotes, setInternalNotes] = useState('')
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [visibilityToTenants, setVisibilityToTenants] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -47,8 +51,8 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
       return
     }
 
-    if (!description.trim()) {
-      setError('Description is required')
+    if (!publicDescription.trim()) {
+      setError('Public description is required')
       return
     }
 
@@ -62,9 +66,11 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
 
       const workOrderData: any = {
         property_id: selectedPropertyId,
-        description: description.trim(),
-        status: 'pending',
+        public_description: publicDescription.trim(),
+        status: 'scheduled', // Landlord-created work orders start as scheduled
         created_by: user.id,
+        created_by_role: 'landlord',
+        visibility_to_tenants: visibilityToTenants,
       }
 
       // Add tenant_id only if selected
@@ -76,6 +82,19 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
       if (category.trim()) {
         workOrderData.category = category.trim()
       }
+
+      // Add internal notes if provided
+      if (internalNotes.trim()) {
+        workOrderData.internal_notes = internalNotes.trim()
+      }
+
+      // Add scheduled date if provided
+      if (scheduledDate) {
+        workOrderData.scheduled_date = scheduledDate
+      }
+
+      // Keep description for backward compatibility (migrated to public_description)
+      workOrderData.description = publicDescription.trim()
 
       const { error: insertError } = await supabase
         .from('maintenance_requests')
@@ -112,23 +131,30 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
 
           <div className="space-y-2">
             <Label htmlFor="property">Property *</Label>
-            <select
-              id="property"
-              value={selectedPropertyId}
-              onChange={e => {
-                setSelectedPropertyId(e.target.value)
-                setSelectedTenantId('') // Reset tenant when property changes
-              }}
-              required
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="">Select a property</option>
-              {properties.map(property => (
-                <option key={property.id} value={property.id}>
-                  {property.name}
-                </option>
-              ))}
-            </select>
+            {propertyId ? (
+              // Show read-only property name when propertyId is provided
+              <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm items-center">
+                {properties.find(p => p.id === propertyId)?.name || 'Property'}
+              </div>
+            ) : (
+              <select
+                id="property"
+                value={selectedPropertyId}
+                onChange={e => {
+                  setSelectedPropertyId(e.target.value)
+                  setSelectedTenantId('') // Reset tenant when property changes
+                }}
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">Select a property</option>
+                {properties.map(property => (
+                  <option key={property.id} value={property.id}>
+                    {property.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -163,14 +189,56 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="publicDescription">Public Description *</Label>
             <Textarea
-              id="description"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Describe the maintenance issue or work needed..."
+              id="publicDescription"
+              value={publicDescription}
+              onChange={e => setPublicDescription(e.target.value)}
+              placeholder="Description visible to tenants. Describe the maintenance issue or work needed..."
               required
               rows={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              This description will be visible to tenants
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="internalNotes">Internal Notes (Optional)</Label>
+            <Textarea
+              id="internalNotes"
+              value={internalNotes}
+              onChange={e => setInternalNotes(e.target.value)}
+              placeholder="Landlord-only notes. Not visible to tenants."
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              These notes are only visible to landlords
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scheduledDate">Scheduled Date (Optional)</Label>
+            <Input
+              id="scheduledDate"
+              type="datetime-local"
+              value={scheduledDate}
+              onChange={e => setScheduledDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">When maintenance is scheduled to occur</p>
+          </div>
+
+          <div className="flex items-center justify-between space-x-2 pt-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="visibilityToTenants">Visible to Tenants</Label>
+              <p className="text-xs text-muted-foreground">
+                Make this work order visible to property tenants
+              </p>
+            </div>
+            <Switch
+              id="visibilityToTenants"
+              checked={visibilityToTenants}
+              onCheckedChange={setVisibilityToTenants}
             />
           </div>
 

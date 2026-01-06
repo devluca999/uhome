@@ -34,8 +34,17 @@ export function useNotes(entityType: NoteEntityType, entityId?: string) {
   async function fetchNotes() {
     if (!entityId || !user) return
 
+    // Skip fetching notes for fallback IDs (client-side generated records that don't exist in DB)
+    if (entityId.startsWith('fallback-')) {
+      setNotes([])
+      setLoading(false)
+      setError(null)
+      return
+    }
+
     try {
       setLoading(true)
+      setError(null)
       const { data, error: fetchError } = await supabase
         .from('notes')
         .select('*')
@@ -44,10 +53,51 @@ export function useNotes(entityType: NoteEntityType, entityId?: string) {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (fetchError) throw fetchError
-      setNotes(data || [])
+      // Handle errors gracefully - 404s and missing tables should return empty array
+      if (fetchError) {
+        const errorMessage = fetchError.message?.toLowerCase() || ''
+        const errorCode = fetchError.code || ''
+
+        // Check for 404, missing table, or relation doesn't exist errors
+        const isNotFoundError =
+          errorCode === 'PGRST116' ||
+          errorCode === '42P01' ||
+          errorMessage.includes('404') ||
+          errorMessage.includes('does not exist') ||
+          errorMessage.includes('relation') ||
+          errorMessage.includes('not found')
+
+        if (isNotFoundError) {
+          // Return empty array for not found errors (table might not exist or no notes found)
+          setNotes([])
+          setError(null)
+        } else {
+          // For other errors, log but don't break the UI
+          console.warn('Error fetching notes:', fetchError)
+          setNotes([])
+          setError(null)
+        }
+      } else {
+        setNotes(data || [])
+        setError(null)
+      }
     } catch (err) {
-      setError(err as Error)
+      // Catch any unexpected errors and handle gracefully
+      const error = err as Error
+      const errorMessage = error.message?.toLowerCase() || ''
+
+      if (
+        errorMessage.includes('404') ||
+        errorMessage.includes('does not exist') ||
+        errorMessage.includes('not found')
+      ) {
+        setNotes([])
+        setError(null)
+      } else {
+        console.warn('Unexpected error fetching notes:', error)
+        setNotes([])
+        setError(null)
+      }
     } finally {
       setLoading(false)
     }

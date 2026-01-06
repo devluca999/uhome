@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
+import { isDevModeActive } from '@/lib/tenant-dev-mode'
 
 type Document = {
   id: string
   property_id: string
+  lease_id: string | null
   uploaded_by: string
   file_url: string
   file_name: string
@@ -14,14 +17,14 @@ type Document = {
   }
 }
 
-export function useDocuments(propertyId?: string) {
+export function useDocuments(leaseId?: string, propertyId?: string) {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     fetchDocuments()
-  }, [propertyId])
+  }, [leaseId, propertyId])
 
   async function fetchDocuments() {
     try {
@@ -36,10 +39,14 @@ export function useDocuments(propertyId?: string) {
         )
         .order('created_at', { ascending: false })
 
-      // If propertyId is provided, filter by it; otherwise fetch all
-      if (propertyId) {
+      // If leaseId is provided, filter by it
+      if (leaseId) {
+        query = query.eq('lease_id', leaseId)
+      } else if (propertyId) {
+        // If propertyId is provided, get all documents for this property (including lease-scoped ones)
         query = query.eq('property_id', propertyId)
       }
+      // Otherwise fetch all (RLS will handle access)
 
       const { data, error } = await query
 
@@ -52,13 +59,65 @@ export function useDocuments(propertyId?: string) {
     }
   }
 
-  async function uploadDocument(file: File, propertyId: string) {
+  // Set up realtime subscription for multi-tab sync (dev mode only)
+  // Note: Documents table changes, not storage bucket changes
+  useRealtimeSubscription({
+    table: 'documents',
+    filter: leaseId ? { lease_id: leaseId } : propertyId ? { property_id: propertyId } : undefined,
+    events: ['INSERT', 'UPDATE', 'DELETE'],
+    onInsert: payload => {
+      if (payload.new) {
+        setDocuments(prev => {
+          // Check if already exists
+          if (prev.some(d => d.id === payload.new.id)) {
+            return prev
+          }
+          return [payload.new as Document, ...prev]
+        })
+      }
+    },
+    onUpdate: payload => {
+      if (payload.new) {
+        setDocuments(prev =>
+          prev.map(d => (d.id === payload.new.id ? (payload.new as Document) : d))
+        )
+      }
+    },
+    onDelete: payload => {
+      if (payload.old) {
+        setDocuments(prev => prev.filter(d => d.id !== payload.old.id))
+      }
+    },
+  })
+
+  async function uploadDocument(file: File, leaseId?: string, propertyId?: string) {
+    // Property ID is required for all uploads
+    if (!propertyId) {
+      throw new Error('Property ID is required for document uploads')
+    }
+
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-    const filePath = `${propertyId}/${fileName}`
+    const pathPrefix = leaseId || propertyId
+    const filePath = `${pathPrefix}/${fileName}`
+
+    // Add dev mode metadata if in dev mode
+    const devModeActive = isDevModeActive()
+    const metadata = devModeActive
+      ? {
+          dev_mode: 'true',
+          role: devModeActive,
+          entity_type: leaseId ? 'lease' : 'property',
+          entity_id: leaseId || propertyId,
+        }
+      : undefined
 
     // Upload to Supabase Storage (assuming a bucket named 'documents')
-    const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file)
+    const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      metadata,
+    })
 
     if (uploadError) throw uploadError
 
@@ -76,7 +135,8 @@ export function useDocuments(propertyId?: string) {
     const { data, error } = await supabase
       .from('documents')
       .insert({
-        property_id: propertyId,
+        lease_id: leaseId || null,
+        property_id: propertyId, // Required
         uploaded_by: user.id,
         file_url: publicUrl,
         file_name: file.name,
