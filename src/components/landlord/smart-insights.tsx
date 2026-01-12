@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { X } from 'lucide-react'
 import { motionTokens, createSpring } from '@/lib/motion'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -23,6 +26,19 @@ interface SmartInsightsProps {
 export function SmartInsights({ insights, className }: SmartInsightsProps) {
   const navigate = useNavigate()
   const cardSpring = createSpring('card')
+  const [isDismissed, setIsDismissed] = useState(false)
+  
+  // Check if insights card was previously dismissed
+  useEffect(() => {
+    const dismissalKey = 'smart-insights-dismissed'
+    const wasDismissed = localStorage.getItem(dismissalKey) === 'true'
+    setIsDismissed(wasDismissed)
+  }, [])
+  
+  const handleDismiss = () => {
+    setIsDismissed(true)
+    localStorage.setItem('smart-insights-dismissed', 'true')
+  }
 
   const handleInsightClick = (insight: Insight) => {
     if (insight.filterContext) {
@@ -53,15 +69,24 @@ export function SmartInsights({ insights, className }: SmartInsightsProps) {
     }
   }
 
-  if (insights.length === 0) {
+  if (insights.length === 0 || isDismissed) {
     return null
   }
 
   return (
-    <Card className={cn('glass-card', className)}>
-      <CardHeader>
+    <Card className={cn('glass-card relative', className)}>
+      <CardHeader className="pr-12">
         <CardTitle>Insights</CardTitle>
         <CardDescription>Financial observations and trends</CardDescription>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 h-8 w-8 opacity-60 hover:opacity-100 transition-opacity"
+          onClick={handleDismiss}
+          aria-label="Dismiss insights"
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
