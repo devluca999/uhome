@@ -60,6 +60,9 @@ export function TenantMessages() {
       if (lease.status === 'draft' && !lease.tenant_id) return false // Draft without tenant_id means not accepted yet
       return true
     }) || []
+  
+  // Check if tenant has no tenant record (not invited yet)
+  const hasNoTenantRecord = !tenantId && !loading && !leasesLoading
 
   // Fetch last message and unread count for each lease
   useEffect(() => {
@@ -71,58 +74,73 @@ export function TenantMessages() {
       }
 
       setLoading(true)
-      const leasesWithData = await Promise.all(
-        leases.map(async lease => {
-          // Fetch property
-          const { data: propertyData } = await supabase
-            .from('properties')
-            .select('name, address')
-            .eq('id', lease.property_id)
-            .single()
-
-          // Fetch last message
-          const { data: messages } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('lease_id', lease.id)
-            .is('soft_deleted_at', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-
-          let lastMessage = undefined
-          if (messages && messages.length > 0) {
-            const msg = messages[0]
-            if (msg.sender_id) {
-              const { data: userData } = await supabase
-                .from('users')
-                .select('email')
-                .eq('id', msg.sender_id)
-                .single()
-              lastMessage = {
-                ...msg,
-                sender: userData ? { email: userData.email } : undefined,
-              }
-            } else {
-              lastMessage = msg
+      
+      // Batch fetch all properties at once
+      const propertyIds = [...new Set(leases.map(l => l.property_id))]
+      const { data: properties } = await supabase
+        .from('properties')
+        .select('id, name, address')
+        .in('id', propertyIds)
+      
+      const propertyMap = new Map(properties?.map(p => [p.id, p]) || [])
+      
+      // Batch fetch last messages for all leases
+      const leaseIds = leases.map(l => l.id)
+      const { data: allMessages } = await supabase
+        .from('messages')
+        .select('*')
+        .in('lease_id', leaseIds)
+        .is('soft_deleted_at', null)
+        .order('created_at', { ascending: false })
+      
+      // Group messages by lease and get the most recent
+      const messagesByLease = new Map<string, typeof allMessages[0]>()
+      allMessages?.forEach(msg => {
+        if (!messagesByLease.has(msg.lease_id)) {
+          messagesByLease.set(msg.lease_id, msg)
+        }
+      })
+      
+      // Batch fetch user data for all message senders
+      const senderIds = [...new Set(allMessages?.map(m => m.sender_id).filter(Boolean) || [])]
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', senderIds)
+      
+      const userMap = new Map(users?.map(u => [u.id, u]) || [])
+      
+      // Batch fetch unread notifications for all leases
+      const { data: notifications } = await supabase
+        .from('notifications')
+        .select('id, lease_id')
+        .in('lease_id', leaseIds)
+        .eq('user_id', user?.id)
+        .eq('read', false)
+      
+      // Count notifications by lease
+      const notificationCounts = new Map<string, number>()
+      notifications?.forEach(n => {
+        notificationCounts.set(n.lease_id, (notificationCounts.get(n.lease_id) || 0) + 1)
+      })
+      
+      // Combine all data
+      const leasesWithData = leases.map(lease => {
+        const lastMessageData = messagesByLease.get(lease.id)
+        const lastMessage = lastMessageData && lastMessageData.sender_id
+          ? {
+              ...lastMessageData,
+              sender: userMap.get(lastMessageData.sender_id),
             }
-          }
-
-          // Fetch unread notifications count
-          const { data: notifications } = await supabase
-            .from('notifications')
-            .select('id', { count: 'exact' })
-            .eq('lease_id', lease.id)
-            .eq('user_id', user?.id)
-            .eq('read', false)
-
-          return {
-            ...lease,
-            property: propertyData || undefined,
-            lastMessage,
-            unreadCount: notifications?.length || 0,
-          }
-        })
-      )
+          : lastMessageData
+        
+        return {
+          ...lease,
+          property: propertyMap.get(lease.property_id),
+          lastMessage,
+          unreadCount: notificationCounts.get(lease.id) || 0,
+        }
+      })
 
       // Sort by last message date (most recent first)
       leasesWithData.sort((a, b) => {
@@ -169,6 +187,19 @@ export function TenantMessages() {
 
   // If no leases, show empty state
   if (!leases || leases.length === 0) {
+    // Different empty states based on tenant status
+    const emptyStateTitle = hasNoTenantRecord 
+      ? "Not yet invited"
+      : allLeases && allLeases.length > 0
+      ? "No active leases"
+      : "No leases yet"
+    
+    const emptyStateDescription = hasNoTenantRecord
+      ? "You haven't been invited to any property yet. Your landlord will send you an invitation to join your lease, and you'll be able to message them here."
+      : allLeases && allLeases.length > 0
+      ? "Your lease has ended or is not yet active. Messaging is only available for active leases."
+      : "Messaging starts once your landlord invites you to your lease. You'll be able to send and receive messages here."
+    
     return (
       <div className="container mx-auto px-4 py-8 relative">
         <GrainOverlay />
@@ -176,8 +207,8 @@ export function TenantMessages() {
         <div className="relative z-10">
           <EmptyState
             icon={<MessageSquare className="h-12 w-12" />}
-            title="No active leases"
-            description="Messaging starts once your landlord invites you to your lease. You'll be able to send and receive messages here."
+            title={emptyStateTitle}
+            description={emptyStateDescription}
           />
         </div>
       </div>

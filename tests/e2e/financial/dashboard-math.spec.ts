@@ -241,6 +241,9 @@ test.describe('Dashboard Math Assertions', () => {
     const occupancyValue = parseInt(occupancyText.replace(/[^0-9]+/g, '') || '0')
 
     expect(occupancyValue).toBe(expectedOccupancyCount)
+    
+    // Additional assertion: At least one property should have tenants
+    expect(expectedOccupancyCount).toBeGreaterThan(0)
   })
 
   test('dashboard open work orders count matches actual open work orders', async ({ page }) => {

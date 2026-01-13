@@ -36,6 +36,24 @@ type Tenant = {
   [key: string]: any
 }
 
+/**
+ * Format date for comparison (YYYY-MM-DD string)
+ *
+ * Normalizes dates to YYYY-MM-DD format for consistent string-based comparison.
+ * This matches the approach used by test helpers and dashboard.
+ *
+ * @param date - Date object or date string
+ * @returns YYYY-MM-DD formatted string
+ */
+function formatDateForComparison(date: Date | string): string {
+  if (typeof date === 'string') {
+    // Extract YYYY-MM-DD part from date string (handles both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:MM:SSZ')
+    return date.split('T')[0]
+  }
+  // Format Date object to YYYY-MM-DD
+  return date.toISOString().split('T')[0]
+}
+
 export interface FinanceFilters {
   propertyId?: string
   dateRange?: {
@@ -59,15 +77,21 @@ export function filterRentRecords(
 
   if (filters?.dateRange) {
     const { start, end } = filters.dateRange
+    // Format range boundaries as YYYY-MM-DD strings for comparison
+    const startStr = formatDateForComparison(start)
+    const endStr = formatDateForComparison(end)
+    
     filtered = filtered.filter(r => {
-      // For paid records, use paid_date
-      if (r.status === 'paid' && r.paid_date) {
-        const paidDate = new Date(r.paid_date)
-        return paidDate >= start && paidDate <= end
+      // For paid records, use paid_date (cash accounting)
+      // Exclude paid records with null paid_date (data quality issue)
+      if (r.status === 'paid') {
+        if (!r.paid_date) return false // Exclude paid records without paid_date
+        const paidDateStr = formatDateForComparison(r.paid_date)
+        return paidDateStr >= startStr && paidDateStr <= endStr
       }
       // For overdue/pending, use due_date
-      const dueDate = new Date(r.due_date)
-      return dueDate >= start && dueDate <= end
+      const dueDateStr = formatDateForComparison(r.due_date)
+      return dueDateStr >= startStr && dueDateStr <= endStr
     })
   }
 
@@ -86,9 +110,13 @@ export function filterExpenses(expenses: Expense[], filters?: FinanceFilters): E
 
   if (filters?.dateRange) {
     const { start, end } = filters.dateRange
+    // Format range boundaries as YYYY-MM-DD strings for comparison
+    const startStr = formatDateForComparison(start)
+    const endStr = formatDateForComparison(end)
+    
     filtered = filtered.filter(e => {
-      const expenseDate = new Date(e.date)
-      return expenseDate >= start && expenseDate <= end
+      const expenseDateStr = formatDateForComparison(e.date)
+      return expenseDateStr >= startStr && expenseDateStr <= endStr
     })
   }
 
@@ -111,8 +139,10 @@ export function calculateRentCollected(
 ): number {
   const filtered = filterRentRecords(rentRecords, filters)
 
+  // Collected revenue uses paid_date (cash accounting)
+  // Only include records where status='paid' AND paid_date is not null
   return filtered
-    .filter(r => r.status === 'paid')
+    .filter(r => r.status === 'paid' && r.paid_date !== null)
     .reduce((sum, r) => sum + Number(r.amount) + (Number(r.late_fee) || 0), 0)
 }
 

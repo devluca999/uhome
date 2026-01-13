@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { Eye, EyeOff, User, Building } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
@@ -19,12 +19,24 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { signIn, signInWithGoogle } = useAuth()
+  const { signIn, signInWithGoogle, user, role, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
   const from =
     (location.state as { from?: { pathname?: string } })?.from?.pathname || '/landlord/dashboard'
+
+  // Redirect authenticated users to their appropriate dashboard
+  useEffect(() => {
+    if (!authLoading && user && role) {
+      if (role === 'landlord') {
+        navigate('/landlord/dashboard', { replace: true })
+      } else if (role === 'tenant') {
+        navigate('/tenant/dashboard', { replace: true })
+      }
+      // Don't redirect if role is null/undefined/unknown
+    }
+  }, [user, role, authLoading, navigate])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,31 +67,41 @@ export function LoginPage() {
     // OAuth redirect will handle navigation
   }
 
-  async function handleQuickLogin(role: 'tenant' | 'landlord') {
+  async function handleQuickLogin(intendedRole: 'tenant' | 'landlord') {
     setError(null)
     setLoading(true)
 
-    const credentials = role === 'tenant' ? DEMO_TENANT_CREDENTIALS : DEMO_LANDLORD_CREDENTIALS
+    const credentials = intendedRole === 'tenant' ? DEMO_TENANT_CREDENTIALS : DEMO_LANDLORD_CREDENTIALS
 
     // Auto-fill credentials
     setEmail(credentials.email)
 
     // Add dev mode URL parameter
     const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.set('dev', role)
+    currentUrl.searchParams.set('dev', intendedRole)
     window.history.replaceState({}, '', currentUrl.toString())
 
-    // Sign in
-    const { error } = await signIn(credentials.email, credentials.password)
+    try {
+      // Sign in
+      const { error } = await signIn(credentials.email, credentials.password)
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      // Navigation handled by auth context, but ensure we go to correct dashboard with dev param
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      // Navigate immediately based on the intended role (from button click)
+      // Don't wait for context role to be fetched - we know the intended role
       const redirectPath =
-        role === 'tenant' ? `/tenant/dashboard?dev=${role}` : `/landlord/dashboard?dev=${role}`
+        intendedRole === 'tenant'
+          ? `/tenant/dashboard?dev=${intendedRole}`
+          : `/landlord/dashboard?dev=${intendedRole}`
       navigate(redirectPath, { replace: true })
+      setLoading(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed')
+      setLoading(false)
     }
   }
 

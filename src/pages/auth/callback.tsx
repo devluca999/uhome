@@ -21,12 +21,15 @@ export function AuthCallback() {
         if (data.session) {
           // Wait a bit for role to be fetched
           setTimeout(() => {
-            const redirectPath =
-              role === 'landlord'
-                ? '/landlord/dashboard'
-                : role === 'tenant'
-                  ? '/tenant/dashboard'
-                  : '/landlord/dashboard' // default fallback
+            let redirectPath: string
+            if (role === 'landlord') {
+              redirectPath = '/landlord/dashboard'
+            } else if (role === 'tenant') {
+              redirectPath = '/tenant/dashboard'
+            } else {
+              // Unknown role - redirect to login to resolve
+              redirectPath = '/login'
+            }
             navigate(redirectPath)
           }, 500)
         } else {

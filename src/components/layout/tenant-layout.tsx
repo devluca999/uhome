@@ -13,6 +13,7 @@ import { useReducedMotion } from '@/lib/motion'
 
 const ALL_NAV_ITEMS = [
   { path: '/tenant/dashboard', label: 'Dashboard', required: true },
+  { path: '/tenant/household', label: 'Household', required: false },
   { path: '/tenant/maintenance', label: 'Maintenance', required: false },
   { path: '/tenant/documents', label: 'Documents', required: false },
   { path: '/tenant/messages', label: 'Messages', required: false },

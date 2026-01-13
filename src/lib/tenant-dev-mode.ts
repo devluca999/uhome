@@ -34,17 +34,67 @@ export const DEMO_LANDLORD_CREDENTIALS = {
 } as const
 
 /**
+ * Check if current environment is staging (runtime check for app)
+ */
+function isStagingEnvironment(): boolean {
+  // Check explicit environment variable
+  const env = import.meta.env.VITE_SUPABASE_ENV
+  if (env === 'staging') {
+    return true
+  }
+
+  // Check Supabase URL for staging indicators
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+  
+  // If URL contains 'prod' or 'production', it's NOT staging
+  if (supabaseUrl.toLowerCase().includes('prod') || 
+      supabaseUrl.toLowerCase().includes('production')) {
+    return false
+  }
+
+  // Allow if URL contains staging/test indicators or is localhost
+  if (supabaseUrl.toLowerCase().includes('staging') || 
+      supabaseUrl.toLowerCase().includes('test') ||
+      supabaseUrl.includes('localhost') ||
+      supabaseUrl.includes('127.0.0.1')) {
+    return true
+  }
+
+  // In development mode (Vite), assume staging if not production
+  // This allows dev mode to work when VITE_SUPABASE_ENV is not explicitly set
+  if (import.meta.env.DEV) {
+    return true
+  }
+
+  // If we can't determine, fail safe (assume production)
+  return false
+}
+
+/**
  * Check if Tenant Dev Mode is currently active
  *
  * Returns true only if:
  * 1. Environment variable VITE_TENANT_DEV_MODE_ENABLED is 'true'
  * 2. URL parameter ?dev=tenant is present
+ * 3. Current environment is staging (NOT production)
  *
- * This dual-gate ensures:
+ * This triple-gate ensures:
  * - Production cannot accidentally enable dev mode (env var is false)
  * - Dev/staging can toggle easily without rebuilds (URL param)
+ * - Runtime check prevents production activation even with URL hacks
  */
 export function isTenantDevModeActive(): boolean {
+  // HARD BLOCK: Dev mode is NEVER allowed in production
+  if (!isStagingEnvironment()) {
+    if (typeof window !== 'undefined') {
+      console.error(
+        '❌ Dev Mode is not allowed outside staging environment. ' +
+        'Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL
+      )
+    }
+    return false
+  }
+
   // Primary gate: Environment variable must be explicitly enabled
   const envEnabled = import.meta.env.VITE_TENANT_DEV_MODE_ENABLED === 'true'
 
@@ -117,8 +167,25 @@ export function getNormalModeUrl(): string {
  * Returns true only if:
  * 1. Environment variable VITE_LANDLORD_DEV_MODE_ENABLED is 'true'
  * 2. URL parameter ?dev=landlord is present
+ * 3. Current environment is staging (NOT production)
+ *
+ * This triple-gate ensures:
+ * - Production cannot accidentally enable dev mode (env var is false)
+ * - Dev/staging can toggle easily without rebuilds (URL param)
+ * - Runtime check prevents production activation even with URL hacks
  */
 export function isLandlordDevModeActive(): boolean {
+  // HARD BLOCK: Dev mode is NEVER allowed in production
+  if (!isStagingEnvironment()) {
+    if (typeof window !== 'undefined') {
+      console.error(
+        '❌ Dev Mode is not allowed outside staging environment. ' +
+        'Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL
+      )
+    }
+    return false
+  }
+
   // Primary gate: Environment variable must be explicitly enabled
   const envEnabled = import.meta.env.VITE_LANDLORD_DEV_MODE_ENABLED === 'true'
 

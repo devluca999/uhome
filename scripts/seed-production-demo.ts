@@ -713,8 +713,6 @@ async function seedProductionDemoData() {
       due_date: string
       status: 'paid' | 'pending' | 'overdue'
       paid_date: string | null
-      payment_method_type: 'manual' | 'external' | null
-      payment_method_label: string | null
       late_fee: number
     }> = []
     
@@ -739,8 +737,6 @@ async function seedProductionDemoData() {
         
         let paidDate: string | null = null
         let status: 'paid' | 'pending' | 'overdue' = 'pending'
-        let paymentMethodType: 'manual' | 'external' | null = null
-        let paymentMethodLabel: string | null = null
         let lateFee = 0
         
         // Guarantee at least one overdue record (use first tenant-lease, 2 months ago)
@@ -754,14 +750,10 @@ async function seedProductionDemoData() {
           if (rand < 0.7) {
             // Paid on time
             status = 'paid'
-            paymentMethodType = 'external'
-            paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
             paidDate = dueDateObj.toISOString().split('T')[0]
           } else if (rand < 0.9) {
             // Paid late
             status = 'paid'
-            paymentMethodType = 'external'
-            paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
             const daysLate = Math.floor(Math.random() * 5) + 1
             paidDate = new Date(dueDateObj.getTime() + daysLate * 24 * 60 * 60 * 1000)
               .toISOString()
@@ -778,8 +770,6 @@ async function seedProductionDemoData() {
           // 85% paid (higher than past months to ensure revenue shows), 15% pending
           if (Math.random() > 0.15) {
             status = 'paid'
-            paymentMethodType = 'external'
-            paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
             
             // Distribute paid_date throughout the month (days 1 to current day)
             const currentDayOfMonth = today.getDate()
@@ -792,7 +782,7 @@ async function seedProductionDemoData() {
           }
         }
         
-        const rentRecord: any = {
+        rentRecords.push({
           property_id: propertyId,
           tenant_id: tenantId,
           lease_id: leaseId,
@@ -801,17 +791,7 @@ async function seedProductionDemoData() {
           status,
           paid_date: paidDate,
           late_fee: lateFee,
-        }
-        
-        // Optionally add payment_method_type and payment_method_label if schema supports them
-        if (paymentMethodType) {
-          rentRecord.payment_method_type = paymentMethodType
-        }
-        if (paymentMethodLabel) {
-          rentRecord.payment_method_label = paymentMethodLabel
-        }
-        
-        rentRecords.push(rentRecord)
+        })
       }
     }
     

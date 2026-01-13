@@ -5,13 +5,14 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { HeroGreeting } from '@/components/ui/hero-greeting'
 import { PaymentCard } from '@/components/ui/payment-card'
 import { FinanceSummaryCard } from '@/components/tenant/finance-summary-card'
+import { JoinHouseholdForm } from '@/components/tenant/join-household-form'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useRentRecords } from '@/hooks/use-rent-records'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useTenantTasks } from '@/hooks/use-tasks'
 import { TaskCard } from '@/components/ui/task-card'
 import { TaskReminderToast } from '@/components/ui/task-reminder-toast'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Home, MessageSquare, ChevronDown, ChevronUp, CheckSquare } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
@@ -32,10 +33,24 @@ export function TenantDashboard() {
     toggleTaskStatus,
     updateChecklistItem,
   } = useTenantTasks(tenantData?.tenant.id)
-  const { user } = useAuth()
+  const { user, role } = useAuth()
+  const navigate = useNavigate()
   const [announcementsOpen, setAnnouncementsOpen] = useState(false)
   const [showTaskReminder, setShowTaskReminder] = useState<string | null>(null)
+  const [showJoinHousehold, setShowJoinHousehold] = useState(false)
   const cardSpring = createSpring('card')
+
+  // Role guard: Prevent landlords from accessing tenant dashboard
+  // ProtectedRoute should handle this, but add defensive check for race conditions
+  useEffect(() => {
+    if (role === 'landlord') {
+      navigate('/landlord/dashboard', { replace: true })
+    }
+  }, [role, navigate])
+
+  if (role === 'landlord') {
+    return null // Prevent rendering while redirecting
+  }
 
   // Show toast reminder for tasks with deadlines approaching
   useEffect(() => {
@@ -87,11 +102,27 @@ export function TenantDashboard() {
           <h1 className="text-3xl font-semibold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back</p>
         </div>
-        <EmptyState
-          icon={<Home className="h-8 w-8" />}
-          title="No property assigned yet"
-          description="Contact your landlord to be assigned to a property and start managing your rental information."
-        />
+        {showJoinHousehold ? (
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle>Join Household</CardTitle>
+              <CardDescription>Enter the invite link your landlord sent you</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <JoinHouseholdForm onCancel={() => setShowJoinHousehold(false)} />
+            </CardContent>
+          </Card>
+        ) : (
+          <EmptyState
+            icon={<Home className="h-8 w-8" />}
+            title="No property assigned yet"
+            description="Join a household using an invite link from your landlord, or contact them to be assigned to a property."
+            action={{
+              label: 'Join Household',
+              onClick: () => setShowJoinHousehold(true),
+            }}
+          />
+        )}
       </div>
     )
   }

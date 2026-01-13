@@ -1,5 +1,65 @@
 # Seed Scripts — uhome
 
+## Production-Realistic Demo Data Seeding
+
+### Quick Start
+
+```bash
+npm run seed:demo
+```
+
+**⚠️ STAGING ONLY** - This script hard-fails if run against production.
+
+### What It Does
+
+The production demo seed script creates comprehensive, production-realistic demo data for staging testing:
+
+- **1 Demo Landlord** user account (`demo-landlord@uhome.internal`)
+- **12+ Tenant** user accounts (including `demo-tenant@uhome.internal`)
+- **5 Properties** with varied rent amounts ($1,200 - $3,500) and due dates
+- **12+ Tenant-lease pairs** created via real invite flow (validates invite logic)
+- **20+ Rent records** distributed across 8 months with realistic payment statuses
+- **30+ Expenses** across multiple categories distributed across 8 months
+- **15+ Work orders** (bidirectional: tenant and landlord created) with various statuses
+- **50+ Messages** across lease-scoped threads with back-and-forth conversations
+
+This creates a comprehensive dataset for power-user testing, E2E validation, and visual UAT.
+
+### Test Credentials
+
+After running the seed script, you can log in with:
+
+**Landlord:**
+- Email: `demo-landlord@uhome.internal`
+- Password: `DemoLandlord2024!`
+
+**Tenant:**
+- Email: `demo-tenant@uhome.internal`
+- Password: `DemoTenant2024!`
+
+### Requirements
+
+- **Required:** `VITE_SUPABASE_URL` in `.env.local` (must point to staging)
+- **Required:** `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` (for staging seeding)
+- **Required:** `VITE_SUPABASE_ANON_KEY` in `.env.local` (for user creation)
+
+The script includes a hard safety guard (`enforceStagingOnly()`) that will fail immediately if production is detected.
+
+### Notes
+
+- The script is idempotent - safe to re-run (checks for existing data)
+- Demo tenant is created via real invite flow (no shortcuts) - validates invite logic
+- All work orders are lease-scoped
+- All messages are lease-scoped (one thread per lease)
+- Rent records include late fees and varied payment statuses
+- Expenses are distributed across properties and months
+
+### Safety
+
+- **Hard-fails on production** - Uses `enforceStagingOnly()` guard
+- **Staging-only execution** - Cannot run against production database
+- **Idempotent** - Safe to re-run multiple times
+
 ## Mock Data Seeding
 
 ### Quick Start

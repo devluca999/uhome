@@ -274,6 +274,15 @@ export function KPIStrip({
               >
                 <Card
                   className={cn('glass-card relative', isClickable && 'hover:border-primary/50')}
+                  data-testid={
+                    cardKey === 'collected'
+                      ? 'finances-revenue'
+                      : cardKey === 'expenses'
+                        ? 'finances-expenses'
+                        : cardKey === 'net'
+                          ? 'finances-net-income'
+                          : undefined
+                  }
                 >
                   {isClickable && <ModalIndicator onClick={() => handleCardClick(card.label)} />}
                   <CardHeader className={cn('pb-2', isClickable && 'pr-12')}>

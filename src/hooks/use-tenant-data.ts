@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useTenantDevMode } from '@/contexts/tenant-dev-mode-context'
+import { useAuth } from '@/contexts/auth-context'
 
 type TenantData = {
   tenant: {
@@ -35,10 +36,32 @@ export function useTenantData() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const devMode = useTenantDevMode()
+  const { role } = useAuth()
 
   useEffect(() => {
-    fetchTenantData()
-  }, [])
+    // Don't fetch tenant data if user is a landlord
+    // This is a defensive guard in case the component somehow renders for a landlord
+    if (role === 'landlord') {
+      console.log('[useTenantData] Role is landlord - blocking tenant queries')
+      setLoading(false)
+      setData(null)
+      return
+    }
+    
+    // Only fetch if role is explicitly 'tenant'
+    // If role is null, wait - don't make queries until we know the role
+    // This prevents queries from being made for landlords during the role loading phase
+    if (role === 'tenant') {
+      console.log('[useTenantData] Role is tenant - fetching tenant data')
+      fetchTenantData()
+    } else if (role === null) {
+      // Role is still loading - keep loading state but don't make queries yet
+      // This prevents race conditions where queries are made before role is determined
+      console.log('[useTenantData] Role is null - waiting for role to load')
+      setLoading(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role])
 
   async function fetchTenantData() {
     try {

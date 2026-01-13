@@ -194,7 +194,7 @@ export function useMaintenanceRequests(
           if (request.lease_id) {
             const { data: leaseData } = await supabase
               .from('leases')
-              .select('property_id')
+              .select('*')
               .eq('id', request.lease_id)
               .single()
             if (leaseData?.property_id) {
@@ -219,13 +219,13 @@ export function useMaintenanceRequests(
           if (request.lease_id) {
             const { data: leaseData } = await supabase
               .from('leases')
-              .select('tenant_id')
+              .select('*')
               .eq('id', request.lease_id)
               .single()
             if (leaseData?.tenant_id) {
               const { data } = await supabase
                 .from('tenants')
-                .select('user_id')
+                .select('*')
                 .eq('id', leaseData.tenant_id)
                 .single()
               tenantData = data
@@ -233,7 +233,7 @@ export function useMaintenanceRequests(
           } else if (request.tenant_id) {
             const { data } = await supabase
               .from('tenants')
-              .select('user_id')
+              .select('*')
               .eq('id', request.tenant_id)
               .single()
             tenantData = data

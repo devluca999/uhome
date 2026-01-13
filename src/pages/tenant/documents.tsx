@@ -86,11 +86,6 @@ export function TenantDocuments() {
                         <File className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-base truncate">{document.file_name}</CardTitle>
-                          {document.uploaded_by_user && (
-                            <CardDescription className="mt-1">
-                              Uploaded by {document.uploaded_by_user.email}
-                            </CardDescription>
-                          )}
                         </div>
                       </div>
                     </CardHeader>

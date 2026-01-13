@@ -15,6 +15,7 @@ interface PortfolioCardProps {
   format?: (value: number) => string
   index?: number
   className?: string
+  'data-testid'?: string
 }
 
 export const PortfolioCard = memo(function PortfolioCard({
@@ -24,6 +25,7 @@ export const PortfolioCard = memo(function PortfolioCard({
   format = v => Math.round(v).toString(),
   index = 0,
   className,
+  'data-testid': dataTestId,
 }: PortfolioCardProps) {
   const cardSpring = useMemo(() => createSpring('card'), [])
   const prefersReducedMotion = useReducedMotion()
@@ -31,6 +33,7 @@ export const PortfolioCard = memo(function PortfolioCard({
   return (
     <motion.div
       className={cn('relative will-change-transform-opacity', className)}
+      data-testid={dataTestId}
       initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
       animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
       whileHover={
@@ -61,7 +64,7 @@ export const PortfolioCard = memo(function PortfolioCard({
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
         <CardContent>
-          <p className="text-3xl font-semibold text-foreground">
+          <p className="text-3xl font-semibold text-foreground" data-testid={dataTestId ? `${dataTestId}-value` : undefined}>
             <NumberCounter value={value} format={format} />
           </p>
         </CardContent>

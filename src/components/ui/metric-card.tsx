@@ -13,6 +13,7 @@ interface MetricCardProps {
   onClick?: () => void
   className?: string
   variant?: 'default' | 'success' | 'warning' | 'danger'
+  'data-testid'?: string
 }
 
 export function MetricCard({
@@ -23,6 +24,7 @@ export function MetricCard({
   onClick,
   className,
   variant = 'default',
+  'data-testid': dataTestId,
 }: MetricCardProps) {
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
@@ -40,6 +42,7 @@ export function MetricCard({
     <Component
       onClick={onClick}
       className={cn('w-full text-left', onClick && 'cursor-pointer')}
+      data-testid={dataTestId}
       whileHover={
         prefersReducedMotion || !onClick
           ? {}

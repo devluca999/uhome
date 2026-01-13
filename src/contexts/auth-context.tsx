@@ -44,7 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`[AuthContext] Auth state change: ${event}`, {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email,
+      })
+
+      // Detect immediate SIGNED_OUT after SIGNED_IN (indicates unwanted signOut)
+      if (event === 'SIGNED_OUT' && session === null) {
+        console.warn(`[AuthContext] ⚠️ SIGNED_OUT event detected - session cleared`)
+      }
+
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -78,13 +90,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Log client configuration
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      
+      console.log(`[AuthContext.signIn] Starting sign in`, {
+        email,
+        passwordLength: password.length,
+        supabaseUrl: supabaseUrl || '[NOT SET]',
+        anonKeyPrefix: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : '[NOT SET]',
+      })
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log(`[AuthContext.signIn] signInWithPassword result:`, {
+        hasData: !!data,
+        hasSession: !!data?.session,
+        hasUser: !!data?.user,
+        hasError: !!error,
+        errorMessage: error?.message,
+        errorStatus: error?.status,
+        errorName: error?.name,
+        rawError: error, // Raw error object
+      })
+
+      if (error) {
+        console.error(`[AuthContext.signIn] Sign in failed:`, error)
+        return { error }
+      }
+
+      console.log(`[AuthContext.signIn] Sign in successful`, {
+        userId: data?.user?.id,
+        userEmail: data?.user?.email,
+        sessionExpiresAt: data?.session?.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : null,
+      })
+
       // Auto-activate dev mode if demo account
-      if (!error && isDevModeAvailable()) {
+      if (isDevModeAvailable()) {
         const devModeRole = shouldActivateDevMode(email)
         if (devModeRole && typeof window !== 'undefined') {
           const currentUrl = new URL(window.location.href)
@@ -95,8 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      return { error }
+      return { error: null }
     } catch (error) {
+      console.error(`[AuthContext.signIn] Exception during sign in:`, error)
       return { error: error as Error }
     }
   }

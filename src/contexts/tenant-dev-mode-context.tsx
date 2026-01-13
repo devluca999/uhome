@@ -12,6 +12,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { isTenantDevModeActive } from '@/lib/tenant-dev-mode'
 import {
   initializeState,
@@ -48,6 +49,7 @@ const TenantDevModeContext = createContext<TenantDevModeContextType | undefined>
 export function TenantDevModeProvider({ children }: { children: ReactNode }) {
   const [isActive, setIsActive] = useState(false)
   const [state, setState] = useState<TenantDevModeState | null>(null)
+  const location = useLocation()
 
   // Initialize state when component mounts or URL changes
   useEffect(() => {
@@ -66,31 +68,7 @@ export function TenantDevModeProvider({ children }: { children: ReactNode }) {
       // Clear state when dev mode is disabled
       setState(null)
     }
-  }, [])
-
-  // Listen for URL changes (e.g., navigation with ?dev=tenant parameter)
-  useEffect(() => {
-    const handleLocationChange = () => {
-      const active = isTenantDevModeActive()
-      if (active !== isActive) {
-        setIsActive(active)
-
-        if (active) {
-          const initialState = initializeState()
-          setState(initialState)
-        } else {
-          setState(null)
-        }
-      }
-    }
-
-    // Listen for popstate (back/forward navigation)
-    window.addEventListener('popstate', handleLocationChange)
-
-    return () => {
-      window.removeEventListener('popstate', handleLocationChange)
-    }
-  }, [isActive])
+  }, [location.search]) // Re-run when URL search params change
 
   function updateMockWorkOrder(id: string, updates: Partial<MockMaintenanceRequest>) {
     if (!isActive) return

@@ -46,7 +46,7 @@ export function useLeaseMessages(leaseId: string) {
               .from('users')
               .select('email')
               .eq('id', msg.sender_id)
-              .single()
+              .maybeSingle()
             return {
               ...msg,
               sender: userData ? { email: userData.email } : undefined,
@@ -79,7 +79,7 @@ export function useLeaseMessages(leaseId: string) {
             .from('users')
             .select('email')
             .eq('id', payload.new.sender_id)
-            .single()
+            .maybeSingle()
           messageWithSender = {
             ...payload.new,
             sender: userData ? { email: userData.email } : undefined,

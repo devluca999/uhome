@@ -262,19 +262,31 @@ export function LandlordFinances() {
         return {
           dateGranularity: 'monthly' as const,
           timeRange: undefined,
-          dateRange: undefined, // Show all data with monthly aggregation
+          dateRange: {
+            // Use current calendar month range (like dashboard) to match test expectations
+            start: new Date(now.getFullYear(), now.getMonth(), 1),
+            end: new Date(now.getFullYear(), now.getMonth() + 1, 0), // Last day of month
+          },
         }
       case 'quarterly':
         return {
           dateGranularity: 'quarterly' as const,
           timeRange: undefined,
-          dateRange: undefined, // Show all data with quarterly aggregation
+          dateRange: {
+            // Quarterly view is scoped to the current calendar quarter.
+            start: new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1),
+            end: new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 0),
+          },
         }
       case 'yearly':
         return {
           dateGranularity: 'yearly' as const,
           timeRange: undefined,
-          dateRange: undefined, // Show all data with yearly aggregation
+          dateRange: {
+            // Use current year range to match test expectations
+            start: new Date(now.getFullYear(), 0, 1), // Jan 1
+            end: new Date(now.getFullYear(), 11, 31), // Dec 31
+          },
         }
       case 'monthToDate':
         return {

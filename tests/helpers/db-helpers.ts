@@ -3,18 +3,33 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
-const supabaseServiceKey = process.env.TEST_SUPABASE_SERVICE_KEY || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.TEST_SUPABASE_SERVICE_KEY || ''
 
 /**
  * Get Supabase client for database operations
- * Uses service key if available, otherwise anon key
+ * Uses anon key (respects RLS)
  */
 export function getSupabaseClient(): SupabaseClient {
-  const key = supabaseServiceKey || supabaseAnonKey
-  if (!supabaseUrl || !key) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing Supabase environment variables in .env.test')
   }
-  return createClient(supabaseUrl, key)
+  return createClient(supabaseUrl, supabaseAnonKey)
+}
+
+/**
+ * Get Supabase admin client for admin operations
+ * Uses service key (bypasses RLS, allows admin operations like creating users)
+ */
+export function getSupabaseAdminClient(): SupabaseClient {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase service key (SUPABASE_SERVICE_KEY) in .env.test')
+  }
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
 
 /**

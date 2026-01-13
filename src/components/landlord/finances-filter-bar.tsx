@@ -57,6 +57,7 @@ export function FinancesFilterBar({
             value={timePeriod}
             onChange={e => onTimePeriodChange(e.target.value as TimePeriod)}
             className="flex h-8 w-full min-w-[140px] rounded-md border border-input bg-background text-foreground px-2 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            data-testid="finances-time-period-select"
           >
             <option value="monthly" className="text-foreground">
               Monthly
@@ -86,6 +87,7 @@ export function FinancesFilterBar({
               value={selectedPropertyId}
               onChange={e => onPropertyChange(e.target.value)}
               className="flex h-8 w-full min-w-[140px] rounded-md border border-input bg-background text-foreground px-2 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              data-testid="finances-property-select"
             >
               <option value="" className="text-foreground">
                 All Properties

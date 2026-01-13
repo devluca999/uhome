@@ -9,7 +9,7 @@
  */
 
 import { Page, expect } from '@playwright/test'
-import { setupMockSupabase } from './mock-supabase'
+import { loginAsLandlord } from '../../helpers/auth-helpers'
 
 /**
  * Get base URL from environment variable or default to localhost
@@ -28,26 +28,15 @@ export async function enableMockMode(page: Page): Promise<void> {
 }
 
 /**
- * Set up mock Supabase and authenticate as mock landlord
+ * Authenticate as demo landlord for visual tests
+ * Uses real authentication helper (same as E2E tests) for reliability
  */
 export async function authenticateAsMockLandlord(page: Page): Promise<void> {
-  // Set up mock Supabase interception
-  await setupMockSupabase(page)
-
-  // Navigate to login page
-  await page.goto(`${getBaseURL()}/login`)
-
-  // Fill in login form with mock credentials
-  await page.fill('input[type="email"]', 'landlord@example.com')
-  await page.fill('input[type="password"]', 'password123')
-
-  // Submit form
-  await page.click('button[type="submit"]')
-
-  // Wait for navigation to dashboard
-  await page.waitForURL(/\/landlord\/dashboard/, { timeout: 10000 })
-
-  // Wait for page to be fully loaded
+  // Use real authentication helper with demo credentials
+  // This is more reliable than mock authentication
+  await loginAsLandlord(page, 'demo-landlord@uhome.internal', 'DemoLandlord2024!')
+  
+  // Wait for page to be fully loaded after authentication
   await page.waitForLoadState('networkidle')
 }
 

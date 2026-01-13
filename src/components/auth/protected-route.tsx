@@ -36,10 +36,30 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to appropriate dashboard based on role
-    const redirectPath = role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'
-    return <Navigate to={redirectPath} replace />
+  // If we have allowed roles and the user has a role, check if they're allowed
+  if (allowedRoles && role) {
+    if (!allowedRoles.includes(role)) {
+      // Redirect to appropriate dashboard based on role
+      if (role === 'landlord') {
+        return <Navigate to="/landlord/dashboard" replace />
+      } else if (role === 'tenant') {
+        return <Navigate to="/tenant/dashboard" replace />
+      }
+      // If role is unknown, redirect to login
+      return <Navigate to="/login" replace />
+    }
+    // Role matches allowed roles, allow access
+    return <>{children}</>
+  }
+
+  // If we have allowed roles but role is not yet loaded, wait for it
+  // This prevents race conditions where the component renders before role is available
+  if (allowedRoles && !role && user) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-stone-600">Loading...</div>
+      </div>
+    )
   }
 
   return <>{children}</>

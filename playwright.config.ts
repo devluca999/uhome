@@ -5,6 +5,13 @@ import path from 'path'
 // Load test environment variables
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') })
 
+// HARD ENVIRONMENT GUARD - Must be imported before any test execution
+// This ensures tests NEVER run against production
+import { enforceStagingOnly } from './tests/helpers/env-guard'
+
+// Enforce staging-only environment
+enforceStagingOnly()
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -30,7 +37,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:1000',
+    baseURL: 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -66,7 +73,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1440, height: 900 },
-        baseURL: process.env.VISUAL_TEST_BASE_URL || 'http://localhost:1000',
+        baseURL: process.env.VISUAL_TEST_BASE_URL || 'http://localhost:3000',
       },
       timeout: 60 * 1000, // Longer timeout for visual tests to allow animations
     },
@@ -75,7 +82,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:1000',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },

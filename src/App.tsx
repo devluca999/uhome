@@ -13,14 +13,9 @@ function App() {
     <ErrorBoundary>
       <SettingsProvider>
         <ThemeProvider>
-          <TenantDevModeProvider>
-            <LandlordDevModeProvider>
-              <AuthProvider>
-                <DevModeIndicator />
-                <RouterProvider router={router} />
-              </AuthProvider>
-            </LandlordDevModeProvider>
-          </TenantDevModeProvider>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
         </ThemeProvider>
       </SettingsProvider>
     </ErrorBoundary>

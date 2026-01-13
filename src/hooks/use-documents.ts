@@ -12,9 +12,6 @@ type Document = {
   file_name: string
   file_type?: string
   created_at: string
-  uploaded_by_user?: {
-    email: string
-  }
 }
 
 export function useDocuments(leaseId?: string, propertyId?: string) {
@@ -31,12 +28,7 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
       setLoading(true)
       let query = supabase
         .from('documents')
-        .select(
-          `
-          *,
-          uploaded_by_user:users(email)
-        `
-        )
+        .select('*')
         .order('created_at', { ascending: false })
 
       // If leaseId is provided, filter by it
@@ -142,12 +134,7 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
         file_name: file.name,
         file_type: file.type,
       })
-      .select(
-        `
-          *,
-          uploaded_by_user:users(email)
-        `
-      )
+      .select('*')
       .single()
 
     if (error) throw error

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Outlet } from 'react-router-dom'
 import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/auth/login'
 import { SignupPage } from '@/pages/auth/signup'
@@ -15,6 +15,7 @@ import { PropertyDetail } from '@/pages/landlord/property-detail'
 import { LandlordOperations } from '@/pages/landlord/operations'
 import { LandlordDocuments } from '@/pages/landlord/documents'
 import { TenantDashboard } from '@/pages/tenant/dashboard'
+import { TenantHousehold } from '@/pages/tenant/household'
 import { TenantMaintenance } from '@/pages/tenant/maintenance'
 import { TenantDocuments } from '@/pages/tenant/documents'
 import { TenantFinances } from '@/pages/tenant/finances'
@@ -25,153 +26,142 @@ import { LeaseDetail } from '@/pages/landlord/lease-detail'
 import { SettingsPage } from '@/pages/settings'
 import { DevBypass } from '@/pages/dev/bypass'
 import { ErrorPage } from '@/components/error-page'
+import { ProvidersWrapper } from '@/components/providers-wrapper'
 
 export const router = createBrowserRouter(
   [
     {
       path: '/',
-      element: <HomePage />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: '/login',
-      element: <LoginPage />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: '/signup',
-      element: <SignupPage />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: '/auth/callback',
-      element: <AuthCallback />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: '/accept-invite/:token',
-      element: <AcceptInvite />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: '/dev/bypass',
-      element: <DevBypass />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: '/landlord',
       element: (
-        <ProtectedRoute allowedRoles={['landlord']}>
-          <LandlordLayout />
-        </ProtectedRoute>
+        <ProvidersWrapper>
+          <Outlet />
+        </ProvidersWrapper>
       ),
       errorElement: <ErrorPage />,
       children: [
         {
-          path: 'dashboard',
-          element: <LandlordDashboard />,
-          errorElement: <ErrorPage />,
+          index: true,
+          element: <HomePage />,
         },
         {
-          path: 'finances',
-          element: <LandlordFinances />,
-          errorElement: <ErrorPage />,
+          path: 'login',
+          element: <LoginPage />,
         },
         {
-          path: 'properties',
-          element: <LandlordProperties />,
-          errorElement: <ErrorPage />,
+          path: 'signup',
+          element: <SignupPage />,
         },
         {
-          path: 'properties/:id',
-          element: <PropertyDetail />,
-          errorElement: <ErrorPage />,
+          path: 'auth/callback',
+          element: <AuthCallback />,
         },
         {
-          path: 'leases/:leaseId',
-          element: <LeaseDetail />,
-          errorElement: <ErrorPage />,
+          path: 'accept-invite/:token',
+          element: <AcceptInvite />,
         },
         {
-          path: 'tenants',
-          element: <LandlordTenants />,
-          errorElement: <ErrorPage />,
+          path: 'dev/bypass',
+          element: <DevBypass />,
         },
         {
-          path: 'operations',
-          element: <LandlordOperations />,
-          errorElement: <ErrorPage />,
+          path: 'landlord',
+          element: (
+            <ProtectedRoute allowedRoles={['landlord']}>
+              <LandlordLayout />
+            </ProtectedRoute>
+          ),
+          children: [
+            {
+              path: 'dashboard',
+              element: <LandlordDashboard />,
+            },
+            {
+              path: 'finances',
+              element: <LandlordFinances />,
+            },
+            {
+              path: 'properties',
+              element: <LandlordProperties />,
+            },
+            {
+              path: 'properties/:id',
+              element: <PropertyDetail />,
+            },
+            {
+              path: 'leases/:leaseId',
+              element: <LeaseDetail />,
+            },
+            {
+              path: 'tenants',
+              element: <LandlordTenants />,
+            },
+            {
+              path: 'operations',
+              element: <LandlordOperations />,
+            },
+            {
+              path: 'documents',
+              element: <LandlordDocuments />,
+            },
+            {
+              path: 'messages',
+              element: <LandlordMessages />,
+            },
+            {
+              path: 'messages/:leaseId',
+              element: <LandlordMessages />,
+            },
+            {
+              path: 'settings',
+              element: <SettingsPage />,
+            },
+          ],
         },
         {
-          path: 'documents',
-          element: <LandlordDocuments />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'messages',
-          element: <LandlordMessages />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'messages/:leaseId',
-          element: <LandlordMessages />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'settings',
-          element: <SettingsPage />,
-          errorElement: <ErrorPage />,
-        },
-      ],
-    },
-    {
-      path: '/tenant',
-      element: (
-        <ProtectedRoute allowedRoles={['tenant']}>
-          <TenantLayout />
-        </ProtectedRoute>
-      ),
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          path: 'dashboard',
-          element: <TenantDashboard />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'maintenance',
-          element: <TenantMaintenance />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'documents',
-          element: <TenantDocuments />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'finances',
-          element: <TenantFinances />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'messages',
-          element: <TenantMessages />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'messages/:leaseId',
-          element: <TenantMessages />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'lease',
-          element: <TenantLeaseDetail />,
-          errorElement: <ErrorPage />,
-        },
-        {
-          path: 'settings',
-          element: <SettingsPage />,
-          errorElement: <ErrorPage />,
+          path: 'tenant',
+          element: (
+            <ProtectedRoute allowedRoles={['tenant']}>
+              <TenantLayout />
+            </ProtectedRoute>
+          ),
+          children: [
+            {
+              path: 'dashboard',
+              element: <TenantDashboard />,
+            },
+            {
+              path: 'household',
+              element: <TenantHousehold />,
+            },
+            {
+              path: 'maintenance',
+              element: <TenantMaintenance />,
+            },
+            {
+              path: 'documents',
+              element: <TenantDocuments />,
+            },
+            {
+              path: 'finances',
+              element: <TenantFinances />,
+            },
+            {
+              path: 'messages',
+              element: <TenantMessages />,
+            },
+            {
+              path: 'messages/:leaseId',
+              element: <TenantMessages />,
+            },
+            {
+              path: 'lease',
+              element: <TenantLeaseDetail />,
+            },
+            {
+              path: 'settings',
+              element: <SettingsPage />,
+            },
+          ],
         },
       ],
     },

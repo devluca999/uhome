@@ -53,6 +53,16 @@ export function MessageBubble({ message, currentUserId, className }: MessageBubb
       {!isSystem && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground px-2">
           <span>{message.sender?.email || 'Unknown'}</span>
+          {isLandlord && (
+            <Badge variant="default" className="text-xs">
+              Landlord
+            </Badge>
+          )}
+          {isTenant && (
+            <Badge variant="secondary" className="text-xs">
+              Tenant
+            </Badge>
+          )}
           {message.intent !== 'general' && (
             <Badge variant="outline" className="text-xs">
               {INTENT_LABELS[message.intent]}

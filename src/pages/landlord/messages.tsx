@@ -81,83 +81,92 @@ export function LandlordMessages() {
         return
       }
 
-      // Fetch last message and unread count for each lease
-      const leasesWithData = await Promise.all(
-        allLeases.map(async lease => {
-          // Fetch property (already have it, but need full object)
-          const property = properties.find(p => p.id === lease.property_id)
-
-          // Fetch tenant
-          const { data: tenantData } = await supabase
-            .from('tenants')
-            .select('id, user_id')
-            .eq('id', lease.tenant_id)
-            .single()
-
-          let tenantUserEmail = null
-          if (tenantData?.user_id) {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('email')
-              .eq('id', tenantData.user_id)
-              .single()
-            tenantUserEmail = userData?.email
-          }
-
-          // Fetch last message
-          const { data: messages } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('lease_id', lease.id)
-            .is('soft_deleted_at', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-
-          let lastMessage = undefined
-          if (messages && messages.length > 0) {
-            const msg = messages[0]
-            if (msg.sender_id) {
-              const { data: userData } = await supabase
-                .from('users')
-                .select('email')
-                .eq('id', msg.sender_id)
-                .single()
-              lastMessage = {
-                ...msg,
-                sender: userData ? { email: userData.email } : undefined,
-              }
-            } else {
-              lastMessage = msg
+      // Batch fetch all tenants
+      const tenantIds = [...new Set(allLeases.map(l => l.tenant_id))]
+      const { data: tenants } = await supabase
+        .from('tenants')
+        .select('id, user_id')
+        .in('id', tenantIds)
+      
+      const tenantMap = new Map(tenants?.map(t => [t.id, t]) || [])
+      
+      // Batch fetch all users (for tenants and message senders)
+      const tenantUserIds = [...new Set(tenants?.map(t => t.user_id).filter(Boolean) || [])]
+      
+      // Batch fetch last messages for all leases
+      const leaseIds = allLeases.map(l => l.id)
+      const { data: allMessages } = await supabase
+        .from('messages')
+        .select('*')
+        .in('lease_id', leaseIds)
+        .is('soft_deleted_at', null)
+        .order('created_at', { ascending: false })
+      
+      // Group messages by lease and get the most recent
+      const messagesByLease = new Map<string, typeof allMessages[0]>()
+      allMessages?.forEach(msg => {
+        if (!messagesByLease.has(msg.lease_id)) {
+          messagesByLease.set(msg.lease_id, msg)
+        }
+      })
+      
+      // Batch fetch all message sender users
+      const senderIds = [...new Set(allMessages?.map(m => m.sender_id).filter(Boolean) || [])]
+      const allUserIds = [...new Set([...tenantUserIds, ...senderIds])]
+      
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', allUserIds)
+      
+      const userMap = new Map(users?.map(u => [u.id, u]) || [])
+      
+      // Batch fetch unread notifications for all leases
+      const { data: notifications } = await supabase
+        .from('notifications')
+        .select('id, lease_id')
+        .in('lease_id', leaseIds)
+        .eq('user_id', user?.id)
+        .eq('read', false)
+      
+      // Count notifications by lease
+      const notificationCounts = new Map<string, number>()
+      notifications?.forEach(n => {
+        notificationCounts.set(n.lease_id, (notificationCounts.get(n.lease_id) || 0) + 1)
+      })
+      
+      // Combine all data
+      const leasesWithData = allLeases.map(lease => {
+        const property = properties.find(p => p.id === lease.property_id)
+        const tenantData = tenantMap.get(lease.tenant_id)
+        const tenantUser = tenantData?.user_id ? userMap.get(tenantData.user_id) : undefined
+        
+        const lastMessageData = messagesByLease.get(lease.id)
+        const lastMessage = lastMessageData && lastMessageData.sender_id
+          ? {
+              ...lastMessageData,
+              sender: userMap.get(lastMessageData.sender_id),
             }
-          }
-
-          // Fetch unread notifications count
-          const { data: notifications } = await supabase
-            .from('notifications')
-            .select('id', { count: 'exact' })
-            .eq('lease_id', lease.id)
-            .eq('user_id', user?.id)
-            .eq('read', false)
-
-          return {
-            ...lease,
-            property: property
-              ? {
-                  name: property.name,
-                  address: property.address || null,
-                }
-              : undefined,
-            tenant: tenantData
-              ? {
-                  id: tenantData.id,
-                  user: tenantUserEmail ? { email: tenantUserEmail } : undefined,
-                }
-              : undefined,
-            lastMessage,
-            unreadCount: notifications?.length || 0,
-          }
-        })
-      )
+          : lastMessageData
+        
+        return {
+          ...lease,
+          property: property
+            ? {
+                name: property.name,
+                address: property.address || null,
+              }
+            : undefined,
+          tenant: tenantData
+            ? {
+                id: tenantData.id,
+                user: tenantUser ? { email: tenantUser.email } : undefined,
+              }
+            : undefined,
+          lastMessage,
+          unreadCount: notificationCounts.get(lease.id) || 0,
+        }
+      })
 
       // Sort leases by last message date (most recent first)
       leasesWithData.sort((a, b) => {
