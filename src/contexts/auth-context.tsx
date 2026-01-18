@@ -4,7 +4,7 @@ import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 import { isDevModeAvailable, shouldActivateDevMode } from '@/lib/tenant-dev-mode'
 
-type UserRole = 'landlord' | 'tenant' | null
+type UserRole = 'landlord' | 'tenant' | 'admin' | null
 
 interface AuthContextType {
   user: User | null

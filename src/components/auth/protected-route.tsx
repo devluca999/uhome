@@ -4,7 +4,7 @@ import { AuthContext } from '@/contexts/auth-context'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  allowedRoles?: ('landlord' | 'tenant')[]
+  allowedRoles?: ('landlord' | 'tenant' | 'admin')[]
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -24,7 +24,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   // Dev bypass check (only in development)
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
-  const devRole = sessionStorage.getItem('dev_role') as 'landlord' | 'tenant' | null
+  const devRole = sessionStorage.getItem('dev_role') as 'landlord' | 'tenant' | 'admin' | null
 
   if (loading && !devBypass) {
     return (
@@ -52,7 +52,9 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   if (allowedRoles && role) {
     if (!allowedRoles.includes(role)) {
       // Redirect to appropriate dashboard based on role
-      if (role === 'landlord') {
+      if (role === 'admin') {
+        return <Navigate to="/admin/overview" replace />
+      } else if (role === 'landlord') {
         return <Navigate to="/landlord/dashboard" replace />
       } else if (role === 'tenant') {
         return <Navigate to="/tenant/dashboard" replace />

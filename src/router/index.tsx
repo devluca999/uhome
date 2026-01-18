@@ -27,6 +27,12 @@ import { SettingsPage } from '@/pages/settings'
 import { DevBypass } from '@/pages/dev/bypass'
 import { ErrorPage } from '@/components/error-page'
 import { ProvidersWrapper } from '@/components/providers-wrapper'
+import { AdminLayout } from '@/components/layout/admin-layout'
+import { AdminOverview } from '@/pages/admin/overview'
+import { AdminUsers } from '@/pages/admin/users'
+import { AdminConversations } from '@/pages/admin/conversations'
+import { AdminSupport } from '@/pages/admin/support'
+import { AdminSystem } from '@/pages/admin/system'
 
 export const router = createBrowserRouter(
   [
@@ -160,6 +166,36 @@ export const router = createBrowserRouter(
             {
               path: 'settings',
               element: <SettingsPage />,
+            },
+          ],
+        },
+        {
+          path: 'admin',
+          element: (
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          ),
+          children: [
+            {
+              path: 'overview',
+              element: <AdminOverview />,
+            },
+            {
+              path: 'users',
+              element: <AdminUsers />,
+            },
+            {
+              path: 'conversations',
+              element: <AdminConversations />,
+            },
+            {
+              path: 'support',
+              element: <AdminSupport />,
+            },
+            {
+              path: 'system',
+              element: <AdminSystem />,
             },
           ],
         },

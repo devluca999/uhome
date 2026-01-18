@@ -8,21 +8,21 @@ export type Database = {
         Row: {
           id: string
           email: string | null
-          role: 'landlord' | 'tenant'
+          role: 'landlord' | 'tenant' | 'admin'
           created_at: string
           updated_at: string
         }
         Insert: {
           id: string
           email?: string | null
-          role: 'landlord' | 'tenant'
+          role: 'landlord' | 'tenant' | 'admin'
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           email?: string | null
-          role?: 'landlord' | 'tenant'
+          role?: 'landlord' | 'tenant' | 'admin'
           created_at?: string
           updated_at?: string
         }
@@ -618,6 +618,41 @@ export type Database = {
           file_name?: string
           file_type?: string | null
           created_at?: string
+        }
+      }
+      support_tickets: {
+        Row: {
+          id: string
+          user_id: string
+          email: string
+          subject: string
+          message: string
+          status: 'open' | 'resolved'
+          created_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email: string
+          subject: string
+          message: string
+          status?: 'open' | 'resolved'
+          created_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email?: string
+          subject?: string
+          message?: string
+          status?: 'open' | 'resolved'
+          created_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
         }
       }
     }
