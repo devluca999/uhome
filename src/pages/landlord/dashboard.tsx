@@ -22,6 +22,7 @@ import { PropertiesDistributionModal } from '@/components/landlord/properties-di
 import { TenantDistributionModal } from '@/components/landlord/tenant-distribution-modal'
 import { OccupancyBreakdownModal } from '@/components/landlord/occupancy-breakdown-modal'
 import { TaskDistributionModal } from '@/components/landlord/task-distribution-modal'
+import { WorkOrdersPreviewModal } from '@/components/landlord/work-orders-preview-modal'
 import { MetricCard } from '@/components/ui/metric-card'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
@@ -79,7 +80,6 @@ export function LandlordDashboard() {
   )
   // const cardSpring = createSpring('card') // Reserved for future use
   const [revenueModalOpen, setRevenueModalOpen] = useState(false)
-  const [revenueViewMode, setRevenueViewMode] = useState<'cash' | 'accrual'>('cash')
   const [activityModalOpen, setActivityModalOpen] = useState(false)
   const [profitModalOpen, setProfitModalOpen] = useState(false)
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
@@ -87,6 +87,7 @@ export function LandlordDashboard() {
   const [tenantsModalOpen, setTenantsModalOpen] = useState(false)
   const [occupancyModalOpen, setOccupancyModalOpen] = useState(false)
   const [tasksModalOpen, setTasksModalOpen] = useState(false)
+  const [workOrdersModalOpen, setWorkOrdersModalOpen] = useState(false)
 
   // Count pending tasks (all types, not just tenant tasks)
   const pendingTasks = tasks.filter(t => t.status === 'pending').length
@@ -553,17 +554,21 @@ export function LandlordDashboard() {
               <PortfolioCard
                 title="Pending Tasks"
                 value={pendingTasks}
-                description="All pending tasks"
+                description="Your action items and reminders"
                 index={4}
               />
             </div>
           </div>
-          <div className="cursor-pointer relative">
+          <div
+            onClick={() => setWorkOrdersModalOpen(true)}
+            className="cursor-pointer relative"
+          >
+            <ModalIndicator onClick={() => setWorkOrdersModalOpen(true)} />
             <div className="[&_.card-header]:pr-12">
               <PortfolioCard
                 title="Open Work Orders"
                 value={requestsLoading ? 0 : openWorkOrders}
-                description="Work orders in progress"
+                description="Maintenance requests in progress"
                 index={5}
                 data-testid="dashboard-work-orders"
               />
@@ -866,8 +871,6 @@ export function LandlordDashboard() {
       <RevenueBreakdownModal
         isOpen={revenueModalOpen}
         onClose={() => setRevenueModalOpen(false)}
-        viewMode={revenueViewMode}
-        onViewModeChange={setRevenueViewMode}
       />
 
       {/* Recent Activity Modal */}
@@ -906,6 +909,12 @@ export function LandlordDashboard() {
 
       {/* Task Distribution Modal */}
       <TaskDistributionModal isOpen={tasksModalOpen} onClose={() => setTasksModalOpen(false)} />
+
+      {/* Work Orders Preview Modal */}
+      <WorkOrdersPreviewModal
+        isOpen={workOrdersModalOpen}
+        onClose={() => setWorkOrdersModalOpen(false)}
+      />
     </div>
   )
 }

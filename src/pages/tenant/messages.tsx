@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -54,12 +54,13 @@ export function TenantMessages() {
   const { leases: allLeases, loading: leasesLoading } = useLeases(undefined, tenantId || undefined)
 
   // Filter leases: tenants only see draft (if tenant_id set) and active leases
-  const leases =
+  const leases = useMemo(() => 
     allLeases?.filter(lease => {
       if (lease.status === 'ended') return false
       if (lease.status === 'draft' && !lease.tenant_id) return false // Draft without tenant_id means not accepted yet
       return true
     }) || []
+  , [allLeases])
   
   // Check if tenant has no tenant record (not invited yet)
   const hasNoTenantRecord = !tenantId && !loading && !leasesLoading

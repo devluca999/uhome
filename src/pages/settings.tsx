@@ -11,10 +11,11 @@ import { NavItemReorder } from '@/components/settings/nav-item-reorder'
 import { useAuth } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { useTheme, type ThemePreference } from '@/contexts/theme-context'
+import { useImageUpload } from '@/hooks/use-image-upload'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { Settings as SettingsIcon, LogOut, Trash2, Key, Check } from 'lucide-react'
+import { Settings as SettingsIcon, LogOut, Trash2, Key, Check, Upload } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 
@@ -40,8 +41,10 @@ export function SettingsPage() {
   const navigate = useNavigate()
   const { settings, updateSettings } = useSettings()
   const { themePreference, setThemePreference } = useTheme()
+  const { uploadImage, uploading: uploadingAvatar, error: avatarError } = useImageUpload('avatars')
   const [userName, setUserName] = useState(settings.userName || '')
   const [organizationName, setOrganizationName] = useState(settings.organizationName || '')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -139,20 +142,55 @@ export function SettingsPage() {
         {/* Section A: Account */}
         <SettingsSection title="Account" description="Your account information">
           <div className="space-y-4">
-            {/* Profile Picture - Placeholder for now */}
+            {/* Profile Picture */}
             <div className="space-y-2">
               <Label>Profile Picture</Label>
               <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-2xl font-semibold text-foreground">
-                  {userName.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-                </div>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profile"
+                    className="h-20 w-20 rounded-full object-cover border-2 border-border"
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-2xl font-semibold text-foreground">
+                    {userName.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Profile picture upload coming soon
+                  {avatarError && (
+                    <p className="text-sm text-destructive mb-2">{avatarError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadingAvatar}
+                      onClick={() => document.getElementById('avatar-upload')?.click()}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {uploadingAvatar ? 'Uploading...' : 'Upload Picture'}
+                    </Button>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file || !user?.id) return
+                        
+                        const publicUrl = await uploadImage(file, user.id)
+                        if (publicUrl) {
+                          setAvatarUrl(publicUrl)
+                        }
+                        e.target.value = '' // Reset input
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    JPG, PNG or WebP. Max 2MB.
                   </p>
-                  <Button variant="outline" size="sm" disabled>
-                    Upload Picture
-                  </Button>
                 </div>
               </div>
             </div>

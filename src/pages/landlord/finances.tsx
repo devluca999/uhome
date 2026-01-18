@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -412,16 +412,16 @@ export function LandlordFinances() {
   // Calculate KPI change subtexts
   const kpiChanges = useMemo(() => {
     // Simple change calculation (can be enhanced with historical data)
-    const collectedChange = records.length > 0 ? '↑ new tenant added' : undefined
-    const expensesChange = filteredExpenses.length > 0 ? '↑ expense recorded' : undefined
+    const collectedChange = records.length > 0 ? 'â†‘ new tenant added' : undefined
+    const expensesChange = filteredExpenses.length > 0 ? 'â†‘ expense recorded' : undefined
     const netChange =
       metrics.netProfit > 0
-        ? '↑ positive margin'
+        ? 'â†‘ positive margin'
         : metrics.netProfit < 0
-          ? '↓ negative margin'
+          ? 'â†“ negative margin'
           : undefined
     const projectedChange =
-      metrics.projectedNet > metrics.netProfit ? '↑ projected growth' : undefined
+      metrics.projectedNet > metrics.netProfit ? 'â†‘ projected growth' : undefined
 
     return {
       collectedChange,
@@ -567,7 +567,7 @@ export function LandlordFinances() {
     ) {
       insights.push({
         id: 'maintenance-trend',
-        text: `Maintenance costs increased ${Math.round(maintenanceTrend.trendPercentage)}% MoM`,
+        text: `Maintenance costs increased ${Math.round(maintenanceTrend.trendPercentage)}% month-over-month`,
         type: 'warning',
         filterContext: {
           category: 'maintenance',
@@ -707,20 +707,41 @@ export function LandlordFinances() {
         properties={properties}
         rentRecords={records}
         expenses={expensesWithFallback}
+        tenants={tenants}
       />
 
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Onboarding Tooltips */}
         <FinancesOnboarding />
 
-        {/* Section C: Graph (Collapsible) */}
-        <CollapsibleSection id="graph" title="Graph" defaultExpanded={true} className="mb-8">
+        {/* Smart Insights */}
+        {insights.length > 0 && (
+          <motion.div
+            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+            transition={{
+              duration: motionTokens.duration.normal,
+              ease: motionTokens.easing.standard,
+            }}
+            className="mb-8"
+          >
+            <SmartInsights insights={insights} />
+          </motion.div>
+        )}
+
+        {/* Section F: Smart Insights & Trends (Collapsible, Default Collapsed) */}
+        <CollapsibleSection
+          id="insights-trends"
+          title="Smart Insights & Trends"
+          defaultExpanded={false}
+          className="mb-8"
+        >
           <motion.div
             initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
             animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
             transition={{
               duration: durationToSeconds(motionTokens.duration.base),
-              ease: motionTokens.ease.standard,
+              ease: motionTokens.easing.standard,
             }}
             data-onboarding="view-modes"
           >
@@ -756,21 +777,6 @@ export function LandlordFinances() {
           </motion.div>
         </CollapsibleSection>
 
-        {/* Smart Insights */}
-        {insights.length > 0 && (
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: motionTokens.duration.normal,
-              ease: motionTokens.easing.standard,
-            }}
-            className="mb-8"
-          >
-            <SmartInsights insights={insights} />
-          </motion.div>
-        )}
-
         {/* Section D: Rent Ledger (Collapsible) */}
         <CollapsibleSection
           id="rent-ledger"
@@ -784,7 +790,7 @@ export function LandlordFinances() {
                 <div>
                   <CardDescription>
                     {records.length} rent record{records.length !== 1 ? 's' : ''}
-                    {selectedCategory && ` • Filtered by ${selectedCategory}`}
+                    {selectedCategory && ` â€¢ Filtered by ${selectedCategory}`}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -859,7 +865,7 @@ export function LandlordFinances() {
                 <div>
                   <CardDescription>
                     {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
-                    {selectedCategory && ` • Filtered by ${selectedCategory}`}
+                    {selectedCategory && ` â€¢ Filtered by ${selectedCategory}`}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">

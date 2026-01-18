@@ -1,24 +1,31 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
-export function useImageUpload(scopeType: 'property' | 'lease', scopeId: string) {
+type BucketType = 'images' | 'avatars'
+
+export function useImageUpload(bucket: BucketType = 'images') {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
-  async function uploadImage(file: File): Promise<{ url: string; error: null } | { url: null; error: string }> {
+  async function uploadImage(file: File, scopeId: string): Promise<string | null> {
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      return { url: null, error: 'File must be an image' }
+      setError('File must be an image')
+      return null
     }
 
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+    // Validate file size (avatars: 2MB, images: 10MB)
+    const maxSize = bucket === 'avatars' ? 2 * 1024 * 1024 : 10 * 1024 * 1024
     if (file.size > maxSize) {
-      return { url: null, error: 'Image must be less than 5MB' }
+      const sizeMB = bucket === 'avatars' ? '2MB' : '10MB'
+      setError(`Image must be less than ${sizeMB}`)
+      return null
     }
 
     setUploading(true)
     setProgress(0)
+    setError(null)
 
     try {
       // Generate unique file name
@@ -28,7 +35,7 @@ export function useImageUpload(scopeType: 'property' | 'lease', scopeId: string)
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('images')
+        .from(bucket)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -36,60 +43,60 @@ export function useImageUpload(scopeType: 'property' | 'lease', scopeId: string)
 
       if (uploadError) {
         console.error('Upload error:', uploadError)
-        return { url: null, error: uploadError.message }
+        setError(uploadError.message)
+        return null
       }
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath)
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(bucket).getPublicUrl(filePath)
 
       setProgress(100)
-      return { url: publicUrl, error: null }
+      return publicUrl
     } catch (err) {
       console.error('Image upload error:', err)
-      return { 
-        url: null, 
-        error: err instanceof Error ? err.message : 'Failed to upload image' 
-      }
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image'
+      setError(errorMessage)
+      return null
     } finally {
       setUploading(false)
       setTimeout(() => setProgress(0), 1000)
     }
   }
 
-  async function deleteImage(url: string): Promise<{ error: null } | { error: string }> {
+  async function deleteImage(url: string): Promise<boolean> {
     try {
       // Extract file path from URL
       const urlParts = url.split('/')
-      const bucketIndex = urlParts.findIndex(part => part === 'images')
+      const bucketIndex = urlParts.findIndex(part => part === bucket)
       if (bucketIndex === -1 || bucketIndex === urlParts.length - 1) {
-        return { error: 'Invalid image URL' }
+        setError('Invalid image URL')
+        return false
       }
 
       const filePath = urlParts.slice(bucketIndex + 1).join('/')
 
       // Delete from storage
-      const { error: deleteError } = await supabase.storage
-        .from('images')
-        .remove([filePath])
+      const { error: deleteError } = await supabase.storage.from(bucket).remove([filePath])
 
       if (deleteError) {
         console.error('Delete error:', deleteError)
-        return { error: deleteError.message }
+        setError(deleteError.message)
+        return false
       }
 
-      return { error: null }
+      return true
     } catch (err) {
       console.error('Image delete error:', err)
-      return {
-        error: err instanceof Error ? err.message : 'Failed to delete image'
-      }
+      setError(err instanceof Error ? err.message : 'Failed to delete image')
+      return false
     }
   }
 
   async function uploadMultipleImages(
-    files: File[]
+    files: File[],
+    scopeId: string
   ): Promise<{ urls: string[]; errors: string[] }> {
     const urls: string[] = []
     const errors: string[] = []
@@ -98,11 +105,11 @@ export function useImageUpload(scopeType: 'property' | 'lease', scopeId: string)
       const file = files[i]
       setProgress(((i + 1) / files.length) * 100)
 
-      const result = await uploadImage(file)
-      if (result.url) {
-        urls.push(result.url)
-      } else if (result.error) {
-        errors.push(`${file.name}: ${result.error}`)
+      const url = await uploadImage(file, scopeId)
+      if (url) {
+        urls.push(url)
+      } else if (error) {
+        errors.push(`${file.name}: ${error}`)
       }
     }
 
@@ -115,6 +122,6 @@ export function useImageUpload(scopeType: 'property' | 'lease', scopeId: string)
     uploadMultipleImages,
     uploading,
     progress,
+    error,
   }
 }
-

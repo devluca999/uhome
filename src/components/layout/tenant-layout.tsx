@@ -1,15 +1,16 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { NotificationBadge } from '@/components/ui/notification-badge'
-import { useAuth } from '@/contexts/auth-context'
+import { AuthContext } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
 import { useScrollReset } from '@/hooks/use-scroll-reset'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 
 const ALL_NAV_ITEMS = [
   { path: '/tenant/dashboard', label: 'Dashboard', required: true },
@@ -23,8 +24,18 @@ const ALL_NAV_ITEMS = [
 export function TenantLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut, user } = useAuth()
+  const authContext = useContext(AuthContext)
   const { settings } = useSettings()
+
+  if (!authContext) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-stone-600">Authentication error. Please refresh the page.</div>
+      </div>
+    )
+  }
+
+  const { signOut, user } = authContext
   const [isMobile, setIsMobile] = useState(false)
   const prefersReducedMotion = useReducedMotion()
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
@@ -108,16 +119,25 @@ export function TenantLayout() {
                 <span className="text-xl font-semibold text-foreground">uhome</span>
               </Link>
               <nav className="flex gap-1 ml-8" aria-label="Main navigation">
-                {visibleNavItems.map(item => (
-                  <Button
-                    key={item.path}
-                    variant={location.pathname === item.path ? 'default' : 'ghost'}
-                    asChild
-                    aria-current={location.pathname === item.path ? 'page' : undefined}
-                  >
-                    <Link to={item.path}>{item.label}</Link>
-                  </Button>
-                ))}
+                {visibleNavItems.map(item => {
+                  const isActive = location.pathname === item.path
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={isActive ? 'default' : 'ghost'}
+                      asChild
+                      aria-current={isActive ? 'page' : undefined}
+                      className={cn(
+                        isActive
+                          ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
+                          : 'bg-transparent hover:bg-muted',
+                        'px-4 py-2 rounded-md transition-all duration-200'
+                      )}
+                    >
+                      <Link to={item.path}>{item.label}</Link>
+                    </Button>
+                  )
+                })}
               </nav>
             </div>
             <div className="flex items-center gap-4">

@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
+import { useImageUpload } from '@/hooks/use-image-upload'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
-import { X } from 'lucide-react'
+import { X, Upload } from 'lucide-react'
 
 interface WorkOrderFormProps {
   onSubmit: () => void
@@ -21,6 +22,7 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
   const { user } = useAuth()
   const { properties } = useProperties()
   const { tenants } = useTenants()
+  const { uploadImage, uploading: uploadingImages } = useImageUpload('images')
   const [selectedPropertyId, setSelectedPropertyId] = useState(propertyId || '')
   const [selectedTenantId, setSelectedTenantId] = useState('')
   const [category, setCategory] = useState('')
@@ -28,6 +30,7 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
   const [internalNotes, setInternalNotes] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
   const [visibilityToTenants, setVisibilityToTenants] = useState(true)
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -95,6 +98,11 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
 
       // Keep description for backward compatibility (migrated to public_description)
       workOrderData.description = publicDescription.trim()
+      
+      // Add image URLs if any
+      if (imageUrls.length > 0) {
+        workOrderData.image_urls = imageUrls
+      }
 
       const { error: insertError } = await supabase
         .from('maintenance_requests')
@@ -108,6 +116,21 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !selectedPropertyId) return
+
+    const url = await uploadImage(file, selectedPropertyId)
+    if (url) {
+      setImageUrls([...imageUrls, url])
+    }
+    e.target.value = '' // Reset input
+  }
+
+  function removeImage(index: number) {
+    setImageUrls(imageUrls.filter((_, i) => i !== index))
   }
 
   return (
@@ -226,6 +249,55 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
               onChange={e => setScheduledDate(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">When maintenance is scheduled to occur</p>
+          </div>
+
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label>Photos (Optional)</Label>
+            <div className="space-y-3">
+              {imageUrls.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {imageUrls.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Upload ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-md border border-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingImages || loading || imageUrls.length >= 5}
+                  onClick={() => document.getElementById('work-order-image-upload')?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {uploadingImages ? 'Uploading...' : 'Add Photo'}
+                </Button>
+                <input
+                  id="work-order-image-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {imageUrls.length}/5 photos
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between space-x-2 pt-2">

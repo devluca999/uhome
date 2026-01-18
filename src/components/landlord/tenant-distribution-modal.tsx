@@ -36,6 +36,7 @@ export function TenantDistributionModal({ isOpen, onClose }: TenantDistributionM
         value: tenantCount,
         color: tenantCount > 0 ? 'green' : 'yellow',
         breakdown: [{ label: 'Tenant count', value: tenantCount }],
+        isCurrency: false, // This is a count, not currency
       }
     })
   }, [tenantDistribution])
@@ -110,6 +111,7 @@ export function TenantDistributionModal({ isOpen, onClose }: TenantDistributionM
       title="Tenant Distribution"
       description="Tenant count and occupancy per property"
       sections={sections}
+      isCurrency={false}
       breakdownComponent={breakdownComponent}
       cta={{
         label: 'View all tenants',

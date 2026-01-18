@@ -108,7 +108,7 @@ export function Drawer({
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto pt-6">{children}</CardContent>
+            <CardContent className="flex-1 overflow-y-auto min-h-0 pt-6 pb-8 pr-4">{children}</CardContent>
           </Card>
         </motion.div>
       </div>

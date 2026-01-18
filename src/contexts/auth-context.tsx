@@ -19,9 +19,10 @@ interface AuthContextType {
   ) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   signInWithGoogle: () => Promise<{ error: Error | null }>
+  signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -199,6 +200,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function signInWithMagicLink(email: string) {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      return { error }
+    } catch (error) {
+      return { error: error as Error }
+    }
+  }
+
   const value = {
     user,
     session,
@@ -208,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     signInWithGoogle,
+    signInWithMagicLink,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

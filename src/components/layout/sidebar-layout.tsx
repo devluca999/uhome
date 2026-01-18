@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { useContext } from 'react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { useAuth } from '@/contexts/auth-context'
+import { AuthContext } from '@/contexts/auth-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
@@ -16,9 +17,19 @@ interface SidebarLayoutProps {
 export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut, user } = useAuth()
+  const authContext = useContext(AuthContext)
   const prefersReducedMotion = useReducedMotion()
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
+
+  if (!authContext) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-stone-600">Authentication error. Please refresh the page.</div>
+      </div>
+    )
+  }
+
+  const { signOut, user } = authContext
 
   async function handleSignOut() {
     // Clear dev bypass if active
@@ -71,8 +82,10 @@ export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) 
                   variant={location.pathname === item.path ? 'default' : 'ghost'}
                   asChild
                   className={cn(
-                    'w-full justify-start',
-                    location.pathname === item.path && 'bg-primary text-primary-foreground'
+                    'w-full justify-start px-4 py-2 rounded-md transition-all duration-200',
+                    location.pathname === item.path
+                      ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
+                      : 'bg-transparent hover:bg-muted'
                   )}
                   aria-current={location.pathname === item.path ? 'page' : undefined}
                 >

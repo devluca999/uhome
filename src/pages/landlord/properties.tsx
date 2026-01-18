@@ -7,10 +7,11 @@ import { PropertyForm } from '@/components/landlord/property-form'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorAlert } from '@/components/error-alert'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
-import { Plus, Home, Filter, X } from 'lucide-react'
+import { Plus, Home, Filter, X, Search } from 'lucide-react'
 
 type PropertyTypeFilter = string | 'all'
 type OccupancyFilter = 'occupied' | 'vacant' | 'all'
@@ -25,6 +26,7 @@ export function LandlordProperties() {
   const [createError, setCreateError] = useState<string | null>(null)
 
   // Filter states
+  const [searchQuery, setSearchQuery] = useState('')
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeFilter>('all')
   const [occupancyFilter, setOccupancyFilter] = useState<OccupancyFilter>('all')
   const [rentRangeFilter, setRentRangeFilter] = useState<RentRangeFilter>('all')
@@ -62,6 +64,17 @@ export function LandlordProperties() {
   // Apply all filters
   const filteredProperties = useMemo(() => {
     let filtered = [...properties]
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(p => {
+        const name = p.name?.toLowerCase() || ''
+        const address = p.address?.toLowerCase() || ''
+        const city = p.city?.toLowerCase() || ''
+        return name.includes(query) || address.includes(query) || city.includes(query)
+      })
+    }
 
     // Property type filter
     if (propertyTypeFilter !== 'all') {
@@ -104,6 +117,7 @@ export function LandlordProperties() {
     return filtered
   }, [
     properties,
+    searchQuery,
     propertyTypeFilter,
     occupancyFilter,
     rentRangeFilter,
@@ -181,11 +195,25 @@ export function LandlordProperties() {
         {properties.length > 0 && (
           <Card className="glass-card mb-6 max-w-4xl">
             <CardContent className="pt-4 pb-4">
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="space-y-3">
+                {/* Search Input Row */}
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Filters:</span>
+                  <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Input
+                    type="text"
+                    placeholder="Search by name, address, or city..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="flex-1 h-9 bg-background/50"
+                  />
                 </div>
+
+                {/* Filters Row */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Filters:</span>
+                  </div>
 
                 {/* Property Type Filter */}
                 {propertyTypes.length > 0 && (
@@ -257,7 +285,8 @@ export function LandlordProperties() {
                 </div>
 
                 {/* Clear All Filters */}
-                {(propertyTypeFilter !== 'all' ||
+                {(searchQuery.trim() !== '' ||
+                  propertyTypeFilter !== 'all' ||
                   occupancyFilter !== 'all' ||
                   rentRangeFilter !== 'all' ||
                   sortFilter !== 'newest') && (
@@ -265,6 +294,7 @@ export function LandlordProperties() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      setSearchQuery('')
                       setPropertyTypeFilter('all')
                       setOccupancyFilter('all')
                       setRentRangeFilter('all')
@@ -276,6 +306,7 @@ export function LandlordProperties() {
                     Clear
                   </Button>
                 )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -299,10 +330,11 @@ export function LandlordProperties() {
           <EmptyState
             icon={<Home className="h-8 w-8" />}
             title="No properties match filters"
-            description="Try adjusting your filters to see more results."
+            description="Try adjusting your search or filters to see more results."
             action={{
               label: 'Clear All Filters',
               onClick: () => {
+                setSearchQuery('')
                 setPropertyTypeFilter('all')
                 setOccupancyFilter('all')
                 setRentRangeFilter('all')

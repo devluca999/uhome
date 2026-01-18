@@ -98,6 +98,7 @@ export function TaskDistributionModal({ isOpen, onClose }: TaskDistributionModal
         value: overdue.length,
         percentage: total > 0 ? (overdue.length / total) * 100 : 0,
         color: 'red',
+        isCurrency: false, // This is a count, not currency
         breakdown: overdue.slice(0, 5).map(task => ({
           label: task.title,
           value: 1,
@@ -108,6 +109,7 @@ export function TaskDistributionModal({ isOpen, onClose }: TaskDistributionModal
         value: upcoming.length,
         percentage: total > 0 ? (upcoming.length / total) * 100 : 0,
         color: 'blue',
+        isCurrency: false, // This is a count, not currency
         breakdown: upcoming.slice(0, 5).map(task => ({
           label: task.title,
           value: 1,
@@ -207,6 +209,7 @@ export function TaskDistributionModal({ isOpen, onClose }: TaskDistributionModal
       title="Task Distribution"
       description="Pending tasks grouped by property and status"
       sections={sections}
+      isCurrency={false}
       breakdownComponent={breakdownComponent}
       cta={{
         label: 'View all tasks',

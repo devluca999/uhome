@@ -1,12 +1,23 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { GrainOverlay } from '@/components/ui/grain-overlay'
+import { MatteLayer } from '@/components/ui/matte-layer'
+import { ReflectiveGradient } from '@/components/ui/reflective-gradient'
 import { Button } from '@/components/ui/button'
 import { X, DollarSign, Calendar, MapPin } from 'lucide-react'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
-import { filterRentRecords, filterExpenses, type FinanceFilters } from '@/lib/finance-calculations'
+import {
+  filterRentRecords,
+  filterExpenses,
+  calculateProjectedExpenses,
+  calculateActiveProperties,
+  calculateOccupancyRate,
+  type FinanceFilters,
+} from '@/lib/finance-calculations'
 import { cn } from '@/lib/utils'
 import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
 import type { Database } from '@/types/database'
@@ -32,6 +43,7 @@ interface RentSummaryModalProps {
   properties?: Array<{ id: string; name: string }>
   rentRecords?: RentRecordWithRelations[]
   expenses?: Expense[]
+  tenants?: Array<{ id: string; property_id: string; user?: { email?: string } | null }>
 }
 
 /**
@@ -49,7 +61,9 @@ export function RentSummaryModal({
   properties = [],
   rentRecords = [],
   expenses = [],
+  tenants = [],
 }: RentSummaryModalProps) {
+  const navigate = useNavigate()
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
 
@@ -203,6 +217,221 @@ export function RentSummaryModal({
           expenses: totalExpenses,
         }
       }
+      case 'projected': {
+        // Projected Income: Upcoming rent (pending rent records)
+        const upcomingRecords = filteredRentRecords.filter(r => r.status === 'pending')
+        const projectedIncome = upcomingRecords.reduce((sum, r) => sum + Number(r.amount), 0)
+
+        // Projected Expenses: Recurring expenses for next 30 days
+        const projectedExpenses = calculateProjectedExpenses(expenses, 30, filters)
+        const projectedNet = projectedIncome - projectedExpenses
+
+        // Group projected income by property
+        const incomeByProperty = new Map<
+          string,
+          { amount: number; count: number; records: RentRecordWithRelations[] }
+        >()
+        upcomingRecords.forEach(record => {
+          const propId = record.property_id
+          const existing = incomeByProperty.get(propId) || { amount: 0, count: 0, records: [] }
+          incomeByProperty.set(propId, {
+            amount: existing.amount + Number(record.amount),
+            count: existing.count + 1,
+            records: [...existing.records, record],
+          })
+        })
+
+        // Group projected expenses by property
+        const expensesByProperty = new Map<string, { amount: number; expenses: Expense[] }>()
+        const recurringExpenses = expenses.filter(e => e.is_recurring)
+        const filteredRecurring = filterExpenses(recurringExpenses, filters)
+
+        // Calculate projected expenses per property for next 30 days
+        filteredRecurring.forEach(expense => {
+          const propId = expense.property_id
+          const existing = expensesByProperty.get(propId) || { amount: 0, expenses: [] }
+          // For each recurring expense, calculate occurrences in next 30 days
+          const now = new Date()
+          const endDate = new Date(now)
+          endDate.setDate(endDate.getDate() + 30)
+
+          if (
+            expense.recurring_start_date &&
+            expense.recurring_frequency &&
+            (!expense.recurring_end_date || new Date(expense.recurring_end_date) >= now)
+          ) {
+            const startDate = new Date(expense.recurring_start_date)
+            const endRecurringDate = expense.recurring_end_date
+              ? new Date(expense.recurring_end_date)
+              : null
+
+            if (startDate <= endDate && (!endRecurringDate || endRecurringDate >= now)) {
+              const periodStart = startDate > now ? startDate : now
+              const periodEnd =
+                endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
+
+              let occurrences = 0
+              const current = new Date(periodStart)
+
+              while (current <= periodEnd) {
+                occurrences++
+
+                switch (expense.recurring_frequency) {
+                  case 'monthly':
+                    current.setMonth(current.getMonth() + 1)
+                    break
+                  case 'quarterly':
+                    current.setMonth(current.getMonth() + 3)
+                    break
+                  case 'yearly':
+                    current.setFullYear(current.getFullYear() + 1)
+                    break
+                }
+              }
+
+              const projectedAmount = Number(expense.amount) * occurrences
+              expensesByProperty.set(propId, {
+                amount: existing.amount + projectedAmount,
+                expenses: [...existing.expenses, expense],
+              })
+            }
+          }
+        })
+
+        // Group projected expenses by category
+        const expensesByCategory = new Map<string, { amount: number; count: number }>()
+        filteredRecurring.forEach(expense => {
+          const category = expense.category || 'uncategorized'
+          const now = new Date()
+          const endDate = new Date(now)
+          endDate.setDate(endDate.getDate() + 30)
+
+          if (
+            expense.recurring_start_date &&
+            expense.recurring_frequency &&
+            (!expense.recurring_end_date || new Date(expense.recurring_end_date) >= now)
+          ) {
+            const startDate = new Date(expense.recurring_start_date)
+            const endRecurringDate = expense.recurring_end_date
+              ? new Date(expense.recurring_end_date)
+              : null
+
+            if (startDate <= endDate && (!endRecurringDate || endRecurringDate >= now)) {
+              const periodStart = startDate > now ? startDate : now
+              const periodEnd =
+                endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
+
+              let occurrences = 0
+              const current = new Date(periodStart)
+
+              while (current <= periodEnd) {
+                occurrences++
+
+                switch (expense.recurring_frequency) {
+                  case 'monthly':
+                    current.setMonth(current.getMonth() + 1)
+                    break
+                  case 'quarterly':
+                    current.setMonth(current.getMonth() + 3)
+                    break
+                  case 'yearly':
+                    current.setFullYear(current.getFullYear() + 1)
+                    break
+                }
+              }
+
+              const projectedAmount = Number(expense.amount) * occurrences
+              const existing = expensesByCategory.get(category) || { amount: 0, count: 0 }
+              expensesByCategory.set(category, {
+                amount: existing.amount + projectedAmount,
+                count: existing.count + 1,
+              })
+            }
+          }
+        })
+
+        return {
+          total: projectedNet,
+          projectedIncome,
+          projectedExpenses,
+          byProperty: Array.from(incomeByProperty.entries()).map(([propId, data]) => {
+            const propertyExpenses = expensesByProperty.get(propId) || { amount: 0, expenses: [] }
+            return {
+              property: properties.find(p => p.id === propId)?.name || 'Unknown',
+              income: data.amount,
+              expenses: propertyExpenses.amount,
+              net: data.amount - propertyExpenses.amount,
+              incomeCount: data.count,
+              expenseCount: propertyExpenses.expenses.length,
+            }
+          }),
+          byCategory: Array.from(expensesByCategory.entries()).map(([category, data]) => ({
+            category: category.charAt(0).toUpperCase() + category.slice(1),
+            amount: data.amount,
+            count: data.count,
+          })),
+          transactions: upcomingRecords.sort((a, b) => {
+            const dateA = new Date(a.due_date).getTime()
+            const dateB = new Date(b.due_date).getTime()
+            return dateA - dateB // Sort by due date ascending (earliest first)
+          }),
+        }
+      }
+      case 'activeProperties': {
+        const activeCount = calculateActiveProperties(properties, tenants, filters)
+        const byProperty = properties.map(property => {
+          const hasTenants = tenants.some(t => t.property_id === property.id)
+          const tenantCount = tenants.filter(t => t.property_id === property.id).length
+          return {
+            property: property.name,
+            isActive: hasTenants,
+            tenantCount,
+            tenants: tenants.filter(t => t.property_id === property.id),
+          }
+        })
+
+        return {
+          total: activeCount,
+          byProperty: byProperty.map(p => ({
+            property: p.property,
+            isActive: p.isActive,
+            tenantCount: p.tenantCount,
+            amount: p.isActive ? 1 : 0, // For display consistency
+            count: p.tenantCount,
+          })),
+        }
+      }
+      case 'occupancy': {
+        const occupancyRate = calculateOccupancyRate(properties, tenants, filters)
+        const activeCount = calculateActiveProperties(properties, tenants, filters)
+        const totalProperties = properties.length
+
+        const byProperty = properties.map(property => {
+          const propertyTenants = tenants.filter(t => t.property_id === property.id)
+          const isOccupied = propertyTenants.length > 0
+          const occupancyPercentage = 1 // For MVP, occupied = 100%, vacant = 0%
+          return {
+            property: property.name,
+            isOccupied,
+            tenantCount: propertyTenants.length,
+            occupancyPercentage: isOccupied ? 100 : 0,
+            tenants: propertyTenants,
+          }
+        })
+
+        return {
+          total: occupancyRate,
+          activeCount,
+          totalProperties,
+          byProperty: byProperty.map(p => ({
+            property: p.property,
+            occupancyPercentage: p.occupancyPercentage,
+            tenantCount: p.tenantCount,
+            amount: p.occupancyPercentage, // For display consistency
+            count: p.tenantCount,
+          })),
+        }
+      }
       default:
         return null
     }
@@ -254,7 +483,7 @@ export function RentSummaryModal({
             duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.fast),
             ease: motionTokens.easing.standard,
           }}
-          className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+          className="absolute inset-0 bg-background/90 backdrop-blur-sm"
           onClick={onClose}
         />
 
@@ -271,17 +500,26 @@ export function RentSummaryModal({
                   ...cardSpring,
                 }
           }
-          className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-visible"
+          className="relative z-10 w-full max-w-2xl"
+          style={{ height: '90vh', maxHeight: '90vh' }}
         >
-          <Card className="glass-card h-full flex flex-col overflow-hidden">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 flex-shrink-0">
+          <div className="h-full flex flex-col overflow-hidden rounded-xl border-2 bg-card/95 backdrop-blur-md text-card-foreground shadow-card relative" style={{ backgroundColor: 'hsl(var(--card) / 0.95)' }}>
+            {/* Card styling elements */}
+            <div className="absolute inset-0 pointer-events-none">
+              <GrainOverlay />
+              <MatteLayer intensity="subtle" />
+              <ReflectiveGradient />
+            </div>
+            <div className="relative z-10 h-full flex flex-col overflow-hidden">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 flex-shrink-0 border-b border-border">
               <div className="flex-1 pr-2">
                 <CardTitle className="text-2xl">{titles[metricType]}</CardTitle>
                 <CardDescription className="mt-2">{descriptions[metricType]}</CardDescription>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  <p>Period: {dateRangeText}</p>
-                  <p>Property: {propertyText}</p>
-                </div>
+                {propertyId && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    <p>Property: {propertyText}</p>
+                  </div>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -293,7 +531,7 @@ export function RentSummaryModal({
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4 overflow-y-auto flex-1 min-h-0">
+            <CardContent className="space-y-4 overflow-y-auto flex-1 min-h-0 pb-12 pr-4">
               {breakdownData && (
                 <div className="space-y-6">
                   {/* Summary */}
@@ -303,14 +541,36 @@ export function RentSummaryModal({
                       <p className="text-2xl font-semibold text-foreground mt-1">
                         {metricType === 'net' && breakdownData.total !== null
                           ? `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                          : metricType === 'activeProperties' || metricType === 'occupancy'
-                            ? `${breakdownData.total}${metricType === 'occupancy' ? '%' : ''}`
-                            : `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                          : metricType === 'projected' && breakdownData.total !== null
+                            ? `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                            : metricType === 'activeProperties'
+                              ? `${breakdownData.total}`
+                              : metricType === 'occupancy'
+                                ? `${breakdownData.total}%`
+                                : `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                       </p>
                       {metricType === 'net' && breakdownData.total !== null && (
                         <div className="mt-2 text-xs text-muted-foreground">
                           <p>Income: ${breakdownData.income?.toLocaleString()}</p>
                           <p>Expenses: ${breakdownData.expenses?.toLocaleString()}</p>
+                        </div>
+                      )}
+                      {metricType === 'projected' && breakdownData.total !== null && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <p>Projected Income: ${breakdownData.projectedIncome?.toLocaleString()}</p>
+                          <p>Projected Expenses: ${breakdownData.projectedExpenses?.toLocaleString()}</p>
+                        </div>
+                      )}
+                      {metricType === 'activeProperties' && 'activeCount' in breakdownData && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <p>Properties with tenants: {breakdownData.total}</p>
+                          <p>Total properties: {properties.length}</p>
+                        </div>
+                      )}
+                      {metricType === 'occupancy' && 'activeCount' in breakdownData && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <p>Active properties: {breakdownData.activeCount}</p>
+                          <p>Total properties: {breakdownData.totalProperties}</p>
                         </div>
                       )}
                     </div>
@@ -330,16 +590,38 @@ export function RentSummaryModal({
                               <MapPin className="w-4 h-4 text-muted-foreground" />
                               <span className="font-medium text-foreground">{item.property}</span>
                               <span className="text-xs text-muted-foreground">
-                                ({item.count} {item.count === 1 ? 'transaction' : 'transactions'})
+                                {metricType === 'projected' && 'income' in item
+                                  ? `(${item.incomeCount || 0} rent, ${item.expenseCount || 0} expenses)`
+                                  : metricType === 'activeProperties' && 'isActive' in item
+                                    ? `(${item.isActive ? 'Active' : 'Inactive'} - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
+                                    : metricType === 'occupancy' && 'occupancyPercentage' in item
+                                      ? `(${item.occupancyPercentage}% - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
+                                      : `(${item.count} ${item.count === 1 ? 'transaction' : 'transactions'})`}
                               </span>
                             </div>
-                            <span className="font-semibold text-foreground">
-                              $
-                              {item.amount.toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0,
-                              })}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              {metricType === 'projected' && 'income' in item && (
+                                <div className="text-right text-xs text-muted-foreground">
+                                  <div>Income: ${item.income.toLocaleString()}</div>
+                                  <div>Expenses: ${item.expenses.toLocaleString()}</div>
+                                </div>
+                              )}
+                              <span className="font-semibold text-foreground">
+                                {metricType === 'activeProperties' || metricType === 'occupancy'
+                                  ? metricType === 'occupancy' && 'occupancyPercentage' in item
+                                    ? `${item.occupancyPercentage}%`
+                                    : item.amount > 0
+                                      ? 'Active'
+                                      : 'Inactive'
+                                  : `$${(metricType === 'projected' && 'net' in item
+                                    ? item.net
+                                    : item.amount
+                                  ).toLocaleString(undefined, {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  })}`}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -381,7 +663,7 @@ export function RentSummaryModal({
                       <h3 className="text-sm font-medium text-foreground mb-3">
                         Recent Transactions ({breakdownData.transactions.length})
                       </h3>
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      <div className="space-y-2">
                         {breakdownData.transactions.slice(0, 10).map((transaction, index) => {
                           if (metricType === 'expenses' && 'name' in transaction) {
                             const expense = transaction as Expense
@@ -495,17 +777,37 @@ export function RentSummaryModal({
                 </div>
               )}
 
-              {/* Fallback for metrics without breakdown */}
-              {!breakdownData &&
-                (metricType === 'projected' ||
-                  metricType === 'activeProperties' ||
-                  metricType === 'occupancy') && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>Detailed breakdown for {titles[metricType].toLowerCase()} coming soon</p>
+              {/* Summary for activeProperties and occupancy */}
+              {breakdownData &&
+                (metricType === 'activeProperties' || metricType === 'occupancy') && (
+                  <div className="space-y-4">
+                    {metricType === 'occupancy' && 'activeCount' in breakdownData && (
+                      <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Active Properties</span>
+                          <span className="text-lg font-semibold text-foreground">
+                            {breakdownData.activeCount} of {breakdownData.totalProperties}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
             </CardContent>
-          </Card>
+            {/* CTA Footer - Sticky outside scrollable content */}
+            <div className="border-t border-border p-4 flex-shrink-0 bg-card">
+              <Button
+                onClick={() => {
+                  onClose()
+                  navigate('/landlord/finances')
+                }}
+                className="w-full"
+              >
+                View Full Finances
+              </Button>
+            </div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>

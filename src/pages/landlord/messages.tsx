@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -8,8 +8,9 @@ import { useLeases } from '@/hooks/use-leases'
 import { useProperties } from '@/hooks/use-properties'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase/client'
-import { MessageSquare, ArrowLeft } from 'lucide-react'
+import { MessageSquare, ArrowLeft, Search, Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Badge } from '@/components/ui/badge'
@@ -55,6 +56,12 @@ export function LandlordMessages() {
   const { properties } = useProperties()
   const [propertiesWithLeases, setPropertiesWithLeases] = useState<PropertyWithLeases[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Filter and sort states
+  const [searchQuery, setSearchQuery] = useState('')
+  const [propertyFilter, setPropertyFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'ended'>('all')
+  const [sortBy, setSortBy] = useState<'recent' | 'unread' | 'property' | 'tenant'>('recent')
 
   // Fetch all leases for landlord's properties
   useEffect(() => {
@@ -213,6 +220,102 @@ export function LandlordMessages() {
     }
   }, [properties, user])
 
+  // Filter and sort leases
+  const filteredAndSortedProperties = useMemo(() => {
+    if (!propertiesWithLeases || propertiesWithLeases.length === 0) return []
+
+    // Flatten all leases
+    let allLeases = propertiesWithLeases.flatMap(pg =>
+      pg.leases.map(lease => ({
+        ...lease,
+        propertyName: pg.property.name,
+        propertyId: pg.property.id,
+      }))
+    )
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      allLeases = allLeases.filter(lease => {
+        const tenantEmail = lease.tenant?.user?.email?.toLowerCase() || ''
+        const propertyName = lease.propertyName?.toLowerCase() || ''
+        const lastMessageBody = lease.lastMessage?.body?.toLowerCase() || ''
+        return (
+          tenantEmail.includes(query) ||
+          propertyName.includes(query) ||
+          lastMessageBody.includes(query)
+        )
+      })
+    }
+
+    // Apply property filter
+    if (propertyFilter !== 'all') {
+      allLeases = allLeases.filter(lease => lease.propertyId === propertyFilter)
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      allLeases = allLeases.filter(lease => {
+        if (statusFilter === 'active') {
+          return lease.status === 'active'
+        }
+        if (statusFilter === 'draft') {
+          return lease.status === 'draft'
+        }
+        if (statusFilter === 'ended') {
+          return lease.status === 'ended'
+        }
+        return true
+      })
+    }
+
+    // Apply sorting
+    if (sortBy === 'unread') {
+      allLeases.sort((a, b) => (b.unreadCount || 0) - (a.unreadCount || 0))
+    } else if (sortBy === 'property') {
+      allLeases.sort((a, b) => a.propertyName.localeCompare(b.propertyName))
+    } else if (sortBy === 'tenant') {
+      allLeases.sort((a, b) => {
+        const aEmail = a.tenant?.user?.email || ''
+        const bEmail = b.tenant?.user?.email || ''
+        return aEmail.localeCompare(bEmail)
+      })
+    }
+    // 'recent' sorting is already done by default in fetchLeasesWithMessages
+
+    // Re-group by property
+    const grouped = allLeases.reduce((acc, lease) => {
+      const existingGroup = acc.find(g => g.property.id === lease.propertyId)
+      if (existingGroup) {
+        existingGroup.leases.push(lease)
+      } else {
+        const property = properties.find(p => p.id === lease.propertyId)
+        if (property) {
+          acc.push({
+            property: {
+              id: property.id,
+              name: property.name,
+              address: property.address || null,
+            },
+            leases: [lease],
+          })
+        }
+      }
+      return acc
+    }, [] as PropertyWithLeases[])
+
+    // Sort property groups by most recent lease activity (only if not sorted by property)
+    if (sortBy !== 'property') {
+      grouped.sort((a, b) => {
+        const aLatest = a.leases[0]?.lastMessage?.created_at || a.leases[0]?.created_at
+        const bLatest = b.leases[0]?.lastMessage?.created_at || b.leases[0]?.created_at
+        return new Date(bLatest || 0).getTime() - new Date(aLatest || 0).getTime()
+      })
+    }
+
+    return grouped
+  }, [propertiesWithLeases, searchQuery, propertyFilter, statusFilter, sortBy, properties])
+
   const selectedLeaseId = leaseId || searchParams.get('leaseId')
   const selectedLease = propertiesWithLeases
     .flatMap(g => g.leases)
@@ -294,6 +397,13 @@ export function LandlordMessages() {
     )
   }
 
+  // Check if any filters are active
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    propertyFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    sortBy !== 'recent'
+
   // Show leases grouped by property
   return (
     <div className="container mx-auto px-4 py-8 relative">
@@ -305,8 +415,125 @@ export function LandlordMessages() {
           <p className="text-muted-foreground mt-1">Lease conversations organized by property</p>
         </div>
 
-        <div className="space-y-6">
-          {propertiesWithLeases.map(propertyGroup => (
+        {/* Filter Bar */}
+        {propertiesWithLeases.length > 0 && (
+          <Card className="glass-card mb-6 max-w-4xl">
+            <CardContent className="pt-4 pb-4">
+              <div className="space-y-3">
+                {/* Search Input Row */}
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Input
+                    type="text"
+                    placeholder="Search by tenant, property, or message..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="flex-1 h-9 bg-background/50"
+                  />
+                </div>
+
+                {/* Filters Row */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Filters:</span>
+                  </div>
+
+                  {/* Property Filter */}
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Property:
+                    </label>
+                    <select
+                      value={propertyFilter}
+                      onChange={e => setPropertyFilter(e.target.value)}
+                      className="flex h-8 min-w-[140px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Properties</option>
+                      {properties.map(property => (
+                        <option key={property.id} value={property.id}>
+                          {property.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Status:</label>
+                    <select
+                      value={statusFilter}
+                      onChange={e =>
+                        setStatusFilter(e.target.value as 'all' | 'active' | 'draft' | 'ended')
+                      }
+                      className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Leases</option>
+                      <option value="active">Active</option>
+                      <option value="draft">Draft</option>
+                      <option value="ended">Ended</option>
+                    </select>
+                  </div>
+
+                  {/* Sort By */}
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Sort:</label>
+                    <select
+                      value={sortBy}
+                      onChange={e =>
+                        setSortBy(e.target.value as 'recent' | 'unread' | 'property' | 'tenant')
+                      }
+                      className="flex h-8 min-w-[140px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="recent">Recent Activity</option>
+                      <option value="unread">Unread First</option>
+                      <option value="property">Property Name</option>
+                      <option value="tenant">Tenant Name</option>
+                    </select>
+                  </div>
+
+                  {/* Clear Filters */}
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery('')
+                        setPropertyFilter('all')
+                        setStatusFilter('all')
+                        setSortBy('recent')
+                      }}
+                      className="ml-auto h-8 text-xs"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Show empty state if filtered results are empty */}
+        {filteredAndSortedProperties.length === 0 && propertiesWithLeases.length > 0 ? (
+          <EmptyState
+            icon={<MessageSquare className="h-12 w-12" />}
+            title="No messages match filters"
+            description="Try adjusting your search or filters to see more results."
+            action={{
+              label: 'Clear All Filters',
+              onClick: () => {
+                setSearchQuery('')
+                setPropertyFilter('all')
+                setStatusFilter('all')
+                setSortBy('recent')
+              },
+            }}
+          />
+        ) : (
+          <div className="space-y-6">
+            {filteredAndSortedProperties.map(propertyGroup => (
             <div key={propertyGroup.property.id}>
               <h2 className="text-xl font-semibold text-foreground mb-4">
                 {propertyGroup.property.name}
@@ -387,7 +614,8 @@ export function LandlordMessages() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

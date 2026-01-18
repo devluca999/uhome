@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { BreakdownModal, type BreakdownSection } from '@/components/ui/breakdown-modal'
 import { useProperties } from '@/hooks/use-properties'
 import { useLandlordRentRecords } from '@/hooks/use-landlord-rent-records'
@@ -13,6 +14,7 @@ interface ProfitBreakdownModalProps {
 }
 
 export function ProfitBreakdownModal({ isOpen, onClose }: ProfitBreakdownModalProps) {
+  const navigate = useNavigate()
   const { properties } = useProperties()
   const { records: rentRecords } = useLandlordRentRecords()
   const { expenses } = useExpenses()
@@ -116,6 +118,13 @@ export function ProfitBreakdownModal({ isOpen, onClose }: ProfitBreakdownModalPr
       description="Detailed breakdown of income, expenses, and net profit"
       sections={sections}
       breakdownComponent={assumptionsComponent}
+      cta={{
+        label: 'View Full Finances',
+        action: () => {
+          onClose()
+          navigate('/landlord/finances')
+        },
+      }}
     />
   )
 }

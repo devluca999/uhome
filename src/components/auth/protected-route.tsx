@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '@/contexts/auth-context'
+import { useContext } from 'react'
+import { AuthContext } from '@/contexts/auth-context'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -7,8 +8,19 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, loading } = useAuth()
+  const authContext = useContext(AuthContext)
   const location = useLocation()
+
+  // If AuthProvider is not available, show error
+  if (!authContext) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-stone-600">Authentication error. Please refresh the page.</div>
+      </div>
+    )
+  }
+
+  const { user, role, loading } = authContext
 
   // Dev bypass check (only in development)
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
