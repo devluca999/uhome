@@ -45,18 +45,22 @@ function isStagingEnvironment(): boolean {
 
   // Check Supabase URL for staging indicators
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-  
+
   // If URL contains 'prod' or 'production', it's NOT staging
-  if (supabaseUrl.toLowerCase().includes('prod') || 
-      supabaseUrl.toLowerCase().includes('production')) {
+  if (
+    supabaseUrl.toLowerCase().includes('prod') ||
+    supabaseUrl.toLowerCase().includes('production')
+  ) {
     return false
   }
 
   // Allow if URL contains staging/test indicators or is localhost
-  if (supabaseUrl.toLowerCase().includes('staging') || 
-      supabaseUrl.toLowerCase().includes('test') ||
-      supabaseUrl.includes('localhost') ||
-      supabaseUrl.includes('127.0.0.1')) {
+  if (
+    supabaseUrl.toLowerCase().includes('staging') ||
+    supabaseUrl.toLowerCase().includes('test') ||
+    supabaseUrl.includes('localhost') ||
+    supabaseUrl.includes('127.0.0.1')
+  ) {
     return true
   }
 
@@ -88,8 +92,8 @@ export function isTenantDevModeActive(): boolean {
   if (!isStagingEnvironment()) {
     if (typeof window !== 'undefined') {
       console.error(
-        '❌ Dev Mode is not allowed outside staging environment. ' +
-        'Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL
+        '❌ Dev Mode is not allowed outside staging environment. ' + 'Current Supabase URL:',
+        import.meta.env.VITE_SUPABASE_URL
       )
     }
     return false
@@ -179,8 +183,8 @@ export function isLandlordDevModeActive(): boolean {
   if (!isStagingEnvironment()) {
     if (typeof window !== 'undefined') {
       console.error(
-        '❌ Dev Mode is not allowed outside staging environment. ' +
-        'Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL
+        '❌ Dev Mode is not allowed outside staging environment. ' + 'Current Supabase URL:',
+        import.meta.env.VITE_SUPABASE_URL
       )
     }
     return false

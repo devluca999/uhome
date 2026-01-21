@@ -1,6 +1,6 @@
 /**
  * Comprehensive Dashboard UAT Tests
- * 
+ *
  * Tests all dashboard features:
  * - Revenue calculations and display
  * - Occupancy metrics
@@ -12,21 +12,31 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupUATScenario, waitForPageReady, verifyDataPersistence, verifyModalOpens, verifyChartInteractive, cleanupUATTest, loginAsSeededLandlord } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupUATScenario,
+  waitForPageReady,
+  verifyDataPersistence,
+  verifyModalOpens,
+  verifyChartInteractive,
+  cleanupUATTest,
+  loginAsSeededLandlord,
+} from '../helpers/uat-helpers'
 import { logTestResult, logVisualMismatch, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 
 test.describe('Dashboard Comprehensive UAT', () => {
   // Use Playwright's baseURL from config (webServer will start app automatically)
-  const baseUrl = process.env.VISUAL_TEST_BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:1000'
+  const baseUrl =
+    process.env.VISUAL_TEST_BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:1000'
 
   test.beforeEach(async ({ page }) => {
-  // Capture browser console logs
-  page.on('console', msg => {
-    if (msg.type() === 'log' || msg.type() === 'error' || msg.type() === 'warn') {
-      console.log(`[Browser Console ${msg.type()}]`, msg.text())
-    }
-  })
+    // Capture browser console logs
+    page.on('console', msg => {
+      if (msg.type() === 'log' || msg.type() === 'error' || msg.type() === 'warn') {
+        console.log(`[Browser Console ${msg.type()}]`, msg.text())
+      }
+    })
     verifyStagingEnvironment()
     await cleanupUATTest(page)
   })
@@ -47,17 +57,17 @@ test.describe('Dashboard Comprehensive UAT', () => {
       // Get the parent card container to find the value
       const revenueCardContainer = revenueCard.locator('..').locator('..').first()
       const cardText = await revenueCardContainer.textContent()
-      
+
       // The value should be formatted as $X,XXX or $0
       // PortfolioCard formats as: `$${Math.round(v).toLocaleString()}`
       const hasRevenueValue = cardText?.match(/\$\d+([,\d]*)?/) !== null
-      
+
       if (!hasRevenueValue) {
         // Log the actual text for debugging
         console.log('Revenue card text:', cardText)
         throw new Error(`Revenue value not found in expected format. Card text: ${cardText}`)
       }
-      
+
       expect(hasRevenueValue).toBeTruthy()
 
       await logTestResult(page, {
@@ -305,7 +315,10 @@ test.describe('Dashboard Comprehensive UAT', () => {
     try {
       // Look for smart insights or recurring work orders
       const insightsElement = page.locator('text=/insight|recurring|pattern/i')
-      const isVisible = await insightsElement.first().isVisible({ timeout: 3000 }).catch(() => false)
+      const isVisible = await insightsElement
+        .first()
+        .isVisible({ timeout: 3000 })
+        .catch(() => false)
 
       // Smart insights may not always be present, so this is optional
       if (isVisible) {
@@ -351,12 +364,18 @@ test.describe('Dashboard Comprehensive UAT', () => {
 
     try {
       // Find recent activity card or button
-      const activityTrigger = page.locator('text=/recent activity|activity/i, button:has-text("View All"), [data-activity]').first()
+      const activityTrigger = page
+        .locator('text=/recent activity|activity/i, button:has-text("View All"), [data-activity]')
+        .first()
       const isVisible = await activityTrigger.isVisible({ timeout: 3000 }).catch(() => false)
 
       if (isVisible) {
         // Click to open modal
-        await verifyModalOpens(page, activityTrigger.locator('..').locator('button, [role="button"]').first() || activityTrigger)
+        await verifyModalOpens(
+          page,
+          activityTrigger.locator('..').locator('button, [role="button"]').first() ||
+            activityTrigger
+        )
 
         await logTestResult(page, {
           page: 'dashboard',
@@ -376,7 +395,13 @@ test.describe('Dashboard Comprehensive UAT', () => {
         })
       }
     } catch (error) {
-      const screenshot = await captureUATScreenshot(page, 'dashboard', 'recent_activity_modal', {}, 'error')
+      const screenshot = await captureUATScreenshot(
+        page,
+        'dashboard',
+        'recent_activity_modal',
+        {},
+        'error'
+      )
       await logFunctionalFailure(page, {
         page: 'dashboard',
         feature: 'recent_activity_modal',
@@ -425,10 +450,17 @@ test.describe('Dashboard Comprehensive UAT', () => {
             const viewport = page.viewportSize()
 
             if (box && viewport) {
-              const isClipped = box.x + box.width > viewport.width || box.y + box.height > viewport.height
+              const isClipped =
+                box.x + box.width > viewport.width || box.y + box.height > viewport.height
 
               if (isClipped) {
-                const screenshot = await captureUATScreenshot(page, 'dashboard', 'modal_clipped', {}, 'clipped')
+                const screenshot = await captureUATScreenshot(
+                  page,
+                  'dashboard',
+                  'modal_clipped',
+                  {},
+                  'clipped'
+                )
                 await logVisualMismatch(page, {
                   page: 'dashboard',
                   feature: 'clickable_cards',
@@ -476,7 +508,13 @@ test.describe('Dashboard Comprehensive UAT', () => {
         throw error
       }
 
-      const screenshot = await captureUATScreenshot(page, 'dashboard', 'clickable_cards', {}, 'error')
+      const screenshot = await captureUATScreenshot(
+        page,
+        'dashboard',
+        'clickable_cards',
+        {},
+        'error'
+      )
       await logFunctionalFailure(page, {
         page: 'dashboard',
         feature: 'clickable_cards',
@@ -539,4 +577,3 @@ test.describe('Dashboard Comprehensive UAT', () => {
     }
   })
 })
-

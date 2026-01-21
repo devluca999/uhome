@@ -12,6 +12,7 @@ import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Download, FileText, DollarSign, Calendar } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 /**
  * Tenant Finances Page
@@ -25,6 +26,8 @@ import { cn } from '@/lib/utils'
  * Tenants must never be able to edit financial data.
  */
 export function TenantFinances() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'TenantFinances' })
   const { data: tenantData, loading: tenantLoading } = useTenantData()
   const { leases } = useLeases(undefined, tenantData?.tenant.id)
   // Get first active lease for the tenant (tenants typically have one active lease)

@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { NotificationBadge } from '@/components/ui/notification-badge'
 import { AuthContext } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
@@ -26,19 +25,8 @@ export function TenantLayout() {
   const navigate = useNavigate()
   const authContext = useContext(AuthContext)
   const { settings } = useSettings()
-
-  if (!authContext) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-stone-600">Authentication error. Please refresh the page.</div>
-      </div>
-    )
-  }
-
-  const { signOut, user } = authContext
   const [isMobile, setIsMobile] = useState(false)
   const prefersReducedMotion = useReducedMotion()
-  const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
 
   // Reset scroll on route changes
   useScrollReset()

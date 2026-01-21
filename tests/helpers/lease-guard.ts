@@ -1,11 +1,11 @@
 /**
  * Lease Requirement Guard for Tests
- * 
+ *
  * Ensures test scenarios follow the lease-required policy:
  * - Tenant-scoped entities (messages, work orders, tasks, rent records, notes, documents)
  *   require a lease to exist
  * - Tests fail loudly if lease requirements are violated
- * 
+ *
  * This guard works alongside the dev-only guard in seed.ts to enforce
  * lease requirements at multiple levels.
  */
@@ -14,11 +14,11 @@ import { getSupabaseAdminClient } from './db-helpers'
 
 /**
  * Verify that seeded data follows lease requirements
- * 
+ *
  * This is a CI-level check that can be called after test scenarios
  * to ensure no invalid state was created. The seed functions already
  * have guards, but this provides an additional safety net.
- * 
+ *
  * @param tenantId - Tenant ID to check
  * @param options - Options that were used for seeding
  * @throws Error if lease requirement is violated
@@ -60,7 +60,7 @@ export async function verifyLeaseRequirements(
 
   // Check if lease exists for this tenant
   const supabaseAdmin = getSupabaseAdminClient()
-  
+
   const { data: leases, error: leaseError } = await supabaseAdmin
     .from('leases')
     .select('id')
@@ -77,14 +77,14 @@ export async function verifyLeaseRequirements(
   if (!leases || leases.length === 0) {
     throw new Error(
       `[LEASE GUARD FAILURE] Tenant-scoped entities require a lease, but no active lease found for tenant ${tenantId}. ` +
-      `This indicates a logic error in test setup. Ensure seedTestScenario creates a lease when tenant-scoped entities are requested.`
+        `This indicates a logic error in test setup. Ensure seedTestScenario creates a lease when tenant-scoped entities are requested.`
     )
   }
 }
 
 /**
  * Check if lease is required based on seed options
- * 
+ *
  * This is a utility function that matches the logic in seed.ts
  * Use it to determine if a lease should exist before running assertions.
  */
@@ -105,4 +105,3 @@ export function requiresLease(options: {
     options.createTasks
   )
 }
-

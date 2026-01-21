@@ -94,12 +94,12 @@ export function LandlordMessages() {
         .from('tenants')
         .select('id, user_id')
         .in('id', tenantIds)
-      
+
       const tenantMap = new Map(tenants?.map(t => [t.id, t]) || [])
-      
+
       // Batch fetch all users (for tenants and message senders)
       const tenantUserIds = [...new Set(tenants?.map(t => t.user_id).filter(Boolean) || [])]
-      
+
       // Batch fetch last messages for all leases
       const leaseIds = allLeases.map(l => l.id)
       const { data: allMessages } = await supabase
@@ -108,26 +108,23 @@ export function LandlordMessages() {
         .in('lease_id', leaseIds)
         .is('soft_deleted_at', null)
         .order('created_at', { ascending: false })
-      
+
       // Group messages by lease and get the most recent
-      const messagesByLease = new Map<string, typeof allMessages[0]>()
+      const messagesByLease = new Map<string, (typeof allMessages)[0]>()
       allMessages?.forEach(msg => {
         if (!messagesByLease.has(msg.lease_id)) {
           messagesByLease.set(msg.lease_id, msg)
         }
       })
-      
+
       // Batch fetch all message sender users
       const senderIds = [...new Set(allMessages?.map(m => m.sender_id).filter(Boolean) || [])]
       const allUserIds = [...new Set([...tenantUserIds, ...senderIds])]
-      
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, email')
-        .in('id', allUserIds)
-      
+
+      const { data: users } = await supabase.from('users').select('id, email').in('id', allUserIds)
+
       const userMap = new Map(users?.map(u => [u.id, u]) || [])
-      
+
       // Batch fetch unread notifications for all leases
       const { data: notifications } = await supabase
         .from('notifications')
@@ -135,27 +132,28 @@ export function LandlordMessages() {
         .in('lease_id', leaseIds)
         .eq('user_id', user?.id)
         .eq('read', false)
-      
+
       // Count notifications by lease
       const notificationCounts = new Map<string, number>()
       notifications?.forEach(n => {
         notificationCounts.set(n.lease_id, (notificationCounts.get(n.lease_id) || 0) + 1)
       })
-      
+
       // Combine all data
       const leasesWithData = allLeases.map(lease => {
         const property = properties.find(p => p.id === lease.property_id)
         const tenantData = tenantMap.get(lease.tenant_id)
         const tenantUser = tenantData?.user_id ? userMap.get(tenantData.user_id) : undefined
-        
+
         const lastMessageData = messagesByLease.get(lease.id)
-        const lastMessage = lastMessageData && lastMessageData.sender_id
-          ? {
-              ...lastMessageData,
-              sender: userMap.get(lastMessageData.sender_id),
-            }
-          : lastMessageData
-        
+        const lastMessage =
+          lastMessageData && lastMessageData.sender_id
+            ? {
+                ...lastMessageData,
+                sender: userMap.get(lastMessageData.sender_id),
+              }
+            : lastMessageData
+
         return {
           ...lease,
           property: property
@@ -460,7 +458,9 @@ export function LandlordMessages() {
 
                   {/* Status Filter */}
                   <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">Status:</label>
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Status:
+                    </label>
                     <select
                       value={statusFilter}
                       onChange={e =>
@@ -534,86 +534,86 @@ export function LandlordMessages() {
         ) : (
           <div className="space-y-6">
             {filteredAndSortedProperties.map(propertyGroup => (
-            <div key={propertyGroup.property.id}>
-              <h2 className="text-xl font-semibold text-foreground mb-4">
-                {propertyGroup.property.name}
-                {propertyGroup.property.address && (
-                  <span className="text-sm font-normal text-muted-foreground ml-2">
-                    {propertyGroup.property.address}
-                  </span>
-                )}
-              </h2>
-              <div className="space-y-4">
-                {propertyGroup.leases.map(lease => {
-                  const isActive =
-                    lease.status === 'active' || (lease.status === 'draft' && lease.tenant_id)
-                  const statusLabel =
-                    lease.status === 'draft'
-                      ? 'Draft'
-                      : lease.status === 'active'
-                        ? 'Active'
-                        : 'Ended'
-                  const lastMessageDate = lease.lastMessage
-                    ? new Date(lease.lastMessage.created_at).toLocaleDateString()
-                    : new Date(lease.created_at).toLocaleDateString()
-                  const lastMessagePreview = lease.lastMessage
-                    ? lease.lastMessage.body.substring(0, 60) +
-                      (lease.lastMessage.body.length > 60 ? '...' : '')
-                    : 'No messages yet'
+              <div key={propertyGroup.property.id}>
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  {propertyGroup.property.name}
+                  {propertyGroup.property.address && (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      {propertyGroup.property.address}
+                    </span>
+                  )}
+                </h2>
+                <div className="space-y-4">
+                  {propertyGroup.leases.map(lease => {
+                    const isActive =
+                      lease.status === 'active' || (lease.status === 'draft' && lease.tenant_id)
+                    const statusLabel =
+                      lease.status === 'draft'
+                        ? 'Draft'
+                        : lease.status === 'active'
+                          ? 'Active'
+                          : 'Ended'
+                    const lastMessageDate = lease.lastMessage
+                      ? new Date(lease.lastMessage.created_at).toLocaleDateString()
+                      : new Date(lease.created_at).toLocaleDateString()
+                    const lastMessagePreview = lease.lastMessage
+                      ? lease.lastMessage.body.substring(0, 60) +
+                        (lease.lastMessage.body.length > 60 ? '...' : '')
+                      : 'No messages yet'
 
-                  return (
-                    <Card
-                      key={lease.id}
-                      className={cn(
-                        'glass-card cursor-pointer hover:bg-muted/50 transition-colors',
-                        lease.status === 'ended' && 'opacity-75'
-                      )}
-                      onClick={() => navigate(`/landlord/messages/${lease.id}`)}
-                    >
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              {lease.tenant?.user?.email || 'Tenant'}
-                              {lease.unreadCount && lease.unreadCount > 0 && (
-                                <Badge variant="default" className="ml-2">
-                                  {lease.unreadCount}
-                                </Badge>
-                              )}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {lease.lease_start_date
-                                ? `Lease started ${new Date(lease.lease_start_date).toLocaleDateString()}`
-                                : 'Draft lease'}
-                            </p>
+                    return (
+                      <Card
+                        key={lease.id}
+                        className={cn(
+                          'glass-card cursor-pointer hover:bg-muted/50 transition-colors',
+                          lease.status === 'ended' && 'opacity-75'
+                        )}
+                        onClick={() => navigate(`/landlord/messages/${lease.id}`)}
+                      >
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                {lease.tenant?.user?.email || 'Tenant'}
+                                {lease.unreadCount && lease.unreadCount > 0 && (
+                                  <Badge variant="default" className="ml-2">
+                                    {lease.unreadCount}
+                                  </Badge>
+                                )}
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {lease.lease_start_date
+                                  ? `Lease started ${new Date(lease.lease_start_date).toLocaleDateString()}`
+                                  : 'Draft lease'}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={
+                                lease.status === 'ended'
+                                  ? 'secondary'
+                                  : isActive
+                                    ? 'default'
+                                    : 'outline'
+                              }
+                            >
+                              {statusLabel}
+                            </Badge>
                           </div>
-                          <Badge
-                            variant={
-                              lease.status === 'ended'
-                                ? 'secondary'
-                                : isActive
-                                  ? 'default'
-                                  : 'outline'
-                            }
-                          >
-                            {statusLabel}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <p className="text-sm text-foreground line-clamp-2">
-                            {lastMessagePreview}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{lastMessageDate}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <p className="text-sm text-foreground line-clamp-2">
+                              {lastMessagePreview}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{lastMessageDate}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         )}
       </div>

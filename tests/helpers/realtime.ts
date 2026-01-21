@@ -1,6 +1,6 @@
 /**
  * Realtime Test Helpers
- * 
+ *
  * Utilities for testing realtime subscriptions and multi-tab sync.
  */
 
@@ -78,9 +78,13 @@ export async function createTestSubscription(
         event: '*',
         schema: 'public',
         table,
-        filter: filter ? Object.entries(filter).map(([key, value]) => `${key}=eq.${value}`).join(',') : undefined,
+        filter: filter
+          ? Object.entries(filter)
+              .map(([key, value]) => `${key}=eq.${value}`)
+              .join(',')
+          : undefined,
       },
-      (payload) => {
+      payload => {
         console.log(`[Realtime] ${table} update:`, payload)
       }
     )
@@ -196,4 +200,3 @@ export async function testMultiTabSync(
     await page2.close()
   }
 }
-

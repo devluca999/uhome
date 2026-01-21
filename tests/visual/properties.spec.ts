@@ -1,6 +1,6 @@
 /**
  * Properties Visual Tests
- * 
+ *
  * Validates property pages render correctly with:
  * - Property lists with data
  * - Property detail pages
@@ -65,11 +65,11 @@ test.describe('Properties Visual Tests', () => {
     // Check card dimensions
     const cards = page.locator('[class*="card"], [class*="property"]')
     const firstCard = cards.first()
-    
+
     if (await firstCard.isVisible()) {
       const box = await firstCard.boundingBox()
       expect(box).toBeTruthy()
-      
+
       // Cards should not exceed viewport
       const viewport = page.viewportSize()
       if (box && viewport) {
@@ -78,4 +78,3 @@ test.describe('Properties Visual Tests', () => {
     }
   })
 })
-

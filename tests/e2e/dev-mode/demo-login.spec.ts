@@ -1,6 +1,6 @@
 /**
  * Demo Login E2E Tests
- * 
+ *
  * Tests that demo login buttons correctly navigate to the appropriate dashboards
  * and verifies demo data integrity (leases, tenant assignments, etc.)
  */
@@ -41,10 +41,12 @@ test.describe('Demo Login', () => {
 
     // Verify Join Household UI is NOT visible (tenant-only feature)
     const joinHouseholdText = page.locator('text=Join Household')
-    await expect(joinHouseholdText).not.toBeVisible({ timeout: 1000 }).catch(() => {
-      // If it's visible, that's a failure
-      throw new Error('Join Household UI should not be visible to landlords')
-    })
+    await expect(joinHouseholdText)
+      .not.toBeVisible({ timeout: 1000 })
+      .catch(() => {
+        // If it's visible, that's a failure
+        throw new Error('Join Household UI should not be visible to landlords')
+      })
   })
 
   test('demo tenant button navigates to tenant dashboard', async ({ page }) => {
@@ -98,14 +100,14 @@ test.describe('Demo Login', () => {
 
   test('demo tenant has active lease after seed', async () => {
     const supabase = getSupabaseAdminClient()
-    
+
     // Get demo tenant user
     const { data: demoTenantUser } = await supabase
       .from('users')
       .select('id')
       .eq('email', 'demo-tenant@uhome.internal')
       .single()
-    
+
     if (!demoTenantUser) {
       test.skip()
       return
@@ -117,7 +119,7 @@ test.describe('Demo Login', () => {
       .select('id')
       .eq('user_id', demoTenantUser.id)
       .single()
-    
+
     if (!tenantRecord) {
       throw new Error('Demo tenant record not found - tenant should be created during seed')
     }
@@ -128,17 +130,16 @@ test.describe('Demo Login', () => {
       .select('id, status, lease_start_date, lease_end_date')
       .eq('tenant_id', tenantRecord.id)
       .single()
-    
+
     if (!lease) {
       throw new Error('Demo tenant does not have a lease - lease should be created during seed')
     }
 
     // Assert lease is active
     expect(lease.status).toBe('active')
-    
+
     // Assert lease has start and end dates
     expect(lease.lease_start_date).toBeTruthy()
     expect(lease.lease_end_date).toBeTruthy()
   })
 })
-

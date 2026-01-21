@@ -80,7 +80,7 @@ export function filterRentRecords(
     // Format range boundaries as YYYY-MM-DD strings for comparison
     const startStr = formatDateForComparison(start)
     const endStr = formatDateForComparison(end)
-    
+
     filtered = filtered.filter(r => {
       // For paid records, use paid_date (cash accounting)
       // Exclude paid records with null paid_date (data quality issue)
@@ -113,7 +113,7 @@ export function filterExpenses(expenses: Expense[], filters?: FinanceFilters): E
     // Format range boundaries as YYYY-MM-DD strings for comparison
     const startStr = formatDateForComparison(start)
     const endStr = formatDateForComparison(end)
-    
+
     filtered = filtered.filter(e => {
       const expenseDateStr = formatDateForComparison(e.date)
       return expenseDateStr >= startStr && expenseDateStr <= endStr

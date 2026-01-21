@@ -55,13 +55,10 @@ serve(async req => {
     const { file_size, property_id } = await req.json()
 
     if (!file_size || !property_id) {
-      return new Response(
-        JSON.stringify({ error: 'file_size and property_id are required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'file_size and property_id are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Check file size limit
@@ -182,4 +179,3 @@ serve(async req => {
     })
   }
 })
-

@@ -27,7 +27,7 @@ async function sendMagicLink() {
   console.log(`   Callback URL: http://localhost:1000/auth/callback\n`)
 
   try {
-    const { data, error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: 'http://localhost:1000/auth/callback',

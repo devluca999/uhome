@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Plus, Home, Filter, X, Search } from 'lucide-react'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 type PropertyTypeFilter = string | 'all'
 type OccupancyFilter = 'occupied' | 'vacant' | 'all'
@@ -19,6 +20,8 @@ type RentRangeFilter = 'all' | 'low' | 'medium' | 'high'
 type SortFilter = 'newest' | 'oldest' | 'rent_high' | 'rent_low' | 'name_az' | 'name_za'
 
 export function LandlordProperties() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'LandlordProperties' })
   const { properties, loading, error, createProperty, deleteProperty } = useProperties()
   const { tenants } = useTenants()
   const [showForm, setShowForm] = useState(false)
@@ -215,97 +218,99 @@ export function LandlordProperties() {
                     <span className="text-sm font-medium text-foreground">Filters:</span>
                   </div>
 
-                {/* Property Type Filter */}
-                {propertyTypes.length > 0 && (
+                  {/* Property Type Filter */}
+                  {propertyTypes.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs text-muted-foreground whitespace-nowrap">
+                        Type:
+                      </label>
+                      <select
+                        value={propertyTypeFilter}
+                        onChange={e => setPropertyTypeFilter(e.target.value)}
+                        className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="all">All Types</option>
+                        {propertyTypes.map(type => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Occupancy Filter */}
                   <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">Type:</label>
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Occupancy:
+                    </label>
                     <select
-                      value={propertyTypeFilter}
-                      onChange={e => setPropertyTypeFilter(e.target.value)}
-                      className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={occupancyFilter}
+                      onChange={e => setOccupancyFilter(e.target.value as OccupancyFilter)}
+                      className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <option value="all">All Types</option>
-                      {propertyTypes.map(type => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
+                      <option value="all">All</option>
+                      <option value="occupied">Occupied</option>
+                      <option value="vacant">Vacant</option>
                     </select>
                   </div>
-                )}
 
-                {/* Occupancy Filter */}
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">
-                    Occupancy:
-                  </label>
-                  <select
-                    value={occupancyFilter}
-                    onChange={e => setOccupancyFilter(e.target.value as OccupancyFilter)}
-                    className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="all">All</option>
-                    <option value="occupied">Occupied</option>
-                    <option value="vacant">Vacant</option>
-                  </select>
-                </div>
+                  {/* Rent Range Filter */}
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Rent:</label>
+                    <select
+                      value={rentRangeFilter}
+                      onChange={e => setRentRangeFilter(e.target.value as RentRangeFilter)}
+                      className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Ranges</option>
+                      <option value="low">Low (≤ ${rentRanges.low.toLocaleString()})</option>
+                      <option value="medium">
+                        Med (${rentRanges.low.toLocaleString()}-${rentRanges.high.toLocaleString()})
+                      </option>
+                      <option value="high">High (≥ ${rentRanges.medium.toLocaleString()})</option>
+                    </select>
+                  </div>
 
-                {/* Rent Range Filter */}
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">Rent:</label>
-                  <select
-                    value={rentRangeFilter}
-                    onChange={e => setRentRangeFilter(e.target.value as RentRangeFilter)}
-                    className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="all">All Ranges</option>
-                    <option value="low">Low (≤ ${rentRanges.low.toLocaleString()})</option>
-                    <option value="medium">
-                      Med (${rentRanges.low.toLocaleString()}-${rentRanges.high.toLocaleString()})
-                    </option>
-                    <option value="high">High (≥ ${rentRanges.medium.toLocaleString()})</option>
-                  </select>
-                </div>
+                  {/* Sort Filter */}
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Sort:</label>
+                    <select
+                      value={sortFilter}
+                      onChange={e => setSortFilter(e.target.value as SortFilter)}
+                      className="flex h-8 min-w-[130px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                      <option value="rent_high">Rent: High→Low</option>
+                      <option value="rent_low">Rent: Low→High</option>
+                      <option value="name_az">Name: A-Z</option>
+                      <option value="name_za">Name: Z-A</option>
+                    </select>
+                  </div>
 
-                {/* Sort Filter */}
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">Sort:</label>
-                  <select
-                    value={sortFilter}
-                    onChange={e => setSortFilter(e.target.value as SortFilter)}
-                    className="flex h-8 min-w-[130px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="rent_high">Rent: High→Low</option>
-                    <option value="rent_low">Rent: Low→High</option>
-                    <option value="name_az">Name: A-Z</option>
-                    <option value="name_za">Name: Z-A</option>
-                  </select>
-                </div>
-
-                {/* Clear All Filters */}
-                {(searchQuery.trim() !== '' ||
-                  propertyTypeFilter !== 'all' ||
-                  occupancyFilter !== 'all' ||
-                  rentRangeFilter !== 'all' ||
-                  sortFilter !== 'newest') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSearchQuery('')
-                      setPropertyTypeFilter('all')
-                      setOccupancyFilter('all')
-                      setRentRangeFilter('all')
-                      setSortFilter('newest')
-                    }}
-                    className="ml-auto h-8 text-xs"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Clear
-                  </Button>
-                )}
+                  {/* Clear All Filters */}
+                  {(searchQuery.trim() !== '' ||
+                    propertyTypeFilter !== 'all' ||
+                    occupancyFilter !== 'all' ||
+                    rentRangeFilter !== 'all' ||
+                    sortFilter !== 'newest') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery('')
+                        setPropertyTypeFilter('all')
+                        setOccupancyFilter('all')
+                        setRentRangeFilter('all')
+                        setSortFilter('newest')
+                      }}
+                      className="ml-auto h-8 text-xs"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Clear
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

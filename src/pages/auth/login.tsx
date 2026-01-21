@@ -13,6 +13,7 @@ import {
   DEMO_TENANT_CREDENTIALS,
   DEMO_LANDLORD_CREDENTIALS,
 } from '@/lib/tenant-dev-mode'
+import { logFailedLogin } from '@/lib/security/security-scanner'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -22,8 +23,14 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [useMagicLink, setUseMagicLink] = useState(false)
-  const { signIn, signInWithGoogle, signInWithMagicLink, user, role, loading: authLoading } =
-    useAuth()
+  const {
+    signIn,
+    signInWithGoogle,
+    signInWithMagicLink,
+    user,
+    role,
+    loading: authLoading,
+  } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -63,6 +70,8 @@ export function LoginPage() {
 
     if (error) {
       setError(error.message)
+      // Log failed login attempt
+      await logFailedLogin(email, error.message)
       setLoading(false)
     } else {
       // Navigation will happen automatically via auth state change
@@ -117,7 +126,8 @@ export function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const credentials = intendedRole === 'tenant' ? DEMO_TENANT_CREDENTIALS : DEMO_LANDLORD_CREDENTIALS
+    const credentials =
+      intendedRole === 'tenant' ? DEMO_TENANT_CREDENTIALS : DEMO_LANDLORD_CREDENTIALS
 
     // Auto-fill credentials
     setEmail(credentials.email)
@@ -218,10 +228,14 @@ export function LoginPage() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={loading}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none disabled:opacity-50"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 focus:outline-none disabled:opacity-50 text-muted-foreground hover:text-foreground"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-emerald-700" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>

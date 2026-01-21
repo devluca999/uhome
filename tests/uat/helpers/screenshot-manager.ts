@@ -1,6 +1,6 @@
 /**
  * Screenshot Manager for UAT Tests
- * 
+ *
  * Manages screenshot capture, storage, and organization
  */
 
@@ -17,16 +17,12 @@ export interface ScreenshotOptions {
 /**
  * Generate screenshot filename with naming convention
  */
-export function generateScreenshotName(
-  page: string,
-  feature: string,
-  suffix?: string
-): string {
+export function generateScreenshotName(page: string, feature: string, suffix?: string): string {
   const timestamp = Date.now()
   const sanitizedPage = page.replace(/[^a-z0-9]/gi, '_').toLowerCase()
   const sanitizedFeature = feature.replace(/[^a-z0-9]/gi, '_').toLowerCase()
   const suffixPart = suffix ? `_${suffix.replace(/[^a-z0-9]/gi, '_').toLowerCase()}` : ''
-  
+
   return `${sanitizedPage}_${sanitizedFeature}${suffixPart}_${timestamp}.png`
 }
 
@@ -35,11 +31,11 @@ export function generateScreenshotName(
  */
 export function ensureScreenshotsDirectory(): string {
   const screenshotsDir = path.join(process.cwd(), 'docs', 'uat', 'screenshots')
-  
+
   if (!fs.existsSync(screenshotsDir)) {
     fs.mkdirSync(screenshotsDir, { recursive: true })
   }
-  
+
   return screenshotsDir
 }
 
@@ -127,4 +123,3 @@ export function verifyScreenshotDirectory(): boolean {
   const screenshotsDir = ensureScreenshotsDirectory()
   return fs.existsSync(screenshotsDir) && fs.statSync(screenshotsDir).isDirectory()
 }
-

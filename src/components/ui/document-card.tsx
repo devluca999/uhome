@@ -63,4 +63,3 @@ export function DocumentCard({ document, readOnly = false, onDelete }: DocumentC
     </Card>
   )
 }
-

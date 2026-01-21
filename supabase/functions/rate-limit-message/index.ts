@@ -54,13 +54,10 @@ serve(async req => {
     const { body, lease_id } = await req.json()
 
     if (!body || !lease_id) {
-      return new Response(
-        JSON.stringify({ error: 'body and lease_id are required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'body and lease_id are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Prevent empty messages (spam prevention)
@@ -172,4 +169,3 @@ serve(async req => {
     })
   }
 })
-

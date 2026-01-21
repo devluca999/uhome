@@ -1,6 +1,6 @@
 /**
  * Modals Visual Tests
- * 
+ *
  * Validates modals render correctly:
  * - Never clip content
  * - Properly centered
@@ -39,7 +39,7 @@ test.describe('Modals Visual Tests', () => {
       if (await modalContent.isVisible()) {
         const box = await modalContent.boundingBox()
         expect(box).toBeTruthy()
-        
+
         // Content should be fully visible
         const viewport = page.viewportSize()
         if (box && viewport) {
@@ -64,13 +64,13 @@ test.describe('Modals Visual Tests', () => {
       if (await modal.isVisible()) {
         const box = await modal.boundingBox()
         const viewport = page.viewportSize()
-        
+
         if (box && viewport) {
           // Modal should be roughly centered (allow some tolerance)
           const centerX = viewport.width / 2
           const modalCenterX = box.x + box.width / 2
           const offset = Math.abs(centerX - modalCenterX)
-          
+
           // Allow 50px tolerance
           expect(offset).toBeLessThan(50)
         }
@@ -112,7 +112,7 @@ test.describe('Modals Visual Tests', () => {
         // Overlay should cover entire viewport
         const box = await overlay.boundingBox()
         const viewport = page.viewportSize()
-        
+
         if (box && viewport) {
           expect(box.width).toBeGreaterThanOrEqual(viewport.width * 0.9)
           expect(box.height).toBeGreaterThanOrEqual(viewport.height * 0.9)
@@ -121,4 +121,3 @@ test.describe('Modals Visual Tests', () => {
     }
   })
 })
-

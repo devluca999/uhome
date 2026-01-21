@@ -1,6 +1,6 @@
 /**
  * Test Reset & Cleanup Helpers
- * 
+ *
  * MANDATORY: All tests must call reset functions in beforeEach hooks.
  * Ensures no test leaves residue in staging database or storage.
  */
@@ -46,28 +46,16 @@ export async function resetStagingFixtures(): Promise<void> {
     // Delete in dependency order to avoid foreign key violations
 
     // Delete test work orders
-    await supabase
-      .from('maintenance_requests')
-      .delete()
-      .like('description', '%Test%')
+    await supabase.from('maintenance_requests').delete().like('description', '%Test%')
 
     // Delete test tasks
-    await supabase
-      .from('tasks')
-      .delete()
-      .like('title', '%Test%')
+    await supabase.from('tasks').delete().like('title', '%Test%')
 
     // Delete test messages
-    await supabase
-      .from('messages')
-      .delete()
-      .like('body', '%Test%')
+    await supabase.from('messages').delete().like('body', '%Test%')
 
     // Delete test documents (metadata)
-    await supabase
-      .from('documents')
-      .delete()
-      .like('file_name', '%test%')
+    await supabase.from('documents').delete().like('file_name', '%test%')
 
     // Delete test tenants
     const { data: testTenants } = await supabase
@@ -88,41 +76,23 @@ export async function resetStagingFixtures(): Promise<void> {
     }
 
     // Delete test properties
-    await supabase
-      .from('properties')
-      .delete()
-      .or('name.like.%Test%')
+    await supabase.from('properties').delete().or('name.like.%Test%')
 
     // Delete test households
-    await supabase
-      .from('households')
-      .delete()
-      .like('name', '%Test%')
+    await supabase.from('households').delete().like('name', '%Test%')
 
     // Delete test invites
-    await supabase
-      .from('tenant_invites')
-      .delete()
-      .like('email', '%@test.%')
+    await supabase.from('tenant_invites').delete().like('email', '%@test.%')
 
     // Delete test leases
-    await supabase
-      .from('leases')
-      .delete()
-      .like('notes', '%Test%')
+    await supabase.from('leases').delete().like('notes', '%Test%')
 
     // Clean up rate limit tracking (older than 1 hour)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    await supabase
-      .from('rate_limit_tracking')
-      .delete()
-      .lt('created_at', oneHourAgo)
+    await supabase.from('rate_limit_tracking').delete().lt('created_at', oneHourAgo)
 
     // Clean up abuse events (older than 1 hour)
-    await supabase
-      .from('abuse_events')
-      .delete()
-      .lt('created_at', oneHourAgo)
+    await supabase.from('abuse_events').delete().lt('created_at', oneHourAgo)
   } catch (error) {
     console.warn('Failed to reset staging fixtures:', error)
     // Don't throw - allow tests to continue even if cleanup fails
@@ -138,12 +108,10 @@ export async function cleanupStorage(): Promise<void> {
 
   try {
     // List all files in documents bucket
-    const { data: files, error: listError } = await supabase.storage
-      .from('documents')
-      .list('', {
-        limit: 1000,
-        sortBy: { column: 'created_at', order: 'desc' },
-      })
+    const { data: files, error: listError } = await supabase.storage.from('documents').list('', {
+      limit: 1000,
+      sortBy: { column: 'created_at', order: 'desc' },
+    })
 
     if (listError) {
       console.warn('Failed to list storage files:', listError)
@@ -164,9 +132,7 @@ export async function cleanupStorage(): Promise<void> {
 
     // Delete test files
     const filePaths = testFiles.map(file => file.name)
-    const { error: deleteError } = await supabase.storage
-      .from('documents')
-      .remove(filePaths)
+    const { error: deleteError } = await supabase.storage.from('documents').remove(filePaths)
 
     if (deleteError) {
       console.warn('Failed to delete test files from storage:', deleteError)
@@ -252,4 +218,3 @@ export async function cleanupUserData(userId: string): Promise<void> {
     console.warn('Failed to cleanup user data:', error)
   }
 }
-

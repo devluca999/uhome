@@ -1,6 +1,6 @@
 /**
  * Test Seeding Helpers
- * 
+ *
  * Provides deterministic seeding for E2E tests against staging database.
  * All seeded data is tagged with is_test = true for easy cleanup.
  */
@@ -63,32 +63,25 @@ function requiresLease(options: SeedOptions): boolean {
 /**
  * Seed a complete test scenario with landlord, tenant, property, and relationships
  */
-export async function seedTestScenario(
-  options: SeedOptions = {}
-): Promise<SeededData> {
+export async function seedTestScenario(options: SeedOptions = {}): Promise<SeededData> {
   // Use admin client for user creation (requires service key)
   const supabaseAdmin = getSupabaseAdminClient()
   // Use regular client for data operations (respects RLS)
   const supabase = getSupabaseClient()
-  
+
   const landlordEmail = options.landlordEmail || generateTestEmail('landlord')
   const tenantEmail = options.tenantEmail || generateTestEmail('tenant')
 
   // Create landlord user using signUp + confirm (proper password hashing)
   // DO NOT use admin.createUser for loginable users - it bypasses password hashing
-  const { userId: landlordUserId } = await createAndConfirmUser(
-    landlordEmail,
-    'TestPassword123!'
-  )
+  const { userId: landlordUserId } = await createAndConfirmUser(landlordEmail, 'TestPassword123!')
 
   // Create landlord in users table (use admin client to bypass RLS)
-  const { error: landlordUserError } = await supabaseAdmin
-    .from('users')
-    .upsert({
-      id: landlordUserId,
-      email: landlordEmail,
-      role: 'landlord',
-    })
+  const { error: landlordUserError } = await supabaseAdmin.from('users').upsert({
+    id: landlordUserId,
+    email: landlordEmail,
+    role: 'landlord',
+  })
 
   if (landlordUserError) throw landlordUserError
 
@@ -122,19 +115,14 @@ export async function seedTestScenario(
   if (tenantEmail && seeded.property) {
     // Create tenant user using signUp + confirm (proper password hashing)
     // DO NOT use admin.createUser for loginable users - it bypasses password hashing
-    const { userId: tenantUserId } = await createAndConfirmUser(
-      tenantEmail,
-      'TestPassword123!'
-    )
+    const { userId: tenantUserId } = await createAndConfirmUser(tenantEmail, 'TestPassword123!')
 
     // Create tenant in users table (use admin client to bypass RLS)
-    const { error: tenantUserError } = await supabaseAdmin
-      .from('users')
-      .upsert({
-        id: tenantUserId,
-        email: tenantEmail,
-        role: 'tenant',
-      })
+    const { error: tenantUserError } = await supabaseAdmin.from('users').upsert({
+      id: tenantUserId,
+      email: tenantEmail,
+      role: 'tenant',
+    })
 
     if (tenantUserError) throw tenantUserError
 
@@ -196,14 +184,14 @@ export async function seedTestScenario(
   // Work orders are lease-scoped when a lease exists
   if (options.createWorkOrders && seeded.property && seeded.tenant) {
     const workOrders = []
-    
+
     // Use lease_id from centralized lease creation (lease-scoped work orders)
     const leaseId = seeded.lease?.id || null
-    
+
     // Determine creator role (default to tenant if not specified)
     const creatorRole = options.workOrderInitiator || 'tenant'
     const creatorId = creatorRole === 'tenant' ? seeded.tenant.userId : seeded.landlord.userId
-    
+
     for (let i = 0; i < 3; i++) {
       // Use production schema: created_by_role is required, status uses canonical values
       // Status values: 'submitted', 'seen', 'scheduled', 'in_progress', 'resolved', 'closed'
@@ -218,7 +206,7 @@ export async function seedTestScenario(
         created_by_role: creatorRole as 'tenant' | 'landlord', // Required: role of creator
         visibility_to_tenants: true, // Default: visible to tenants
       }
-      
+
       const { data: workOrder, error: workOrderError } = await supabaseAdmin
         .from('maintenance_requests')
         .insert(workOrderData)
@@ -234,21 +222,19 @@ export async function seedTestScenario(
   // Create tasks if requested (use admin client to bypass RLS)
   // Tasks table from create_tasks_table.sql (required for production schema)
   if (options.createTasks && seeded.tenant && seeded.property) {
-    const { error: taskError } = await supabaseAdmin
-      .from('tasks')
-      .insert({
-        title: 'Test Task',
-        assigned_to_type: 'tenant',
-        assigned_to_id: seeded.tenant.tenantId,
-        status: 'pending',
-        linked_context_type: 'property',
-        linked_context_id: seeded.property.id,
-        created_by: seeded.landlord.userId,
-        checklist_items: [
-          { id: '1', text: 'Item 1', completed: false },
-          { id: '2', text: 'Item 2', completed: false },
-        ],
-      })
+    const { error: taskError } = await supabaseAdmin.from('tasks').insert({
+      title: 'Test Task',
+      assigned_to_type: 'tenant',
+      assigned_to_id: seeded.tenant.tenantId,
+      status: 'pending',
+      linked_context_type: 'property',
+      linked_context_id: seeded.property.id,
+      created_by: seeded.landlord.userId,
+      checklist_items: [
+        { id: '1', text: 'Item 1', completed: false },
+        { id: '2', text: 'Item 2', completed: false },
+      ],
+    })
 
     if (taskError) throw taskError
   }
@@ -263,7 +249,7 @@ export async function seedTestScenario(
   ) {
     throw new Error(
       '[SEED ERROR] Tenant-scoped entities require a lease but none was created. ' +
-      'This indicates a logic error in seedTestScenario.'
+        'This indicates a logic error in seedTestScenario.'
     )
   }
 
@@ -290,4 +276,3 @@ export async function seedFullScenario(): Promise<SeededData> {
     createTasks: true,
   })
 }
-

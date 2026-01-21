@@ -1,6 +1,6 @@
 /**
  * Dashboard-Finances Sync E2E Tests
- * 
+ *
  * Tests data consistency, race conditions, and concurrent updates.
  */
 
@@ -28,7 +28,9 @@ test.describe('Dashboard-Finances Sync', () => {
 
     // Get dashboard revenue value
     const dashboardRevenue = await page.locator('[data-revenue]').textContent()
-    const dashboardValue = dashboardRevenue ? parseFloat(dashboardRevenue.replace(/[^0-9.]/g, '')) : 0
+    const dashboardValue = dashboardRevenue
+      ? parseFloat(dashboardRevenue.replace(/[^0-9.]/g, ''))
+      : 0
 
     // Navigate to finances page
     await page.goto(`${baseUrl}/landlord/finances`)
@@ -70,10 +72,7 @@ test.describe('Dashboard-Finances Sync', () => {
     })
 
     // Open two pages
-    const [page1, page2] = await Promise.all([
-      context.newPage(),
-      context.newPage(),
-    ])
+    const [page1, page2] = await Promise.all([context.newPage(), context.newPage()])
 
     // Login both as landlord
     for (const p of [page1, page2]) {
@@ -115,10 +114,7 @@ test.describe('Dashboard-Finances Sync', () => {
     })
 
     // Open two pages
-    const [page1, page2] = await Promise.all([
-      context.newPage(),
-      context.newPage(),
-    ])
+    const [page1, page2] = await Promise.all([context.newPage(), context.newPage()])
 
     // Login both
     for (const p of [page1, page2]) {
@@ -148,4 +144,3 @@ test.describe('Dashboard-Finances Sync', () => {
     await page2.close()
   })
 })
-

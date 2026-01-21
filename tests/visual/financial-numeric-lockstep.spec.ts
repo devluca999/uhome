@@ -32,9 +32,18 @@ test.describe('Financial Numeric Lockstep', () => {
 
     // Calculate expected values
     const currentMonth = new Date()
-    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(landlord.id, currentMonth)
-    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(landlord.id, currentMonth)
-    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(landlord.id, currentMonth)
+    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(
+      landlord.id,
+      currentMonth
+    )
+    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(
+      landlord.id,
+      currentMonth
+    )
+    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(
+      landlord.id,
+      currentMonth
+    )
 
     // Capture screenshot
     const screenshot = await page.screenshot({ fullPage: false })
@@ -86,9 +95,18 @@ test.describe('Financial Numeric Lockstep', () => {
 
     // Calculate expected values
     const currentMonth = new Date()
-    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(landlord.id, currentMonth)
-    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(landlord.id, currentMonth)
-    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(landlord.id, currentMonth)
+    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(
+      landlord.id,
+      currentMonth
+    )
+    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(
+      landlord.id,
+      currentMonth
+    )
+    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(
+      landlord.id,
+      currentMonth
+    )
 
     // Capture screenshot
     const screenshot = await page.screenshot({ fullPage: false })
@@ -149,8 +167,16 @@ test.describe('Financial Numeric Lockstep', () => {
     const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
     const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
 
-    const expectedRevenue = await financialAssertions.calculatePropertyRevenue(propertyId, monthStart, monthEnd)
-    const expectedExpenses = await financialAssertions.calculatePropertyExpenses(propertyId, monthStart, monthEnd)
+    const expectedRevenue = await financialAssertions.calculatePropertyRevenue(
+      propertyId,
+      monthStart,
+      monthEnd
+    )
+    const expectedExpenses = await financialAssertions.calculatePropertyExpenses(
+      propertyId,
+      monthStart,
+      monthEnd
+    )
 
     // Capture screenshot
     const screenshot = await page.screenshot({ fullPage: false })
@@ -170,4 +196,3 @@ test.describe('Financial Numeric Lockstep', () => {
     expect(Math.abs(expensesValue - expectedExpenses)).toBeLessThan(0.01)
   })
 })
-

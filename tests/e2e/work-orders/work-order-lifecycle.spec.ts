@@ -1,6 +1,6 @@
 /**
  * Work Order Lifecycle E2E Tests
- * 
+ *
  * Tests work order creation, status updates, sync, and edge cases.
  */
 
@@ -82,7 +82,7 @@ test.describe('Work Order Lifecycle', () => {
     // Tenant should not be able to do this
     const statusButton = page.locator('button:has-text("Scheduled")')
     const isVisible = await statusButton.isVisible()
-    
+
     if (isVisible) {
       // If button is visible, clicking should fail or be disabled
       await expect(statusButton).toBeDisabled()
@@ -146,11 +146,10 @@ test.describe('Work Order Lifecycle', () => {
     // This is typically prevented by state machine logic
     const openButton = page.locator('button:has-text("Open")')
     const isVisible = await openButton.isVisible()
-    
+
     // Status regression should not be allowed
     if (isVisible) {
       await expect(openButton).toBeDisabled()
     }
   })
 })
-

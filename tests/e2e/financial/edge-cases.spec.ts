@@ -33,7 +33,10 @@ test.describe('Financial Edge Cases', () => {
     const futureMonth = new Date()
     futureMonth.setMonth(futureMonth.getMonth() + 6) // 6 months in future
 
-    const futureRevenue = await financialAssertions.calculateMonthlyRevenue(landlord.id, futureMonth)
+    const futureRevenue = await financialAssertions.calculateMonthlyRevenue(
+      landlord.id,
+      futureMonth
+    )
 
     // Future month should have 0 or very low revenue (only if seeded data extends that far)
     expect(futureRevenue).toBeGreaterThanOrEqual(0)
@@ -75,7 +78,7 @@ test.describe('Financial Edge Cases', () => {
     }
 
     const propertiesWithTenants = new Set(tenants.map(t => t.property_id))
-    
+
     // Find a property without tenants (if any)
     const propertyWithoutTenants = allProperties.find(p => !propertiesWithTenants.has(p.id))
 
@@ -115,7 +118,9 @@ test.describe('Financial Edge Cases', () => {
     }
 
     const expectedBalance = Number(overdueRent.amount || 0) + Number(overdueRent.late_fee || 0)
-    const calculatedBalance = await financialAssertions.calculateTenantBalance(overdueRent.tenant_id)
+    const calculatedBalance = await financialAssertions.calculateTenantBalance(
+      overdueRent.tenant_id
+    )
 
     // Balance should match (may include multiple overdue records)
     expect(calculatedBalance).toBeGreaterThanOrEqual(expectedBalance)
@@ -222,4 +227,3 @@ test.describe('Financial Edge Cases', () => {
     }
   })
 })
-

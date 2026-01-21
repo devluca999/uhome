@@ -503,7 +503,10 @@ export function RentSummaryModal({
           className="relative z-10 w-full max-w-2xl"
           style={{ height: '90vh', maxHeight: '90vh' }}
         >
-          <div className="h-full flex flex-col overflow-hidden rounded-xl border-2 bg-card/95 backdrop-blur-md text-card-foreground shadow-card relative" style={{ backgroundColor: 'hsl(var(--card) / 0.95)' }}>
+          <div
+            className="h-full flex flex-col overflow-hidden rounded-xl border-2 bg-card/95 backdrop-blur-md text-card-foreground shadow-card relative"
+            style={{ backgroundColor: 'hsl(var(--card) / 0.95)' }}
+          >
             {/* Card styling elements */}
             <div className="absolute inset-0 pointer-events-none">
               <GrainOverlay />
@@ -511,301 +514,306 @@ export function RentSummaryModal({
               <ReflectiveGradient />
             </div>
             <div className="relative z-10 h-full flex flex-col overflow-hidden">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 flex-shrink-0 border-b border-border">
-              <div className="flex-1 pr-2">
-                <CardTitle className="text-2xl">{titles[metricType]}</CardTitle>
-                <CardDescription className="mt-2">{descriptions[metricType]}</CardDescription>
-                {propertyId && (
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    <p>Property: {propertyText}</p>
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-8 w-8 p-0 flex-shrink-0"
-                aria-label="Close modal"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4 overflow-y-auto flex-1 min-h-0 pb-12 pr-4">
-              {breakdownData && (
-                <div className="space-y-6">
-                  {/* Summary */}
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total {titles[metricType]}</p>
-                      <p className="text-2xl font-semibold text-foreground mt-1">
-                        {metricType === 'net' && breakdownData.total !== null
-                          ? `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                          : metricType === 'projected' && breakdownData.total !== null
-                            ? `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                            : metricType === 'activeProperties'
-                              ? `${breakdownData.total}`
-                              : metricType === 'occupancy'
-                                ? `${breakdownData.total}%`
-                                : `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-                      </p>
-                      {metricType === 'net' && breakdownData.total !== null && (
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          <p>Income: ${breakdownData.income?.toLocaleString()}</p>
-                          <p>Expenses: ${breakdownData.expenses?.toLocaleString()}</p>
-                        </div>
-                      )}
-                      {metricType === 'projected' && breakdownData.total !== null && (
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          <p>Projected Income: ${breakdownData.projectedIncome?.toLocaleString()}</p>
-                          <p>Projected Expenses: ${breakdownData.projectedExpenses?.toLocaleString()}</p>
-                        </div>
-                      )}
-                      {metricType === 'activeProperties' && 'activeCount' in breakdownData && (
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          <p>Properties with tenants: {breakdownData.total}</p>
-                          <p>Total properties: {properties.length}</p>
-                        </div>
-                      )}
-                      {metricType === 'occupancy' && 'activeCount' in breakdownData && (
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          <p>Active properties: {breakdownData.activeCount}</p>
-                          <p>Total properties: {breakdownData.totalProperties}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Breakdown by Property */}
-                  {breakdownData.byProperty && breakdownData.byProperty.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-foreground mb-3">By Property</h3>
-                      <div className="space-y-2">
-                        {breakdownData.byProperty.map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
-                          >
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-muted-foreground" />
-                              <span className="font-medium text-foreground">{item.property}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {metricType === 'projected' && 'income' in item
-                                  ? `(${item.incomeCount || 0} rent, ${item.expenseCount || 0} expenses)`
-                                  : metricType === 'activeProperties' && 'isActive' in item
-                                    ? `(${item.isActive ? 'Active' : 'Inactive'} - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
-                                    : metricType === 'occupancy' && 'occupancyPercentage' in item
-                                      ? `(${item.occupancyPercentage}% - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
-                                      : `(${item.count} ${item.count === 1 ? 'transaction' : 'transactions'})`}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {metricType === 'projected' && 'income' in item && (
-                                <div className="text-right text-xs text-muted-foreground">
-                                  <div>Income: ${item.income.toLocaleString()}</div>
-                                  <div>Expenses: ${item.expenses.toLocaleString()}</div>
-                                </div>
-                              )}
-                              <span className="font-semibold text-foreground">
-                                {metricType === 'activeProperties' || metricType === 'occupancy'
-                                  ? metricType === 'occupancy' && 'occupancyPercentage' in item
-                                    ? `${item.occupancyPercentage}%`
-                                    : item.amount > 0
-                                      ? 'Active'
-                                      : 'Inactive'
-                                  : `$${(metricType === 'projected' && 'net' in item
-                                    ? item.net
-                                    : item.amount
-                                  ).toLocaleString(undefined, {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0,
-                                  })}`}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 flex-shrink-0 border-b border-border">
+                <div className="flex-1 pr-2">
+                  <CardTitle className="text-2xl">{titles[metricType]}</CardTitle>
+                  <CardDescription className="mt-2">{descriptions[metricType]}</CardDescription>
+                  {propertyId && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      <p>Property: {propertyText}</p>
                     </div>
                   )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8 w-8 p-0 flex-shrink-0"
+                  aria-label="Close modal"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4 overflow-y-auto flex-1 min-h-0 pb-12 pr-4">
+                {breakdownData && (
+                  <div className="space-y-6">
+                    {/* Summary */}
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total {titles[metricType]}</p>
+                        <p className="text-2xl font-semibold text-foreground mt-1">
+                          {metricType === 'net' && breakdownData.total !== null
+                            ? `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                            : metricType === 'projected' && breakdownData.total !== null
+                              ? `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                              : metricType === 'activeProperties'
+                                ? `${breakdownData.total}`
+                                : metricType === 'occupancy'
+                                  ? `${breakdownData.total}%`
+                                  : `$${Math.abs(breakdownData.total).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                        </p>
+                        {metricType === 'net' && breakdownData.total !== null && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <p>Income: ${breakdownData.income?.toLocaleString()}</p>
+                            <p>Expenses: ${breakdownData.expenses?.toLocaleString()}</p>
+                          </div>
+                        )}
+                        {metricType === 'projected' && breakdownData.total !== null && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <p>
+                              Projected Income: ${breakdownData.projectedIncome?.toLocaleString()}
+                            </p>
+                            <p>
+                              Projected Expenses: $
+                              {breakdownData.projectedExpenses?.toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                        {metricType === 'activeProperties' && 'activeCount' in breakdownData && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <p>Properties with tenants: {breakdownData.total}</p>
+                            <p>Total properties: {properties.length}</p>
+                          </div>
+                        )}
+                        {metricType === 'occupancy' && 'activeCount' in breakdownData && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <p>Active properties: {breakdownData.activeCount}</p>
+                            <p>Total properties: {breakdownData.totalProperties}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                  {/* Breakdown by Category (for expenses) */}
-                  {breakdownData.byCategory && breakdownData.byCategory.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-foreground mb-3">By Category</h3>
-                      <div className="space-y-2">
-                        {breakdownData.byCategory.map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-foreground">{item.category}</span>
-                              <span className="text-xs text-muted-foreground">
-                                ({item.count} {item.count === 1 ? 'expense' : 'expenses'})
+                    {/* Breakdown by Property */}
+                    {breakdownData.byProperty && breakdownData.byProperty.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium text-foreground mb-3">By Property</h3>
+                        <div className="space-y-2">
+                          {breakdownData.byProperty.map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-muted-foreground" />
+                                <span className="font-medium text-foreground">{item.property}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {metricType === 'projected' && 'income' in item
+                                    ? `(${item.incomeCount || 0} rent, ${item.expenseCount || 0} expenses)`
+                                    : metricType === 'activeProperties' && 'isActive' in item
+                                      ? `(${item.isActive ? 'Active' : 'Inactive'} - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
+                                      : metricType === 'occupancy' && 'occupancyPercentage' in item
+                                        ? `(${item.occupancyPercentage}% - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
+                                        : `(${item.count} ${item.count === 1 ? 'transaction' : 'transactions'})`}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {metricType === 'projected' && 'income' in item && (
+                                  <div className="text-right text-xs text-muted-foreground">
+                                    <div>Income: ${item.income.toLocaleString()}</div>
+                                    <div>Expenses: ${item.expenses.toLocaleString()}</div>
+                                  </div>
+                                )}
+                                <span className="font-semibold text-foreground">
+                                  {metricType === 'activeProperties' || metricType === 'occupancy'
+                                    ? metricType === 'occupancy' && 'occupancyPercentage' in item
+                                      ? `${item.occupancyPercentage}%`
+                                      : item.amount > 0
+                                        ? 'Active'
+                                        : 'Inactive'
+                                    : `$${(metricType === 'projected' && 'net' in item
+                                        ? item.net
+                                        : item.amount
+                                      ).toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0,
+                                      })}`}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Breakdown by Category (for expenses) */}
+                    {breakdownData.byCategory && breakdownData.byCategory.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium text-foreground mb-3">By Category</h3>
+                        <div className="space-y-2">
+                          {breakdownData.byCategory.map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-foreground">{item.category}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({item.count} {item.count === 1 ? 'expense' : 'expenses'})
+                                </span>
+                              </div>
+                              <span className="font-semibold text-foreground">
+                                $
+                                {item.amount.toLocaleString(undefined, {
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0,
+                                })}
                               </span>
                             </div>
-                            <span className="font-semibold text-foreground">
-                              $
-                              {item.amount.toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0,
-                              })}
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Transaction List */}
+                    {breakdownData.transactions && breakdownData.transactions.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium text-foreground mb-3">
+                          Recent Transactions ({breakdownData.transactions.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {breakdownData.transactions.slice(0, 10).map((transaction, index) => {
+                            if (metricType === 'expenses' && 'name' in transaction) {
+                              const expense = transaction as Expense
+                              return (
+                                <div
+                                  key={expense.id || index}
+                                  className="flex items-center justify-between p-3 bg-background rounded-lg border border-border/50"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <DollarSign className="w-4 h-4 text-muted-foreground" />
+                                      <span className="font-medium text-foreground">
+                                        {expense.name}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {new Date(expense.date).toLocaleDateString()}
+                                      </span>
+                                      {expense.category && (
+                                        <span className="px-2 py-0.5 bg-muted rounded text-xs">
+                                          {expense.category}
+                                        </span>
+                                      )}
+                                      {properties.find(p => p.id === expense.property_id) && (
+                                        <span className="flex items-center gap-1">
+                                          <MapPin className="w-3 h-3" />
+                                          {properties.find(p => p.id === expense.property_id)?.name}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className="font-semibold text-foreground ml-4">
+                                    $
+                                    {Number(expense.amount).toLocaleString(undefined, {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 0,
+                                    })}
+                                  </span>
+                                </div>
+                              )
+                            } else if ('property' in transaction) {
+                              const record = transaction as RentRecordWithRelations
+                              const amount = Number(record.amount) + (Number(record.late_fee) || 0)
+                              return (
+                                <div
+                                  key={record.id || index}
+                                  className="flex items-center justify-between p-3 bg-background rounded-lg border border-border/50"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <DollarSign className="w-4 h-4 text-muted-foreground" />
+                                      <span className="font-medium text-foreground">
+                                        Rent - {record.property?.name || 'Unknown'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {record.paid_date
+                                          ? new Date(record.paid_date).toLocaleDateString()
+                                          : new Date(record.due_date).toLocaleDateString()}
+                                      </span>
+                                      <span
+                                        className={`px-2 py-0.5 rounded text-xs ${
+                                          record.status === 'paid'
+                                            ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                            : record.status === 'overdue'
+                                              ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                              : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                                        }`}
+                                      >
+                                        {record.status}
+                                      </span>
+                                      {Number(record.late_fee) > 0 && (
+                                        <span className="text-xs">
+                                          + ${Number(record.late_fee).toLocaleString()} late fee
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className="font-semibold text-foreground ml-4">
+                                    $
+                                    {amount.toLocaleString(undefined, {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 0,
+                                    })}
+                                  </span>
+                                </div>
+                              )
+                            }
+                            return null
+                          })}
+                        </div>
+                        {breakdownData.transactions.length > 10 && (
+                          <p className="text-xs text-muted-foreground mt-2 text-center">
+                            Showing 10 of {breakdownData.transactions.length} transactions
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Empty State */}
+                    {(!breakdownData.transactions || breakdownData.transactions.length === 0) &&
+                      (!breakdownData.byProperty || breakdownData.byProperty.length === 0) && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>No transactions found for the selected filters</p>
+                        </div>
+                      )}
+                  </div>
+                )}
+
+                {/* Summary for activeProperties and occupancy */}
+                {breakdownData &&
+                  (metricType === 'activeProperties' || metricType === 'occupancy') && (
+                    <div className="space-y-4">
+                      {metricType === 'occupancy' && 'activeCount' in breakdownData && (
+                        <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Active Properties</span>
+                            <span className="text-lg font-semibold text-foreground">
+                              {breakdownData.activeCount} of {breakdownData.totalProperties}
                             </span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Transaction List */}
-                  {breakdownData.transactions && breakdownData.transactions.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-foreground mb-3">
-                        Recent Transactions ({breakdownData.transactions.length})
-                      </h3>
-                      <div className="space-y-2">
-                        {breakdownData.transactions.slice(0, 10).map((transaction, index) => {
-                          if (metricType === 'expenses' && 'name' in transaction) {
-                            const expense = transaction as Expense
-                            return (
-                              <div
-                                key={expense.id || index}
-                                className="flex items-center justify-between p-3 bg-background rounded-lg border border-border/50"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <DollarSign className="w-4 h-4 text-muted-foreground" />
-                                    <span className="font-medium text-foreground">
-                                      {expense.name}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                                    <span className="flex items-center gap-1">
-                                      <Calendar className="w-3 h-3" />
-                                      {new Date(expense.date).toLocaleDateString()}
-                                    </span>
-                                    {expense.category && (
-                                      <span className="px-2 py-0.5 bg-muted rounded text-xs">
-                                        {expense.category}
-                                      </span>
-                                    )}
-                                    {properties.find(p => p.id === expense.property_id) && (
-                                      <span className="flex items-center gap-1">
-                                        <MapPin className="w-3 h-3" />
-                                        {properties.find(p => p.id === expense.property_id)?.name}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <span className="font-semibold text-foreground ml-4">
-                                  $
-                                  {Number(expense.amount).toLocaleString(undefined, {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0,
-                                  })}
-                                </span>
-                              </div>
-                            )
-                          } else if ('property' in transaction) {
-                            const record = transaction as RentRecordWithRelations
-                            const amount = Number(record.amount) + (Number(record.late_fee) || 0)
-                            return (
-                              <div
-                                key={record.id || index}
-                                className="flex items-center justify-between p-3 bg-background rounded-lg border border-border/50"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <DollarSign className="w-4 h-4 text-muted-foreground" />
-                                    <span className="font-medium text-foreground">
-                                      Rent - {record.property?.name || 'Unknown'}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                                    <span className="flex items-center gap-1">
-                                      <Calendar className="w-3 h-3" />
-                                      {record.paid_date
-                                        ? new Date(record.paid_date).toLocaleDateString()
-                                        : new Date(record.due_date).toLocaleDateString()}
-                                    </span>
-                                    <span
-                                      className={`px-2 py-0.5 rounded text-xs ${
-                                        record.status === 'paid'
-                                          ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                                          : record.status === 'overdue'
-                                            ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                                            : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                                      }`}
-                                    >
-                                      {record.status}
-                                    </span>
-                                    {Number(record.late_fee) > 0 && (
-                                      <span className="text-xs">
-                                        + ${Number(record.late_fee).toLocaleString()} late fee
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <span className="font-semibold text-foreground ml-4">
-                                  $
-                                  {amount.toLocaleString(undefined, {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0,
-                                  })}
-                                </span>
-                              </div>
-                            )
-                          }
-                          return null
-                        })}
-                      </div>
-                      {breakdownData.transactions.length > 10 && (
-                        <p className="text-xs text-muted-foreground mt-2 text-center">
-                          Showing 10 of {breakdownData.transactions.length} transactions
-                        </p>
+                        </div>
                       )}
                     </div>
                   )}
-
-                  {/* Empty State */}
-                  {(!breakdownData.transactions || breakdownData.transactions.length === 0) &&
-                    (!breakdownData.byProperty || breakdownData.byProperty.length === 0) && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>No transactions found for the selected filters</p>
-                      </div>
-                    )}
-                </div>
-              )}
-
-              {/* Summary for activeProperties and occupancy */}
-              {breakdownData &&
-                (metricType === 'activeProperties' || metricType === 'occupancy') && (
-                  <div className="space-y-4">
-                    {metricType === 'occupancy' && 'activeCount' in breakdownData && (
-                      <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Active Properties</span>
-                          <span className="text-lg font-semibold text-foreground">
-                            {breakdownData.activeCount} of {breakdownData.totalProperties}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-            </CardContent>
-            {/* CTA Footer - Sticky outside scrollable content */}
-            <div className="border-t border-border p-4 flex-shrink-0 bg-card">
-              <Button
-                onClick={() => {
-                  onClose()
-                  navigate('/landlord/finances')
-                }}
-                className="w-full"
-              >
-                View Full Finances
-              </Button>
-            </div>
+              </CardContent>
+              {/* CTA Footer - Sticky outside scrollable content */}
+              <div className="border-t border-border p-4 flex-shrink-0 bg-card">
+                <Button
+                  onClick={() => {
+                    onClose()
+                    navigate('/landlord/finances')
+                  }}
+                  className="w-full"
+                >
+                  View Full Finances
+                </Button>
+              </div>
             </div>
           </div>
         </motion.div>

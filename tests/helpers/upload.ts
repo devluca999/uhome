@@ -1,6 +1,6 @@
 /**
  * Upload Test Helpers
- * 
+ *
  * Utilities for testing file uploads in E2E tests.
  */
 
@@ -16,9 +16,12 @@ export function createTestFile(
   type: string = 'image/jpeg'
 ): File {
   // Create a blob with the specified size
-  const content = new Array(size).fill(0).map(() => Math.random().toString(36).charAt(2)).join('')
+  const content = new Array(size)
+    .fill(0)
+    .map(() => Math.random().toString(36).charAt(2))
+    .join('')
   const blob = new Blob([content], { type })
-  
+
   // Create a File from the blob
   return new File([blob], name, { type })
 }
@@ -67,10 +70,7 @@ export async function verifyFileInStorage(
 /**
  * Verify file metadata in database
  */
-export async function verifyFileInDatabase(
-  propertyId: string,
-  fileName: string
-): Promise<boolean> {
+export async function verifyFileInDatabase(propertyId: string, fileName: string): Promise<boolean> {
   const supabase = getSupabaseClient()
 
   try {
@@ -128,18 +128,17 @@ export async function deleteFileFromStorage(
 /**
  * Wait for upload to complete (with timeout)
  */
-export async function waitForUploadComplete(
-  page: Page,
-  timeout: number = 10000
-): Promise<void> {
+export async function waitForUploadComplete(page: Page, timeout: number = 10000): Promise<void> {
   // Wait for upload indicator to disappear or success message to appear
-  await page.waitForSelector('[data-upload-status="complete"], [data-upload-status="success"]', {
-    timeout,
-    state: 'visible',
-  }).catch(() => {
-    // If selector doesn't exist, just wait a bit
-    return page.waitForTimeout(2000)
-  })
+  await page
+    .waitForSelector('[data-upload-status="complete"], [data-upload-status="success"]', {
+      timeout,
+      state: 'visible',
+    })
+    .catch(() => {
+      // If selector doesn't exist, just wait a bit
+      return page.waitForTimeout(2000)
+    })
 }
 
 /**
@@ -164,4 +163,3 @@ export function createOversizedFile(sizeMB: number = 11): File {
 export function createUnsupportedFile(): File {
   return createTestFile('test.exe', 1024, 'application/x-msdownload')
 }
-

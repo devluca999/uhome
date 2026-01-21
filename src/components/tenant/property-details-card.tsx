@@ -97,4 +97,3 @@ export function PropertyDetailsCard({ property, lease }: PropertyDetailsCardProp
     </Card>
   )
 }
-

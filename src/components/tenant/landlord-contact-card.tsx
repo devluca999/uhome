@@ -114,4 +114,3 @@ export function LandlordContactCard({ propertyId, leaseId }: LandlordContactCard
     </Card>
   )
 }
-

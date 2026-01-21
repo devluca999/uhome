@@ -9,7 +9,8 @@ export function AdminSystem() {
   // In a real system, you would fetch this data from logs/system tables
   // For now, we show a basic informational view
 
-  const systemWarnings: Array<{ id: string; type: 'info' | 'warning' | 'error'; message: string }> = []
+  const systemWarnings: Array<{ id: string; type: 'info' | 'warning' | 'error'; message: string }> =
+    []
   const authErrors: Array<{ id: string; message: string; timestamp: string }> = []
   const jobFailures: Array<{ id: string; message: string; timestamp: string }> = []
 
@@ -21,7 +22,9 @@ export function AdminSystem() {
         <div className="max-w-7xl mx-auto space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground">System Health</h1>
-            <p className="text-muted-foreground mt-2">Basic operational signals and system status</p>
+            <p className="text-muted-foreground mt-2">
+              Basic operational signals and system status
+            </p>
           </div>
 
           {/* System Warnings */}
@@ -84,7 +87,10 @@ export function AdminSystem() {
               ) : (
                 <div className="space-y-2">
                   {authErrors.map(error => (
-                    <div key={error.id} className="p-3 rounded-lg border bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+                    <div
+                      key={error.id}
+                      className="p-3 rounded-lg border bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
+                    >
                       <div className="flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 mt-0.5 text-red-600 dark:text-red-400" />
                         <div className="flex-1">
@@ -145,7 +151,10 @@ export function AdminSystem() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">System Status</span>
-                  <Badge variant="outline" className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                  >
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Operational
                   </Badge>

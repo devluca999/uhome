@@ -1,13 +1,18 @@
 /**
  * Invite Lifecycle E2E Tests
- * 
+ *
  * Tests invite creation, acceptance, sync, and edge cases.
  */
 
 import { test, expect } from '@playwright/test'
 import { resetAll, resetDevState } from '../../helpers/reset'
 import { seedTestScenario } from '../../helpers/seed'
-import { createAndConfirmUser, loginAsLandlord, generateTestEmail, loginAsTenant } from '../../helpers/auth-helpers'
+import {
+  createAndConfirmUser,
+  loginAsLandlord,
+  generateTestEmail,
+  loginAsTenant,
+} from '../../helpers/auth-helpers'
 import { getSupabaseAdminClient } from '../../helpers/db-helpers'
 import { testMultiTabSync, waitForRealtimeUpdate } from '../../helpers/realtime'
 
@@ -24,10 +29,14 @@ test.describe('Invite Lifecycle', () => {
     const tenantEmail = generateTestEmail('tenant')
     const password = 'TestPassword123!'
 
-    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, { role: 'landlord' })
+    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, {
+      role: 'landlord',
+    })
     const supabaseAdmin = getSupabaseAdminClient()
-    await supabaseAdmin.from('users').upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
-    
+    await supabaseAdmin
+      .from('users')
+      .upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
+
     // Login as landlord
     await loginAsLandlord(page, landlordEmail, password)
     await page.goto(`${baseUrl}/landlord/properties`)
@@ -77,15 +86,19 @@ test.describe('Invite Lifecycle', () => {
     const tenantEmail = generateTestEmail('tenant')
     const password = 'TestPassword123!'
 
-    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, { role: 'landlord' })
+    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, {
+      role: 'landlord',
+    })
     const supabaseAdmin = getSupabaseAdminClient()
-    await supabaseAdmin.from('users').upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
+    await supabaseAdmin
+      .from('users')
+      .upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
     await loginAsLandlord(page, landlordEmail, password)
 
     // Create invite with past expiration date (would need to set this in DB)
     // For now, we verify that expired invites are handled
     await page.goto(`${baseUrl}/landlord/properties`)
-    
+
     // Try to accept expired invite
     // This would require navigating to accept-invite page with expired token
     // The UI should show an error message
@@ -97,10 +110,14 @@ test.describe('Invite Lifecycle', () => {
     const tenantEmail = generateTestEmail('tenant')
     const password = 'TestPassword123!'
 
-    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, { role: 'landlord' })
+    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, {
+      role: 'landlord',
+    })
     const supabaseAdmin = getSupabaseAdminClient()
-    await supabaseAdmin.from('users').upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
-    
+    await supabaseAdmin
+      .from('users')
+      .upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
+
     await loginAsLandlord(page, landlordEmail, password)
 
     // Create invite
@@ -147,9 +164,8 @@ test.describe('Invite Lifecycle', () => {
     // Verify tenant no longer sees property
     await page.reload()
     await page.waitForLoadState('networkidle')
-    
+
     // Tenant should see empty state or error
     await expect(page.locator('text=Test Property')).not.toBeVisible({ timeout: 5000 })
   })
 })
-

@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useContext } from 'react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { AuthContext } from '@/contexts/auth-context'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,8 +12,10 @@ import { cn } from '@/lib/utils'
 const ADMIN_NAV_ITEMS = [
   { path: '/admin/overview', label: 'Overview' },
   { path: '/admin/users', label: 'Users' },
-  { path: '/admin/conversations', label: 'Conversations' },
-  { path: '/admin/support', label: 'Support' },
+  { path: '/admin/messages-support', label: 'Messages & Support' },
+  { path: '/admin/payments', label: 'Payments' },
+  { path: '/admin/performance', label: 'Performance' },
+  { path: '/admin/audit-security', label: 'Audit & Security' },
   { path: '/admin/system', label: 'System' },
 ]
 
@@ -63,7 +66,12 @@ export function AdminLayout() {
                   e.currentTarget.style.display = 'none'
                 }}
               />
-              <span>uhome Admin</span>
+              <div className="flex items-center gap-2">
+                <span>uhome</span>
+                <Badge variant="secondary" rounded="full" className="lowercase text-xs">
+                  admin
+                </Badge>
+              </div>
             </Link>
           </div>
 
@@ -81,15 +89,32 @@ export function AdminLayout() {
                 }}
               >
                 <Button
-                  variant={location.pathname === item.path ? 'default' : 'ghost'}
+                  variant={
+                    location.pathname === item.path ||
+                    (item.path === '/admin/messages-support' &&
+                      (location.pathname === '/admin/conversations' ||
+                        location.pathname === '/admin/support'))
+                      ? 'default'
+                      : 'ghost'
+                  }
                   asChild
                   className={cn(
                     'w-full justify-start px-4 py-2 rounded-md transition-all duration-200',
-                    location.pathname === item.path
+                    location.pathname === item.path ||
+                      (item.path === '/admin/messages-support' &&
+                        (location.pathname === '/admin/conversations' ||
+                          location.pathname === '/admin/support'))
                       ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
                       : 'bg-transparent hover:bg-muted'
                   )}
-                  aria-current={location.pathname === item.path ? 'page' : undefined}
+                  aria-current={
+                    location.pathname === item.path ||
+                    (item.path === '/admin/messages-support' &&
+                      (location.pathname === '/admin/conversations' ||
+                        location.pathname === '/admin/support'))
+                      ? 'page'
+                      : undefined
+                  }
                 >
                   <Link to={item.path}>{item.label}</Link>
                 </Button>
@@ -104,7 +129,9 @@ export function AdminLayout() {
                 <p className="text-sm font-medium text-foreground truncate">
                   {devBypass ? 'Dev Mode' : user?.email || 'User'}
                 </p>
-                <p className="text-xs text-muted-foreground">Admin</p>
+                <Badge variant="secondary" rounded="full" className="text-xs lowercase mt-1">
+                  admin
+                </Badge>
               </div>
             </div>
             <div className="flex items-center gap-2">

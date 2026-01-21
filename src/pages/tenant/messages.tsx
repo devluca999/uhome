@@ -13,6 +13,7 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Badge } from '@/components/ui/badge'
 import type { Database } from '@/types/database'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 type Lease = Database['public']['Tables']['leases']['Row']
 type Message = Database['public']['Tables']['messages']['Row']
@@ -31,6 +32,9 @@ type LeaseWithLastMessage = Lease & {
 }
 
 export function TenantMessages() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'TenantMessages' })
+
   const { leaseId } = useParams<{ leaseId?: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -54,14 +58,16 @@ export function TenantMessages() {
   const { leases: allLeases, loading: leasesLoading } = useLeases(undefined, tenantId || undefined)
 
   // Filter leases: tenants only see draft (if tenant_id set) and active leases
-  const leases = useMemo(() => 
-    allLeases?.filter(lease => {
-      if (lease.status === 'ended') return false
-      if (lease.status === 'draft' && !lease.tenant_id) return false // Draft without tenant_id means not accepted yet
-      return true
-    }) || []
-  , [allLeases])
-  
+  const leases = useMemo(
+    () =>
+      allLeases?.filter(lease => {
+        if (lease.status === 'ended') return false
+        if (lease.status === 'draft' && !lease.tenant_id) return false // Draft without tenant_id means not accepted yet
+        return true
+      }) || [],
+    [allLeases]
+  )
+
   // Check if tenant has no tenant record (not invited yet)
   const hasNoTenantRecord = !tenantId && !loading && !leasesLoading
 
@@ -75,16 +81,16 @@ export function TenantMessages() {
       }
 
       setLoading(true)
-      
+
       // Batch fetch all properties at once
       const propertyIds = [...new Set(leases.map(l => l.property_id))]
       const { data: properties } = await supabase
         .from('properties')
         .select('id, name, address')
         .in('id', propertyIds)
-      
+
       const propertyMap = new Map(properties?.map(p => [p.id, p]) || [])
-      
+
       // Batch fetch last messages for all leases
       const leaseIds = leases.map(l => l.id)
       const { data: allMessages } = await supabase
@@ -93,24 +99,21 @@ export function TenantMessages() {
         .in('lease_id', leaseIds)
         .is('soft_deleted_at', null)
         .order('created_at', { ascending: false })
-      
+
       // Group messages by lease and get the most recent
-      const messagesByLease = new Map<string, typeof allMessages[0]>()
+      const messagesByLease = new Map<string, (typeof allMessages)[0]>()
       allMessages?.forEach(msg => {
         if (!messagesByLease.has(msg.lease_id)) {
           messagesByLease.set(msg.lease_id, msg)
         }
       })
-      
+
       // Batch fetch user data for all message senders
       const senderIds = [...new Set(allMessages?.map(m => m.sender_id).filter(Boolean) || [])]
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, email')
-        .in('id', senderIds)
-      
+      const { data: users } = await supabase.from('users').select('id, email').in('id', senderIds)
+
       const userMap = new Map(users?.map(u => [u.id, u]) || [])
-      
+
       // Batch fetch unread notifications for all leases
       const { data: notifications } = await supabase
         .from('notifications')
@@ -118,23 +121,24 @@ export function TenantMessages() {
         .in('lease_id', leaseIds)
         .eq('user_id', user?.id)
         .eq('read', false)
-      
+
       // Count notifications by lease
       const notificationCounts = new Map<string, number>()
       notifications?.forEach(n => {
         notificationCounts.set(n.lease_id, (notificationCounts.get(n.lease_id) || 0) + 1)
       })
-      
+
       // Combine all data
       const leasesWithData = leases.map(lease => {
         const lastMessageData = messagesByLease.get(lease.id)
-        const lastMessage = lastMessageData && lastMessageData.sender_id
-          ? {
-              ...lastMessageData,
-              sender: userMap.get(lastMessageData.sender_id),
-            }
-          : lastMessageData
-        
+        const lastMessage =
+          lastMessageData && lastMessageData.sender_id
+            ? {
+                ...lastMessageData,
+                sender: userMap.get(lastMessageData.sender_id),
+              }
+            : lastMessageData
+
         return {
           ...lease,
           property: propertyMap.get(lease.property_id),
@@ -189,18 +193,18 @@ export function TenantMessages() {
   // If no leases, show empty state
   if (!leases || leases.length === 0) {
     // Different empty states based on tenant status
-    const emptyStateTitle = hasNoTenantRecord 
-      ? "Not yet invited"
+    const emptyStateTitle = hasNoTenantRecord
+      ? 'Not yet invited'
       : allLeases && allLeases.length > 0
-      ? "No active leases"
-      : "No leases yet"
-    
+        ? 'No active leases'
+        : 'No leases yet'
+
     const emptyStateDescription = hasNoTenantRecord
       ? "You haven't been invited to any property yet. Your landlord will send you an invitation to join your lease, and you'll be able to message them here."
       : allLeases && allLeases.length > 0
-      ? "Your lease has ended or is not yet active. Messaging is only available for active leases."
-      : "Messaging starts once your landlord invites you to your lease. You'll be able to send and receive messages here."
-    
+        ? 'Your lease has ended or is not yet active. Messaging is only available for active leases.'
+        : "Messaging starts once your landlord invites you to your lease. You'll be able to send and receive messages here."
+
     return (
       <div className="container mx-auto px-4 py-8 relative">
         <GrainOverlay />

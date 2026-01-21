@@ -1,13 +1,18 @@
 /**
  * Tenant Production Flows E2E Tests
- * 
+ *
  * Tests tenant core flows, household UI, messaging parity, and role-based access control.
  */
 
 import { test, expect } from '@playwright/test'
 import { resetAll } from '../../helpers/reset'
 import { seedTestScenario } from '../../helpers/seed'
-import { createAndConfirmUser, loginAsTenant, loginAsLandlord, generateTestEmail } from '../../helpers/auth-helpers'
+import {
+  createAndConfirmUser,
+  loginAsTenant,
+  loginAsLandlord,
+  generateTestEmail,
+} from '../../helpers/auth-helpers'
 import { getSupabaseAdminClient } from '../../helpers/db-helpers'
 
 test.describe('Tenant Production Flows', () => {
@@ -22,7 +27,9 @@ test.describe('Tenant Production Flows', () => {
     const tenantEmail = generateTestEmail('tenant')
     const password = 'TestPassword123!'
 
-    const { userId: tenantId } = await createAndConfirmUser(tenantEmail, password, { role: 'tenant' })
+    const { userId: tenantId } = await createAndConfirmUser(tenantEmail, password, {
+      role: 'tenant',
+    })
     const supabaseAdmin = getSupabaseAdminClient()
     await supabaseAdmin.from('users').upsert({ id: tenantId, email: tenantEmail, role: 'tenant' })
 
@@ -110,9 +117,13 @@ test.describe('Tenant Production Flows', () => {
     const tenantEmail = generateTestEmail('tenant')
     const password = 'TestPassword123!'
 
-    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, { role: 'landlord' })
+    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, {
+      role: 'landlord',
+    })
     const supabaseAdmin = getSupabaseAdminClient()
-    await supabaseAdmin.from('users').upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
+    await supabaseAdmin
+      .from('users')
+      .upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
 
     // Login as landlord
     await loginAsLandlord(page, landlordEmail, password)
@@ -135,13 +146,15 @@ test.describe('Tenant Production Flows', () => {
     await page.click('button:has-text("Invite Tenant")')
     await page.waitForTimeout(500)
     await page.fill('input[type="email"]', tenantEmail)
-    
+
     // Select property from dropdown (if available)
-    const propertySelect = page.locator('select[name="property_id"], select:has-text("Select property")')
+    const propertySelect = page.locator(
+      'select[name="property_id"], select:has-text("Select property")'
+    )
     if (await propertySelect.isVisible()) {
       await propertySelect.selectOption({ label: 'Invite Test Property' })
     }
-    
+
     await page.click('button[type="submit"]:has-text("Send Invite")')
     await page.waitForTimeout(2000)
 
@@ -249,8 +262,12 @@ test.describe('Tenant Production Flows', () => {
     const tenant2Email = generateTestEmail('tenant2')
     const password = 'TestPassword123!'
 
-    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, { role: 'landlord' })
-    await supabaseAdmin.from('users').upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
+    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, password, {
+      role: 'landlord',
+    })
+    await supabaseAdmin
+      .from('users')
+      .upsert({ id: landlordId, email: landlordEmail, role: 'landlord' })
 
     // Create property 1
     const { data: property1 } = await supabaseAdmin
@@ -281,9 +298,11 @@ test.describe('Tenant Production Flows', () => {
     }
 
     // Create tenant 1 for property 1
-    const { userId: tenant1Id } = await createAndConfirmUser(tenant1Email, password, { role: 'tenant' })
+    const { userId: tenant1Id } = await createAndConfirmUser(tenant1Email, password, {
+      role: 'tenant',
+    })
     await supabaseAdmin.from('users').upsert({ id: tenant1Id, email: tenant1Email, role: 'tenant' })
-    
+
     const { data: tenant1Record } = await supabaseAdmin
       .from('tenants')
       .insert({
@@ -295,7 +314,9 @@ test.describe('Tenant Production Flows', () => {
       .single()
 
     // Create tenant 2 for property 2
-    const { userId: tenant2Id } = await createAndConfirmUser(tenant2Email, password, { role: 'tenant' })
+    const { userId: tenant2Id } = await createAndConfirmUser(tenant2Email, password, {
+      role: 'tenant',
+    })
     await supabaseAdmin.from('users').upsert({ id: tenant2Id, email: tenant2Email, role: 'tenant' })
 
     await supabaseAdmin.from('tenants').insert({
@@ -377,7 +398,9 @@ test.describe('Tenant Production Flows', () => {
     await page.waitForURL(/\/tenant\/maintenance/, { timeout: 5000 })
 
     // Assert: Can see maintenance requests
-    await expect(page.locator('[data-testid^="work-order-card-"]').first()).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[data-testid^="work-order-card-"]').first()).toBeVisible({
+      timeout: 5000,
+    })
 
     // Assert: Can submit new request
     await expect(page.locator('button:has-text("New Request")')).toBeVisible()
@@ -412,4 +435,3 @@ test.describe('Tenant Production Flows', () => {
     await expect(page).toHaveURL(/\/landlord\/dashboard/)
   })
 })
-

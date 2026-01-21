@@ -47,7 +47,7 @@ export function useTenantData() {
       setData(null)
       return
     }
-    
+
     // Only fetch if role is explicitly 'tenant'
     // If role is null, wait - don't make queries until we know the role
     // This prevents queries from being made for landlords during the role loading phase
@@ -91,7 +91,7 @@ export function useTenantData() {
           property_id,
           move_in_date,
           lease_end_date,
-          property:properties(*)
+          properties(*)
         `
         )
         .eq('user_id', user.id)
@@ -107,9 +107,9 @@ export function useTenantData() {
         throw tenantError
       }
 
-      const property = Array.isArray(tenantData.property)
-        ? tenantData.property[0]
-        : tenantData.property
+      const property = Array.isArray(tenantData.properties)
+        ? tenantData.properties[0]
+        : tenantData.properties
 
       // Fetch leases for this tenant
       const { data: leasesData } = await supabase

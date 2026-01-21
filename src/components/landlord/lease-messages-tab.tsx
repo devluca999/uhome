@@ -10,6 +10,7 @@ import { MessageSquare } from 'lucide-react'
 import type { Database } from '@/types/database'
 
 type Lease = Database['public']['Tables']['leases']['Row']
+type Message = Database['public']['Tables']['messages']['Row']
 
 interface LeaseMessagesTabProps {
   lease: Lease
@@ -76,7 +77,7 @@ export function LeaseMessagesTab({
                 {messages.map(message => (
                   <MessageBubble
                     key={message.id}
-                    message={message as any}
+                    message={message as Message & { sender?: { email: string | null } }}
                     currentUserId={user?.id}
                   />
                 ))}

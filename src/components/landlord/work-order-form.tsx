@@ -98,7 +98,7 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
 
       // Keep description for backward compatibility (migrated to public_description)
       workOrderData.description = publicDescription.trim()
-      
+
       // Add image URLs if any
       if (imageUrls.length > 0) {
         workOrderData.image_urls = imageUrls
@@ -293,9 +293,7 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
                   className="hidden"
                   onChange={handleImageUpload}
                 />
-                <span className="text-xs text-muted-foreground">
-                  {imageUrls.length}/5 photos
-                </span>
+                <span className="text-xs text-muted-foreground">{imageUrls.length}/5 photos</span>
               </div>
             </div>
           </div>

@@ -34,11 +34,16 @@ test.describe('Dashboard Math Assertions', () => {
 
     // Calculate expected monthly revenue (current calendar month)
     const currentMonth = new Date()
-    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(landlord.id, currentMonth)
+    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(
+      landlord.id,
+      currentMonth
+    )
 
     // Extract revenue from dashboard (find the revenue card/value)
     // This selector will need to be adjusted based on actual dashboard structure
-    const revenueElement = page.locator('[data-testid="dashboard-revenue"], [data-testid="monthly-revenue"]').first()
+    const revenueElement = page
+      .locator('[data-testid="dashboard-revenue"], [data-testid="monthly-revenue"]')
+      .first()
     const revenueText = await revenueElement.textContent()
 
     if (!revenueText) {
@@ -70,9 +75,14 @@ test.describe('Dashboard Math Assertions', () => {
     }
 
     const currentMonth = new Date()
-    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(landlord.id, currentMonth)
+    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(
+      landlord.id,
+      currentMonth
+    )
 
-    const expensesElement = page.locator('[data-testid="dashboard-expenses"], [data-testid="monthly-expenses"]').first()
+    const expensesElement = page
+      .locator('[data-testid="dashboard-expenses"], [data-testid="monthly-expenses"]')
+      .first()
     const expensesText = await expensesElement.textContent()
 
     if (!expensesText) {
@@ -102,15 +112,18 @@ test.describe('Dashboard Math Assertions', () => {
     }
 
     const currentMonth = new Date()
-    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(landlord.id, currentMonth)
+    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(
+      landlord.id,
+      currentMonth
+    )
 
     // Find the Net Income card specifically (not property profitability)
     const netIncomeCard = page.locator('[data-testid="dashboard-net-income"]')
     await netIncomeCard.waitFor({ state: 'visible', timeout: 5000 })
-    
+
     // Wait for NumberCounter animation to complete
     await page.waitForTimeout(1000)
-    
+
     // FIX: Select the value element specifically, not the entire card
     // MetricCard structure: Card > CardContent > div.text-2xl (the value)
     const netIncomeText = await netIncomeCard.locator('.text-2xl').textContent()
@@ -118,11 +131,13 @@ test.describe('Dashboard Math Assertions', () => {
     if (!netIncomeText) {
       throw new Error('Could not find net income value on dashboard')
     }
-    
+
     // Extract the numeric value (should be in format like "$22,548")
     const netIncomeValue = parseFloat(netIncomeText.replace(/[$,]/g, ''))
-    
-    console.log(`Dashboard Net Income: $${netIncomeValue}, Expected: $${expectedNetIncome}, Difference: $${Math.abs(netIncomeValue - expectedNetIncome)}`)
+
+    console.log(
+      `Dashboard Net Income: $${netIncomeValue}, Expected: $${expectedNetIncome}, Difference: $${Math.abs(netIncomeValue - expectedNetIncome)}`
+    )
 
     expect(Math.abs(netIncomeValue - expectedNetIncome)).toBeLessThan(0.01)
   })
@@ -151,8 +166,15 @@ test.describe('Dashboard Math Assertions', () => {
 
     // Calculate month-to-date (start of month to today)
     const today = new Date()
-    const monthToDateRevenue = await financialAssertions.calculateRevenueForRange(landlord.id, monthStart, today)
-    const fullMonthRevenue = await financialAssertions.calculateMonthlyRevenue(landlord.id, currentMonth)
+    const monthToDateRevenue = await financialAssertions.calculateRevenueForRange(
+      landlord.id,
+      monthStart,
+      today
+    )
+    const fullMonthRevenue = await financialAssertions.calculateMonthlyRevenue(
+      landlord.id,
+      currentMonth
+    )
 
     // If we're not on the last day of the month, these should be different
     if (today.getDate() < monthEnd.getDate()) {
@@ -231,7 +253,7 @@ test.describe('Dashboard Math Assertions', () => {
       expect(occupancyValue).toBe(expectedOccupancyCount)
       return
     }
-    
+
     const occupancyText = await occupancyElement.textContent()
 
     if (!occupancyText) {
@@ -241,7 +263,7 @@ test.describe('Dashboard Math Assertions', () => {
     const occupancyValue = parseInt(occupancyText.replace(/[^0-9]+/g, '') || '0')
 
     expect(occupancyValue).toBe(expectedOccupancyCount)
-    
+
     // Additional assertion: At least one property should have tenants
     expect(expectedOccupancyCount).toBeGreaterThan(0)
   })
@@ -287,7 +309,9 @@ test.describe('Dashboard Math Assertions', () => {
     const expectedOpenCount = workOrders?.length || 0
 
     // Extract open work orders count from dashboard
-    const workOrdersElement = page.locator('[data-testid="dashboard-work-orders"], [data-testid="open-work-orders"]').first()
+    const workOrdersElement = page
+      .locator('[data-testid="dashboard-work-orders"], [data-testid="open-work-orders"]')
+      .first()
     const workOrdersText = await workOrdersElement.textContent()
 
     if (!workOrdersText) {
@@ -299,4 +323,3 @@ test.describe('Dashboard Math Assertions', () => {
     expect(workOrdersValue).toBe(expectedOpenCount)
   })
 })
-

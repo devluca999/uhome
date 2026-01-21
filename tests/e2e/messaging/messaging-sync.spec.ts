@@ -1,6 +1,6 @@
 /**
  * Messaging Sync E2E Tests
- * 
+ *
  * Tests message sending, unread state, sync, and edge cases.
  */
 
@@ -155,10 +155,9 @@ test.describe('Messaging Sync', () => {
     // Verify tenant can no longer send messages
     await page.reload()
     await page.waitForLoadState('networkidle')
-    
+
     // Should show error or empty state
     const canSend = await page.locator('button:has-text("Send")').isEnabled()
     expect(canSend).toBeFalsy()
   })
 })
-

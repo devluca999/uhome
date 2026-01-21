@@ -116,4 +116,3 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
     </form>
   )
 }
-

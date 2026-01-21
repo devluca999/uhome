@@ -1,6 +1,6 @@
 /**
  * Integration Tests for Data Consistency
- * 
+ *
  * Tests cross-page data consistency:
  * - Dashboard-finances data consistency
  * - Property-tenant relationships
@@ -10,7 +10,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupMultiTabScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupMultiTabScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 
@@ -106,8 +111,8 @@ test.describe('Data Consistency Integration Tests', () => {
           feature: 'property_tenant_relationships',
           role: 'landlord',
           action: 'verify_relationships',
-          status: (hasTenant || hasProperty) ? 'passed' : 'skipped',
-          error: (hasTenant || hasProperty) ? undefined : 'Relationship data not found',
+          status: hasTenant || hasProperty ? 'passed' : 'skipped',
+          error: hasTenant || hasProperty ? undefined : 'Relationship data not found',
         })
       } catch (error) {
         await logTestResult(page, {
@@ -166,4 +171,3 @@ test.describe('Data Consistency Integration Tests', () => {
     }
   })
 })
-

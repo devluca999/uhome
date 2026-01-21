@@ -1,0 +1,150 @@
+﻿
+> uhome@0.1.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+C:\Users\user\Documents\GitHub\haume\scripts\seed-mock-data.ts
+  469:19  warning  'recordNotes' is assigned a value but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  469:19  error    'recordNotes' is never reassigned. Use 'const' instead                                         prefer-const
+  474:17  warning  'paymentMethodType' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  475:17  warning  'paymentMethodLabel' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\kpi-strip.tsx
+  20:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\lease-form.tsx
+  7:10  warning  'useLeases' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\notes-panel.tsx
+  7:31  warning  'X' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\occupancy-breakdown-modal.tsx
+   7:10  warning  'Button' is defined but never used. Allowed unused vars must match /^_/u                      @typescript-eslint/no-unused-vars
+  22:11  warning  'partiallyOccupied' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\profit-breakdown-modal.tsx
+  35:11  warning  'totalExpenses' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  36:11  warning  'netProfit' is assigned a value but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  37:11  warning  'marginPercentage' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\properties-distribution-modal.tsx
+  7:10  warning  'Button' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\property-documents.tsx
+   1:10  warning  'useState' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   2:29  warning  'CardDescription' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   2:46  warning  'CardHeader' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+   2:58  warning  'CardTitle' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  13:22  warning  'loading' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  14:11  warning  'leases' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\property-type-select.tsx
+  23:41  warning  'allTypes' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\recent-activity-modal.tsx
+  2:10  warning  'useNavigate' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\rent-ledger-row.tsx
+  3:64  warning  'DollarSign' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\rent-record-form.tsx
+  46:9  warning  'buttonSpring' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\rent-summary-modal.tsx
+   21:10  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u                                                                   @typescript-eslint/no-unused-vars
+  412:17  warning  'occupancyPercentage' is assigned a value but never used. Allowed unused vars must match /^_/u                                         @typescript-eslint/no-unused-vars
+  438:6   warning  React Hook useMemo has missing dependencies: 'expenses', 'filters', and 'tenants'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  466:9   warning  'dateRangeText' is assigned a value but never used. Allowed unused vars must match /^_/u                                               @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\task-distribution-modal.tsx
+    8:10  warning  'Button' is defined but never used. Allowed unused vars must match /^_/u                                          @typescript-eslint/no-unused-vars
+   11:10  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u                                              @typescript-eslint/no-unused-vars
+  119:6   warning  React Hook useMemo has a missing dependency: 'categorizeTasks'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  155:23  warning  'overdue' is assigned a value but never used. Allowed unused vars must match /^_/u                                @typescript-eslint/no-unused-vars
+  155:32  warning  'upcoming' is assigned a value but never used. Allowed unused vars must match /^_/u                               @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\task-form.tsx
+   6:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   8:19  warning  'Upload' is defined but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+  12:64  error    Unexpected any. Specify a different type                                                 @typescript-eslint/no-explicit-any
+  42:9   warning  'buttonSpring' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  78:13  warning  'urls' is assigned a value but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\tenant-distribution-modal.tsx
+  45:9  warning  'filteredTenants' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\tenant-invite-form.tsx
+   8:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u                                    @typescript-eslint/no-unused-vars
+   9:23  warning  'X' is defined but never used. Allowed unused vars must match /^_/u                                                    @typescript-eslint/no-unused-vars
+  10:10  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u                                                   @typescript-eslint/no-unused-vars
+  34:10  warning  'checkingPreviousLease' is assigned a value but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+  35:9   warning  'buttonSpring' is assigned a value but never used. Allowed unused vars must match /^_/u                                @typescript-eslint/no-unused-vars
+  44:6   warning  React Hook useEffect has a missing dependency: 'checkPreviousLease'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\tenant-list-modal.tsx
+   8:10  warning  'Badge' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  10:20  warning  'Mail' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  11:10  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\work-order-expense-prompt.tsx
+  1:10  warning  'useState' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  5:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\landlord\work-order-form.tsx
+  70:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Documents\GitHub\haume\src\components\layout\landlord-layout.tsx
+   6:10  warning  'NotificationBadge' is defined but never used. Allowed unused vars must match /^_/u                                                                                                               @typescript-eslint/no-unused-vars
+  41:35  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                       react-hooks/rules-of-hooks
+  42:32  error    React Hook "useReducedMotion" is called conditionally. React Hooks must be called in the exact same order in every component render                                                               react-hooks/rules-of-hooks
+  46:3   error    React Hook "useScrollReset" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  49:3   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?       react-hooks/rules-of-hooks
+  59:27  error    React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?         react-hooks/rules-of-hooks
+  69:27  error    React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?         react-hooks/rules-of-hooks
+
+C:\Users\user\Documents\GitHub\haume\src\components\layout\tenant-layout.tsx
+   6:10  warning  'NotificationBadge' is defined but never used. Allowed unused vars must match /^_/u                                                                                                               @typescript-eslint/no-unused-vars
+  39:35  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                       react-hooks/rules-of-hooks
+  40:32  error    React Hook "useReducedMotion" is called conditionally. React Hooks must be called in the exact same order in every component render                                                               react-hooks/rules-of-hooks
+  44:3   error    React Hook "useScrollReset" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  47:3   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?       react-hooks/rules-of-hooks
+  57:27  error    React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?         react-hooks/rules-of-hooks
+  67:27  error    React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?         react-hooks/rules-of-hooks
+
+C:\Users\user\Documents\GitHub\haume\src\components\messages\lease-thread.tsx
+  84:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Documents\GitHub\haume\src\components\settings\nav-item-reorder.tsx
+  4:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\settings\settings-section.tsx
+  4:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\settings\theme-preview.tsx
+  2:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\tenant\finance-summary-card.tsx
+  5:24  warning  'durationToSeconds' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\tenant\join-household-form.tsx
+  37:46  error  Unnecessary escape character: \/  no-useless-escape
+
+C:\Users\user\Documents\GitHub\haume\src\components\tenant\lease-messages-tab.tsx
+  79:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Documents\GitHub\haume\src\components\tenant\property-details-card.tsx
+  2:24  warning  'Calendar' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Documents\GitHub\haume\src\components\ui\area-chart.tsx
+  53:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Documents\GitHub\haume\src\components\ui\avatar.tsx
+  16:6  error  'className' is missing in props validation  react/prop-types
+
+C:\Users\user\Documents\GitHub\haume\src\components\ui\badge.tsx
+  38:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\user\Documents\GitHub\haume\src\components\ui\bar-chart.tsx
+  35:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+

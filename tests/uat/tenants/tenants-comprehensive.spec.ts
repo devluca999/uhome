@@ -1,6 +1,6 @@
 /**
  * Comprehensive Tenants UAT Tests
- * 
+ *
  * Tests all tenant features:
  * - Add/remove tenants to household
  * - Invite workflow
@@ -11,7 +11,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupMultiTabScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupMultiTabScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 import { createTestFile, uploadFileViaUI } from '../../helpers/upload'
@@ -86,7 +91,9 @@ test.describe('Tenants Comprehensive UAT', () => {
       await landlordPage.goto(`${baseUrl}/landlord/tenants`)
       await waitForPageReady(landlordPage)
 
-      const inviteButton = landlordPage.locator('button:has-text("Invite"), button:has-text("Add")').first()
+      const inviteButton = landlordPage
+        .locator('button:has-text("Invite"), button:has-text("Add")')
+        .first()
       if (await inviteButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await inviteButton.click()
         await landlordPage.waitForTimeout(500)
@@ -149,7 +156,9 @@ test.describe('Tenants Comprehensive UAT', () => {
     try {
       // Find profile picture upload
       const fileInput = page.locator('input[type="file"]').first()
-      const uploadButton = page.locator('button:has-text("Upload"), button:has-text("Change")').first()
+      const uploadButton = page
+        .locator('button:has-text("Upload"), button:has-text("Change")')
+        .first()
 
       const hasFileInput = await fileInput.isVisible({ timeout: 2000 }).catch(() => false)
       const hasUploadButton = await uploadButton.isVisible({ timeout: 2000 }).catch(() => false)
@@ -227,4 +236,3 @@ test.describe('Tenants Comprehensive UAT', () => {
     }
   })
 })
-

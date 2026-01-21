@@ -1,6 +1,6 @@
 /**
  * Dev Mode Activation E2E Tests
- * 
+ *
  * Tests dev mode activation, edge cases, and production blocking.
  * Verifies that dev mode cannot be activated in production.
  */
@@ -15,7 +15,7 @@ test.describe('Dev Mode Activation', () => {
   test.beforeEach(async ({ page }) => {
     // Enforce staging-only environment
     enforceStagingOnly()
-    
+
     // Reset dev state
     await resetDevState(page)
   })
@@ -28,7 +28,7 @@ test.describe('Dev Mode Activation', () => {
     // Verify dev mode indicator is visible (if env var is set)
     // Note: This test assumes VITE_TENANT_DEV_MODE_ENABLED=true in test env
     const devModeIndicator = page.locator('[data-dev-mode]')
-    
+
     // Check if dev mode is available (env var check)
     const isAvailable = await page.evaluate(() => {
       return import.meta.env.VITE_TENANT_DEV_MODE_ENABLED === 'true'
@@ -76,11 +76,11 @@ test.describe('Dev Mode Activation', () => {
   test('production build → dev mode NEVER ON', async ({ page }) => {
     // This test verifies that production URLs are blocked
     // We can't actually test production, but we can verify the guard logic
-    
+
     // Check that environment guard would block production
     const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
-    const isProduction = supabaseUrl.toLowerCase().includes('prod') || 
-                         supabaseUrl.toLowerCase().includes('production')
+    const isProduction =
+      supabaseUrl.toLowerCase().includes('prod') || supabaseUrl.toLowerCase().includes('production')
 
     if (isProduction) {
       // If we're somehow in production, the guard should have already thrown
@@ -90,7 +90,7 @@ test.describe('Dev Mode Activation', () => {
       // In staging, dev mode can be activated
       await page.goto(`${baseUrl}/?dev=tenant`)
       await page.waitForLoadState('networkidle')
-      
+
       // Dev mode should be available in staging (if env var is set)
       const envEnabled = await page.evaluate(() => {
         return import.meta.env.VITE_TENANT_DEV_MODE_ENABLED === 'true'
@@ -140,25 +140,26 @@ test.describe('Dev Mode Activation', () => {
   test('dev mode does not bypass RLS', async ({ page }) => {
     // This test verifies that dev mode does not bypass RLS policies
     // We'll test by trying to access data that should be blocked
-    
+
     await page.goto(`${baseUrl}/?dev=tenant`)
     await page.waitForLoadState('networkidle')
 
     // Try to access a property that the tenant shouldn't have access to
     // This would require setting up test data first
     // For now, we verify that dev mode is active but RLS is still enforced
-    
+
     const isDevModeActive = await page.evaluate(() => {
-      return localStorage.getItem('tenant-dev-mode-state') !== null ||
-             new URLSearchParams(window.location.search).get('dev') === 'tenant'
+      return (
+        localStorage.getItem('tenant-dev-mode-state') !== null ||
+        new URLSearchParams(window.location.search).get('dev') === 'tenant'
+      )
     })
 
     // Dev mode being active doesn't mean RLS is bypassed
     // RLS is enforced at the database level, not the application level
     expect(isDevModeActive).toBeTruthy()
-    
+
     // Note: Actual RLS bypass testing would require database queries
     // which should be done in separate RLS-specific tests
   })
 })
-

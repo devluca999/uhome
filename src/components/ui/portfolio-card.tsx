@@ -64,7 +64,10 @@ export const PortfolioCard = memo(function PortfolioCard({
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
         <CardContent>
-          <p className="text-3xl font-semibold text-foreground" data-testid={dataTestId ? `${dataTestId}-value` : undefined}>
+          <p
+            className="text-3xl font-semibold text-foreground"
+            data-testid={dataTestId ? `${dataTestId}-value` : undefined}
+          >
             <NumberCounter value={value} format={format} />
           </p>
         </CardContent>

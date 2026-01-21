@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 import { isDevModeActive } from '@/lib/tenant-dev-mode'
+import { trackUpload } from '@/hooks/admin/use-upload-monitoring'
 
 type Document = {
   id: string
@@ -26,10 +27,7 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
   async function fetchDocuments() {
     try {
       setLoading(true)
-      let query = supabase
-        .from('documents')
-        .select('*')
-        .order('created_at', { ascending: false })
+      let query = supabase.from('documents').select('*').order('created_at', { ascending: false })
 
       // If leaseId is provided, filter by it
       if (leaseId) {
@@ -104,19 +102,36 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
         }
       : undefined
 
-    // Upload to Supabase Storage (assuming a bucket named 'documents')
-    const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-      metadata,
-    })
+    // Track upload with monitoring
+    const { result: publicUrl, error: uploadError } = await trackUpload(
+      async () => {
+        // Upload to Supabase Storage (assuming a bucket named 'documents')
+        const { error: uploadErr } = await supabase.storage
+          .from('documents')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+            metadata,
+          })
+
+        if (uploadErr) throw uploadErr
+
+        // Get public URL
+        const {
+          data: { publicUrl: url },
+        } = supabase.storage.from('documents').getPublicUrl(filePath)
+
+        return url
+      },
+      {
+        bucket: 'documents',
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      }
+    )
 
     if (uploadError) throw uploadError
-
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('documents').getPublicUrl(filePath)
 
     // Create document record
     const {

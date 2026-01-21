@@ -1,6 +1,6 @@
 /**
  * Visual UAT Tests for Dashboard
- * 
+ *
  * Visual assertions for dashboard:
  * - Charts render correctly
  * - Cards stay within size constraints
@@ -9,7 +9,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupUATScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupUATScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logVisualMismatch } from '../helpers/result-logger'
 import { captureUATScreenshot, captureChartScreenshot } from '../helpers/screenshot-manager'
 
@@ -94,10 +99,17 @@ test.describe('Dashboard Visual UAT', () => {
             const viewport = page.viewportSize()
 
             if (box && viewport) {
-              const isClipped = box.x + box.width > viewport.width || box.y + box.height > viewport.height
+              const isClipped =
+                box.x + box.width > viewport.width || box.y + box.height > viewport.height
 
               if (isClipped) {
-                const screenshot = await captureUATScreenshot(page, 'dashboard', 'modal_clipped', {}, 'clipped')
+                const screenshot = await captureUATScreenshot(
+                  page,
+                  'dashboard',
+                  'modal_clipped',
+                  {},
+                  'clipped'
+                )
                 await logVisualMismatch(page, {
                   page: 'dashboard',
                   feature: 'modals',
@@ -121,4 +133,3 @@ test.describe('Dashboard Visual UAT', () => {
     }
   })
 })
-

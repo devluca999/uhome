@@ -9,8 +9,11 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Download, File } from 'lucide-react'
 import { motion as motionTokens, createSpring } from '@/lib/motion'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 export function TenantDocuments() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'TenantDocuments' })
   const { data: tenantData, loading: tenantLoading } = useTenantData()
   const { leases } = useLeases(undefined, tenantData?.tenant.id)
   // Get first active lease for the tenant (tenants typically have one active lease)

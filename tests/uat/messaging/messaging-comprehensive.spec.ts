@@ -1,6 +1,6 @@
 /**
  * Comprehensive Messaging UAT Tests
- * 
+ *
  * Tests all messaging features:
  * - Tenant ↔ landlord chat threads
  * - Real-time updates across tabs
@@ -11,7 +11,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupMultiTabScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupMultiTabScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 
@@ -46,7 +51,9 @@ test.describe('Messaging Comprehensive UAT', () => {
         await tenantPage.waitForTimeout(500)
 
         // Find send button
-        const sendButton = tenantPage.locator('button:has-text("Send"), button[type="submit"]').first()
+        const sendButton = tenantPage
+          .locator('button:has-text("Send"), button[type="submit"]')
+          .first()
         if (await sendButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await sendButton.click()
           await tenantPage.waitForTimeout(2000)
@@ -75,7 +82,13 @@ test.describe('Messaging Comprehensive UAT', () => {
         })
       }
     } catch (error) {
-      const screenshot = await captureUATScreenshot(tenantPage, 'messaging', 'send_message', {}, 'error')
+      const screenshot = await captureUATScreenshot(
+        tenantPage,
+        'messaging',
+        'send_message',
+        {},
+        'error'
+      )
       await logFunctionalFailure(tenantPage, {
         page: 'messaging',
         feature: 'send_message',
@@ -106,7 +119,9 @@ test.describe('Messaging Comprehensive UAT', () => {
         await messageInput.fill('Real-time test message')
         await tenantPage.waitForTimeout(500)
 
-        const sendButton = tenantPage.locator('button:has-text("Send"), button[type="submit"]').first()
+        const sendButton = tenantPage
+          .locator('button:has-text("Send"), button[type="submit"]')
+          .first()
         if (await sendButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await sendButton.click()
           await tenantPage.waitForTimeout(1000)
@@ -162,7 +177,9 @@ test.describe('Messaging Comprehensive UAT', () => {
         await messageInput.fill('Notification test message')
         await tenantPage.waitForTimeout(500)
 
-        const sendButton = tenantPage.locator('button:has-text("Send"), button[type="submit"]').first()
+        const sendButton = tenantPage
+          .locator('button:has-text("Send"), button[type="submit"]')
+          .first()
         if (await sendButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await sendButton.click()
           await tenantPage.waitForTimeout(2000)
@@ -175,8 +192,12 @@ test.describe('Messaging Comprehensive UAT', () => {
       await landlordPage.waitForTimeout(3000)
 
       // Check for notification indicator
-      const notificationIndicator = landlordPage.locator('[data-notification], [class*="notification"], [aria-label*="notification"]')
-      const hasNotification = await notificationIndicator.isVisible({ timeout: 5000 }).catch(() => false)
+      const notificationIndicator = landlordPage.locator(
+        '[data-notification], [class*="notification"], [aria-label*="notification"]'
+      )
+      const hasNotification = await notificationIndicator
+        .isVisible({ timeout: 5000 })
+        .catch(() => false)
 
       await logTestResult(landlordPage, {
         page: 'messaging',
@@ -213,12 +234,14 @@ test.describe('Messaging Comprehensive UAT', () => {
 
     try {
       // Find message history container
-      const messageContainer = page.locator('[class*="message"], [class*="chat"], [class*="history"]').first()
+      const messageContainer = page
+        .locator('[class*="message"], [class*="chat"], [class*="history"]')
+        .first()
       const isVisible = await messageContainer.isVisible({ timeout: 5000 }).catch(() => false)
 
       if (isVisible) {
         // Verify scrolling works
-        await messageContainer.evaluate(el => el.scrollTop = el.scrollHeight)
+        await messageContainer.evaluate(el => (el.scrollTop = el.scrollHeight))
         await page.waitForTimeout(500)
 
         await logTestResult(page, {
@@ -267,7 +290,9 @@ test.describe('Messaging Comprehensive UAT', () => {
         await messageInput.fill('Unread test message')
         await tenantPage.waitForTimeout(500)
 
-        const sendButton = tenantPage.locator('button:has-text("Send"), button[type="submit"]').first()
+        const sendButton = tenantPage
+          .locator('button:has-text("Send"), button[type="submit"]')
+          .first()
         if (await sendButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await sendButton.click()
           await tenantPage.waitForTimeout(2000)
@@ -280,7 +305,9 @@ test.describe('Messaging Comprehensive UAT', () => {
       await landlordPage.waitForTimeout(3000)
 
       // Check for unread indicator
-      const unreadIndicator = landlordPage.locator('[data-unread], [class*="unread"], [aria-label*="unread"]')
+      const unreadIndicator = landlordPage.locator(
+        '[data-unread], [class*="unread"], [aria-label*="unread"]'
+      )
       const hasUnread = await unreadIndicator.isVisible({ timeout: 5000 }).catch(() => false)
 
       // Mark as read
@@ -289,7 +316,9 @@ test.describe('Messaging Comprehensive UAT', () => {
         await landlordPage.waitForTimeout(1000)
 
         // Verify unread indicator disappears
-        const unreadAfterRead = await unreadIndicator.isVisible({ timeout: 2000 }).catch(() => false)
+        const unreadAfterRead = await unreadIndicator
+          .isVisible({ timeout: 2000 })
+          .catch(() => false)
 
         await logTestResult(landlordPage, {
           page: 'messaging',
@@ -325,4 +354,3 @@ test.describe('Messaging Comprehensive UAT', () => {
     }
   })
 })
-

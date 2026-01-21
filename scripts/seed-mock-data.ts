@@ -40,10 +40,10 @@ if (!isUsingServiceRole) {
 
 /**
  * Create and confirm a demo user with proper password hashing
- * 
+ *
  * Uses signUp (proper password hashing) + admin confirmation, NOT admin.createUser.
  * admin.createUser bypasses password hashing and leads to "Invalid login credentials" errors.
- * 
+ *
  * @param email - User email address
  * @param password - User password (will be properly hashed via signUp)
  * @param role - User role ('landlord' or 'tenant')
@@ -57,7 +57,7 @@ async function createAndConfirmDemoUser(
   if (!isUsingServiceRole) {
     throw new Error('createAndConfirmDemoUser requires SUPABASE_SERVICE_ROLE_KEY')
   }
-  
+
   if (!supabaseAnon) {
     throw new Error('createAndConfirmDemoUser requires VITE_SUPABASE_ANON_KEY for signUp')
   }
@@ -76,7 +76,9 @@ async function createAndConfirmDemoUser(
   if (signUpError) {
     // If user already exists, try to sign in to verify the password works
     if (signUpError.message?.includes('already registered') || signUpError.status === 422) {
-      console.log(`[createAndConfirmDemoUser] User already exists, attempting sign in to verify password...`)
+      console.log(
+        `[createAndConfirmDemoUser] User already exists, attempting sign in to verify password...`
+      )
       const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
         email,
         password,
@@ -84,35 +86,45 @@ async function createAndConfirmDemoUser(
 
       if (signInError || !signInData.user) {
         // Password doesn't work - user exists but password is wrong (created with admin.createUser)
-        console.log(`[createAndConfirmDemoUser] Existing user password invalid, deleting and recreating...`)
-        
+        console.log(
+          `[createAndConfirmDemoUser] Existing user password invalid, deleting and recreating...`
+        )
+
         const { data: usersList } = await supabase.auth.admin.listUsers()
         const existingUser = usersList?.users?.find(u => u.email === email)
-        
+
         if (existingUser) {
           // Delete the existing user via admin API
           const { error: deleteError } = await supabase.auth.admin.deleteUser(existingUser.id)
           if (deleteError) {
-            throw new Error(`User exists but password is invalid. Failed to delete: ${deleteError.message}. Please delete user manually from Supabase Auth dashboard.`)
+            throw new Error(
+              `User exists but password is invalid. Failed to delete: ${deleteError.message}. Please delete user manually from Supabase Auth dashboard.`
+            )
           }
           console.log(`[createAndConfirmDemoUser] Deleted existing invalid user`)
-          
+
           // Wait a moment for deletion to propagate
           await new Promise(resolve => setTimeout(resolve, 1000))
-          
+
           // Now try to sign up again
-          const { data: retrySignUpData, error: retrySignUpError } = await supabaseAnon.auth.signUp({
-            email,
-            password,
-          })
-          
+          const { data: retrySignUpData, error: retrySignUpError } = await supabaseAnon.auth.signUp(
+            {
+              email,
+              password,
+            }
+          )
+
           if (retrySignUpError || !retrySignUpData.user) {
-            throw new Error(`Failed to sign up after deletion: ${retrySignUpError?.message || 'No user returned'}`)
+            throw new Error(
+              `Failed to sign up after deletion: ${retrySignUpError?.message || 'No user returned'}`
+            )
           }
-          
+
           userId = retrySignUpData.user.id
           isNewUser = true
-          console.log(`[createAndConfirmDemoUser] SignUp successful after deletion. User ID: ${userId}`)
+          console.log(
+            `[createAndConfirmDemoUser] SignUp successful after deletion. User ID: ${userId}`
+          )
         } else {
           throw new Error(`User exists but could not find user ID to delete`)
         }
@@ -140,10 +152,9 @@ async function createAndConfirmDemoUser(
   // Step 2: Confirm user via admin API (only for newly created users)
   if (isNewUser) {
     console.log(`[createAndConfirmDemoUser] Confirming user via admin API...`)
-    const { error: confirmError } = await supabase.auth.admin.updateUserById(
-      userId,
-      { email_confirm: true }
-    )
+    const { error: confirmError } = await supabase.auth.admin.updateUserById(userId, {
+      email_confirm: true,
+    })
 
     if (confirmError) {
       throw new Error(`Failed to confirm user: ${confirmError.message}`)
@@ -151,13 +162,13 @@ async function createAndConfirmDemoUser(
 
     console.log(`[createAndConfirmDemoUser] User confirmed successfully`)
   } else {
-    console.log(`[createAndConfirmDemoUser] Skipping confirmation (user already exists and is valid)`)
+    console.log(
+      `[createAndConfirmDemoUser] Skipping confirmation (user already exists and is valid)`
+    )
   }
 
   // Step 3: Create/update user record in users table
-  const { error: userError } = await supabase
-    .from('users')
-    .upsert({ id: userId, email, role })
+  const { error: userError } = await supabase.from('users').upsert({ id: userId, email, role })
 
   if (userError) {
     throw new Error(`Failed to create user record: ${userError.message}`)
@@ -173,7 +184,9 @@ async function createAndConfirmDemoUser(
     })
 
     if (verifyError) {
-      throw new Error(`[AUTH VERIFICATION FAILED] User created but cannot authenticate. Email: ${email}, Error: ${verifyError.message}`)
+      throw new Error(
+        `[AUTH VERIFICATION FAILED] User created but cannot authenticate. Email: ${email}, Error: ${verifyError.message}`
+      )
     }
 
     // Sign out the verification session (we just needed to verify it works)
@@ -377,7 +390,7 @@ async function seedMockData() {
           console.log(`✅ Created ${createdTenants.length} tenant assignments`)
 
           // Create Leases (first-class entities per lease-model architecture)
-          const leases = createdTenants.map((tenant, index) => {
+          const leases = createdTenants.map(tenant => {
             const property = createdProperties.find(p => p.id === tenant.property_id)
             return {
               property_id: tenant.property_id,
@@ -431,7 +444,9 @@ async function seedMockData() {
             const tenant = createdTenants[tenantIndex]
             if (!tenant) continue // Skip if no tenants exist
             // Find corresponding lease
-            const lease = createdLeases.find(l => l.tenant_id === tenant.id && l.property_id === property.id)
+            const lease = createdLeases.find(
+              l => l.tenant_id === tenant.id && l.property_id === property.id
+            )
             if (!lease) continue // Skip if no lease exists
             const rentAmount = property.rent_amount
             const dueDate = property.rent_due_date || 1
@@ -445,20 +460,15 @@ async function seedMockData() {
               )
               const isPastMonth = monthOffset > 0
               const isCurrentMonth = monthOffset === 0
-              const isFutureMonth = monthOffset < 0
 
               // Vary payment dates: some early (1-2 days before), some on time, some late (1-5 days after)
               let paidDate: string | null = null
               let status: 'paid' | 'pending' | 'overdue' = 'pending'
-              let paymentMethodType: 'manual' | 'external' | null = null
-              let paymentMethodLabel: string | null = null
-              let recordNotes: string | null = null
-
               if (isPastMonth) {
                 // Past months are paid
                 status = 'paid'
-                paymentMethodType = 'external'
-                paymentMethodLabel =
+                const _unusedPaymentMethodType = 'external'
+                const _unusedPaymentMethodLabel =
                   paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
 
                 // Vary paid date: 70% on time or early, 30% late
@@ -469,7 +479,7 @@ async function seedMockData() {
                   paidDate = new Date(dueDateObj.getTime() + daysLate * 24 * 60 * 60 * 1000)
                     .toISOString()
                     .split('T')[0]
-                  recordNotes = notes[Math.floor(Math.random() * notes.length)]
+                  const _unusedRecordNotes = notes[Math.floor(Math.random() * notes.length)]
                 } else if (paymentVariation < 0.7) {
                   // On time (due date)
                   paidDate = dueDateObj.toISOString().split('T')[0]
@@ -485,8 +495,8 @@ async function seedMockData() {
                 if (Math.random() > 0.3) {
                   // 70% chance it's paid
                   status = 'paid'
-                  paymentMethodType = 'external'
-                  paymentMethodLabel =
+                  const _unusedPaymentMethodTypeCurrent = 'external'
+                  const _unusedPaymentMethodLabelCurrent =
                     paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
                   const daysAgo = Math.floor(Math.random() * 5) // Paid 0-5 days ago
                   paidDate = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
@@ -839,7 +849,9 @@ async function seedTenantDevModeScenario() {
       demoLandlordId = existingLandlord.id
       // Ensure the role is correct (update if wrong)
       if (existingLandlord.role !== 'landlord') {
-        console.log(`⚠️  Existing demo landlord has wrong role (${existingLandlord.role}), updating to 'landlord'...`)
+        console.log(
+          `⚠️  Existing demo landlord has wrong role (${existingLandlord.role}), updating to 'landlord'...`
+        )
         const { error: updateError } = await supabase
           .from('users')
           .update({ role: 'landlord' })
@@ -1003,10 +1015,7 @@ async function seedTenantDevModeScenario() {
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
 
     // Clear existing demo work orders to avoid duplicates
-    await supabase
-      .from('maintenance_requests')
-      .delete()
-      .eq('property_id', demoPropertyId)
+    await supabase.from('maintenance_requests').delete().eq('property_id', demoPropertyId)
 
     const workOrders = [
       // Work Order 1 - Submitted
@@ -1073,10 +1082,7 @@ async function seedTenantDevModeScenario() {
     const oneDayAgo = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000)
 
     // Clear existing demo notifications
-    await supabase
-      .from('notifications')
-      .delete()
-      .eq('user_id', demoTenantUserId)
+    await supabase.from('notifications').delete().eq('user_id', demoTenantUserId)
 
     const notifications = [
       // Notification 1 - Unread (work order 2 scheduled)
@@ -1182,7 +1188,9 @@ async function seedFullDevModeScenario() {
       demoLandlordId = existingLandlord.id
       // Ensure the role is correct (update if wrong)
       if (existingLandlord.role !== 'landlord') {
-        console.log(`⚠️  Existing demo landlord has wrong role (${existingLandlord.role}), updating to 'landlord'...`)
+        console.log(
+          `⚠️  Existing demo landlord has wrong role (${existingLandlord.role}), updating to 'landlord'...`
+        )
         const { error: updateError } = await supabase
           .from('users')
           .update({ role: 'landlord' })
@@ -1255,10 +1263,7 @@ async function seedFullDevModeScenario() {
     ]
 
     // Clear existing demo properties
-    await supabase
-      .from('properties')
-      .delete()
-      .eq('owner_id', demoLandlordId)
+    await supabase.from('properties').delete().eq('owner_id', demoLandlordId)
 
     const { data: createdProperties, error: propError } = await supabase
       .from('properties')
@@ -1275,15 +1280,10 @@ async function seedFullDevModeScenario() {
     // Step 4: Create Households (if table exists)
     // ========================================================================
     let household1Id: string | null = null
-    let household2Id: string | null = null
 
     try {
       // Check if households table exists by trying to query it
-      const { data: existingHouseholds } = await supabase
-        .from('households')
-        .select('id')
-        .eq('property_id', property1Id)
-        .limit(1)
+      await supabase.from('households').select('id').eq('property_id', property1Id).limit(1)
 
       // If query succeeds, create households
       const households = [
@@ -1298,7 +1298,6 @@ async function seedFullDevModeScenario() {
 
       if (!householdError && createdHouseholds) {
         household1Id = createdHouseholds[0].id
-        household2Id = createdHouseholds[1].id
         console.log(`✅ Created ${createdHouseholds.length} demo households`)
       }
     } catch (e) {
@@ -1310,10 +1309,7 @@ async function seedFullDevModeScenario() {
     // Step 5: Create Tenant Assignments
     // ========================================================================
     // Clear existing demo tenants
-    await supabase
-      .from('tenants')
-      .delete()
-      .eq('user_id', demoTenantUserId)
+    await supabase.from('tenants').delete().eq('user_id', demoTenantUserId)
 
     const { data: createdTenants, error: tenantError } = await supabase
       .from('tenants')
@@ -1336,10 +1332,7 @@ async function seedFullDevModeScenario() {
     // Step 6: Create Leases
     // ========================================================================
     // Clear existing demo leases
-    await supabase
-      .from('leases')
-      .delete()
-      .eq('property_id', property1Id)
+    await supabase.from('leases').delete().eq('property_id', property1Id)
 
     const { data: createdLeases, error: leaseError } = await supabase
       .from('leases')
@@ -1442,7 +1435,7 @@ async function seedFullDevModeScenario() {
         updated_at: oneWeekAgo.toISOString(),
       },
     ]
-    
+
     // Add created_by if the column exists (try-catch will handle if it doesn't)
     const workOrders = workOrdersBase.map((wo, idx) => ({
       ...wo,
@@ -1451,19 +1444,28 @@ async function seedFullDevModeScenario() {
 
     // Try inserting with all columns first, fall back to minimal schema if columns don't exist
     let createdWorkOrders: Array<{ id: string; [key: string]: unknown }>
-    
+
     const { data: woWithAll, error: errorWithAll } = await supabase
       .from('maintenance_requests')
       .insert(workOrders)
       .select()
-    
+
     if (errorWithAll) {
       // Try with minimal schema (only columns from original schema: property_id, tenant_id, status, category, description)
-      console.log('⚠️  Advanced columns not found, using minimal schema (property_id, tenant_id, status, category, description)')
-      const workOrdersMinimal = workOrdersBase.map((wo) => ({
+      console.log(
+        '⚠️  Advanced columns not found, using minimal schema (property_id, tenant_id, status, category, description)'
+      )
+      const workOrdersMinimal = workOrdersBase.map(wo => ({
         property_id: wo.property_id,
         tenant_id: wo.tenant_id || demoTenantId, // Ensure tenant_id is never null for minimal schema
-        status: wo.status === 'submitted' ? 'pending' : wo.status === 'resolved' ? 'completed' : wo.status === 'in_progress' ? 'in_progress' : 'pending',
+        status:
+          wo.status === 'submitted'
+            ? 'pending'
+            : wo.status === 'resolved'
+              ? 'completed'
+              : wo.status === 'in_progress'
+                ? 'in_progress'
+                : 'pending',
         category: wo.category,
         description: wo.description,
       }))
@@ -1471,13 +1473,13 @@ async function seedFullDevModeScenario() {
         .from('maintenance_requests')
         .insert(workOrdersMinimal)
         .select()
-      
+
       if (errorMinimal) throw errorMinimal
       createdWorkOrders = woMinimal || []
     } else {
       createdWorkOrders = woWithAll || []
     }
-    
+
     console.log(`✅ Created ${createdWorkOrders.length} demo work orders`)
 
     // ========================================================================
@@ -1576,10 +1578,7 @@ async function seedFullDevModeScenario() {
     const oneDayAgo = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000)
 
     // Clear existing demo notifications
-    await supabase
-      .from('notifications')
-      .delete()
-      .in('user_id', [demoTenantUserId, demoLandlordId])
+    await supabase.from('notifications').delete().in('user_id', [demoTenantUserId, demoLandlordId])
 
     const notifications = [
       // Tenant notifications
@@ -1695,10 +1694,12 @@ async function seedFullDevModeScenario() {
 
 async function verifySeededData() {
   console.log('\n🔍 Verifying seeded data...\n')
-  
+
   try {
     // Get current user (should be landlord)
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       console.log('⚠️  No authenticated user - verification requires authentication')
       return
@@ -1709,45 +1710,44 @@ async function verifySeededData() {
       .from('tenants')
       .select('id, user_id, property_id')
       .limit(100)
-    
+
     if (tenants && tenants.length > 0) {
       const { data: leases } = await supabase
         .from('leases')
         .select('id, tenant_id, property_id, status, lease_start_date, lease_end_date')
-        .in('tenant_id', tenants.map(t => t.id))
-      
-      const tenantsWithoutLeases = tenants.filter(t => 
-        !leases?.some(l => l.tenant_id === t.id)
-      )
-      
+        .in(
+          'tenant_id',
+          tenants.map(t => t.id)
+        )
+
+      const tenantsWithoutLeases = tenants.filter(t => !leases?.some(l => l.tenant_id === t.id))
+
       if (tenantsWithoutLeases.length > 0) {
         console.log(`❌ ${tenantsWithoutLeases.length} tenants without leases!`)
       } else {
         console.log(`✅ All ${tenants.length} tenants have leases`)
       }
-      
+
       // Check active leases
       const activeLeases = leases?.filter(l => l.status === 'active') || []
       console.log(`✅ ${activeLeases.length} active leases`)
-      
+
       // Verify leases have dates
-      const leasesWithoutDates = leases?.filter(l => 
-        !l.lease_start_date || !l.lease_end_date
-      ) || []
-      
+      const leasesWithoutDates = leases?.filter(l => !l.lease_start_date || !l.lease_end_date) || []
+
       if (leasesWithoutDates.length > 0) {
         console.log(`⚠️  ${leasesWithoutDates.length} leases missing start/end dates`)
       } else {
         console.log(`✅ All leases have start and end dates`)
       }
     }
-    
+
     // Verify rent records reference lease_id
     const { data: rentRecords } = await supabase
       .from('rent_records')
       .select('id, lease_id')
       .limit(100)
-    
+
     if (rentRecords && rentRecords.length > 0) {
       const recordsWithoutLease = rentRecords.filter(r => !r.lease_id)
       if (recordsWithoutLease.length > 0) {
@@ -1756,13 +1756,13 @@ async function verifySeededData() {
         console.log(`✅ All ${rentRecords.length} rent records reference lease_id`)
       }
     }
-    
+
     // Verify work orders reference lease_id
     const { data: workOrders } = await supabase
       .from('maintenance_requests')
       .select('id, lease_id')
       .limit(100)
-    
+
     if (workOrders && workOrders.length > 0) {
       const ordersWithoutLease = workOrders.filter(w => !w.lease_id)
       if (ordersWithoutLease.length > 0) {
@@ -1771,7 +1771,7 @@ async function verifySeededData() {
         console.log(`✅ All ${workOrders.length} work orders reference lease_id`)
       }
     }
-    
+
     console.log('\n✅ Verification complete!\n')
   } catch (error) {
     console.error('\n❌ Verification error:', error)

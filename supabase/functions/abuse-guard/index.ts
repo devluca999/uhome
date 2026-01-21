@@ -136,7 +136,8 @@ serve(async req => {
     if (recentViolations && recentViolations >= 5) {
       return new Response(
         JSON.stringify({
-          error: 'Account temporarily restricted due to repeated violations. Please try again later.',
+          error:
+            'Account temporarily restricted due to repeated violations. Please try again later.',
           code: 'ACCOUNT_TEMPORARILY_RESTRICTED',
           retry_after: 3600, // 1 hour
         }),
@@ -174,4 +175,3 @@ serve(async req => {
     })
   }
 })
-

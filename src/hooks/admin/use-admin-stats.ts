@@ -18,6 +18,19 @@ export interface AdminStats {
   canceledLast30Days: number
   newUsersLast7Days: number
   newUsersLast30Days: number
+  // Transaction metrics (mock data until Stripe is integrated)
+  transactionMetrics?: {
+    platformRevenue: number // Total SaaS fees (mock)
+    monthlyRevenue: number // Monthly SaaS fees (mock)
+    failedTransactions: number // Failed payments (mock)
+    refunds: number // Refunds (mock)
+  }
+  // System load metrics
+  systemLoad?: {
+    activeSessions: number // Estimated active sessions
+    apiCallsLast24h: number // API calls in last 24h (from admin_metrics)
+    averageResponseTime: number // Average API response time (from admin_metrics)
+  }
 }
 
 export function useAdminStats() {
@@ -132,6 +145,43 @@ export function useAdminStats() {
 
       if (newUsers30Error) throw newUsers30Error
 
+      // Fetch API call metrics for system load (last 24 hours)
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+      const { count: apiCalls24h, error: apiCallsError } = await supabase
+        .from('admin_metrics')
+        .select('*', { count: 'exact', head: true })
+        .eq('metric_type', 'api_call')
+        .gte('created_at', oneDayAgo)
+
+      if (apiCallsError) {
+        console.warn('Error fetching API call metrics:', apiCallsError)
+      }
+
+      // Fetch average API response time (last 24 hours)
+      const { data: apiMetrics, error: apiMetricsError } = await supabase
+        .from('admin_metrics')
+        .select('duration_ms')
+        .eq('metric_type', 'api_call')
+        .gte('created_at', oneDayAgo)
+
+      let averageResponseTime = 0
+      if (!apiMetricsError && apiMetrics && apiMetrics.length > 0) {
+        const totalDuration = apiMetrics.reduce((sum, m) => sum + (m.duration_ms || 0), 0)
+        averageResponseTime = Math.round(totalDuration / apiMetrics.length)
+      }
+
+      // Calculate mock transaction metrics (until Stripe is integrated)
+      const platformRevenue = (proCount || 0) * 15 * 12 // $15/month * 12 months * pro users
+      const monthlyRevenue = (proCount || 0) * 15 // $15/month * pro users
+      const failedTransactions = Math.floor(Math.random() * 5) // Mock: 0-4
+      const refunds = Math.floor(Math.random() * 3) // Mock: 0-2
+
+      // Estimate active sessions (users who signed in within last hour)
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+      // Note: We don't have last_sign_in_at in public.users, so we'll estimate based on recent activity
+      // In production, this would come from session tracking
+      const activeSessions = Math.floor((totalUsers || 0) * 0.1) // Mock: ~10% of users
+
       setStats({
         totalUsers: totalUsers || 0,
         usersByRole: {
@@ -149,6 +199,17 @@ export function useAdminStats() {
         canceledLast30Days: canceled30Days || 0,
         newUsersLast7Days: newUsers7Days || 0,
         newUsersLast30Days: newUsers30Days || 0,
+        transactionMetrics: {
+          platformRevenue,
+          monthlyRevenue,
+          failedTransactions,
+          refunds,
+        },
+        systemLoad: {
+          activeSessions,
+          apiCallsLast24h: apiCalls24h || 0,
+          averageResponseTime,
+        },
       })
     } catch (err) {
       console.error('Error fetching admin stats:', err)

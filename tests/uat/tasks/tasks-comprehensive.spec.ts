@@ -1,6 +1,6 @@
 /**
  * Comprehensive Tasks UAT Tests
- * 
+ *
  * Tests all task features:
  * - Add/complete/delete tasks
  * - Move-in checklist
@@ -12,7 +12,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupMultiTabScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupMultiTabScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 import { createTestFile, uploadFileViaUI } from '../../helpers/upload'
@@ -36,7 +41,9 @@ test.describe('Tasks Comprehensive UAT', () => {
 
     try {
       // Find add task button
-      const addButton = page.locator('button:has-text("Add Task"), button:has-text("Create Task")').first()
+      const addButton = page
+        .locator('button:has-text("Add Task"), button:has-text("Create Task")')
+        .first()
       const isVisible = await addButton.isVisible({ timeout: 3000 }).catch(() => false)
 
       if (isVisible) {
@@ -100,7 +107,10 @@ test.describe('Tasks Comprehensive UAT', () => {
           await page.waitForTimeout(1000)
 
           // Verify task is marked as complete
-          const isComplete = await task.locator('[class*="complete"], [data-completed]').isVisible({ timeout: 2000 }).catch(() => false)
+          const isComplete = await task
+            .locator('[class*="complete"], [data-completed]')
+            .isVisible({ timeout: 2000 })
+            .catch(() => false)
 
           await logTestResult(page, {
             page: 'tasks',
@@ -320,4 +330,3 @@ test.describe('Tasks Comprehensive UAT', () => {
     }
   })
 })
-

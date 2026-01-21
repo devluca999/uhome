@@ -1,6 +1,6 @@
 /**
  * Rate Limit E2E Tests
- * 
+ *
  * Tests rate limit enforcement, spam detection, and edge cases.
  */
 
@@ -146,4 +146,3 @@ test.describe('Rate Limit Tests', () => {
     }
   })
 })
-

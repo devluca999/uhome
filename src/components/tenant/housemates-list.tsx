@@ -173,9 +173,7 @@ export function HousematesList({ propertyId, currentTenantId }: HousematesListPr
                 <div
                   key={housemate.id}
                   className={`flex items-start gap-4 p-3 rounded-lg border ${
-                    isCurrentTenant
-                      ? 'bg-primary/5 border-primary/20'
-                      : 'bg-matte/30 border-border'
+                    isCurrentTenant ? 'bg-primary/5 border-primary/20' : 'bg-matte/30 border-border'
                   }`}
                 >
                   <Avatar className="w-12 h-12">
@@ -192,9 +190,7 @@ export function HousematesList({ propertyId, currentTenantId }: HousematesListPr
                         <span className="text-xs text-primary font-medium">(You)</span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {housemate.user.email}
-                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{housemate.user.email}</p>
                     <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                       <Calendar className="w-3 h-3" />
                       <span>Moved in {moveInDate}</span>
@@ -209,4 +205,3 @@ export function HousematesList({ propertyId, currentTenantId }: HousematesListPr
     </Card>
   )
 }
-

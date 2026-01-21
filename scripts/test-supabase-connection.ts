@@ -20,7 +20,7 @@ async function testConnection() {
   // Test 1: Basic connection
   console.log('1. Testing basic connection...')
   try {
-    const { data, error } = await supabase.from('users').select('count').limit(1)
+    const { error } = await supabase.from('users').select('count').limit(1)
     if (error) {
       console.log(`   ⚠️  Connection works but got error: ${error.code} - ${error.message}`)
       if (error.message.includes('infinite recursion')) {
@@ -37,7 +37,7 @@ async function testConnection() {
   console.log('\n2. Checking if RLS fix was applied (helper functions)...')
   try {
     // Try to query using the helper function - if it exists, the fix was applied
-    const { data, error } = await supabase.rpc('user_owns_property', {
+    const { error } = await supabase.rpc('user_owns_property', {
       property_uuid: '00000000-0000-0000-0000-000000000000',
     })
     if (error) {
@@ -60,7 +60,7 @@ async function testConnection() {
   console.log('\n3. Checking if data exists...')
   try {
     // Sign in as the test landlord
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    const { error: authError } = await supabase.auth.signInWithPassword({
       email: 'landlord@example.com',
       password: 'password123',
     })

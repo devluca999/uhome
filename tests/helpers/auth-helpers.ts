@@ -29,13 +29,13 @@ export async function delay(ms: number): Promise<void> {
 
 /**
  * Create and confirm a user for E2E testing
- * 
+ *
  * Uses the standard signUp flow (proper password hashing) followed by admin confirmation.
  * This ensures passwords are set correctly and mirrors the real user registration process.
- * 
+ *
  * DO NOT use admin.createUser for loginable users - it bypasses password hashing
  * and leads to "Invalid login credentials" errors.
- * 
+ *
  * @param email - User email address
  * @param password - User password (will be properly hashed via signUp)
  * @param metadata - Optional user metadata
@@ -61,7 +61,9 @@ export async function createAndConfirmUser(
 
   if (signUpError || !data.user) {
     console.error(`[createAndConfirmUser] SignUp failed:`, signUpError)
-    throw new Error(`Failed to sign up user: ${signUpError?.message || 'No user returned from signup'}`)
+    throw new Error(
+      `Failed to sign up user: ${signUpError?.message || 'No user returned from signup'}`
+    )
   }
 
   console.log(`[createAndConfirmUser] SignUp successful. User ID: ${data.user.id}`)
@@ -76,8 +78,9 @@ export async function createAndConfirmUser(
 
   // Step 2: Fetch user BEFORE confirmation to see initial state
   console.log(`[createAndConfirmUser] Step 2: Fetching user BEFORE confirmation...`)
-  const { data: userBeforeConfirm, error: fetchBeforeError } = await supabaseAdmin.auth.admin.getUserById(data.user.id)
-  
+  const { data: userBeforeConfirm, error: fetchBeforeError } =
+    await supabaseAdmin.auth.admin.getUserById(data.user.id)
+
   if (fetchBeforeError) {
     console.error(`[createAndConfirmUser] Failed to fetch user before confirm:`, fetchBeforeError)
   } else if (userBeforeConfirm?.user) {
@@ -113,8 +116,9 @@ export async function createAndConfirmUser(
 
   // Step 4: Fetch user AFTER confirmation to verify state
   console.log(`[createAndConfirmUser] Step 4: Fetching user AFTER confirmation...`)
-  const { data: userAfterConfirm, error: fetchAfterError } = await supabaseAdmin.auth.admin.getUserById(data.user.id)
-  
+  const { data: userAfterConfirm, error: fetchAfterError } =
+    await supabaseAdmin.auth.admin.getUserById(data.user.id)
+
   if (fetchAfterError) {
     console.error(`[createAndConfirmUser] Failed to fetch user after confirm:`, fetchAfterError)
   } else if (userAfterConfirm?.user) {
@@ -190,22 +194,30 @@ export async function createAndConfirmUser(
     console.error(`[createAndConfirmUser] ============================================`)
     console.error(`[createAndConfirmUser] AUTH PROVIDER CONFIG INFO:`)
     console.error(`[createAndConfirmUser] ============================================`)
-    console.error(`[createAndConfirmUser] Supabase URL:`, process.env.VITE_SUPABASE_URL || '[NOT SET]')
-    console.error(`[createAndConfirmUser] Has Service Key:`, !!(process.env.SUPABASE_SERVICE_KEY || process.env.TEST_SUPABASE_SERVICE_KEY))
+    console.error(
+      `[createAndConfirmUser] Supabase URL:`,
+      process.env.VITE_SUPABASE_URL || '[NOT SET]'
+    )
+    console.error(
+      `[createAndConfirmUser] Has Service Key:`,
+      !!(process.env.SUPABASE_SERVICE_KEY || process.env.TEST_SUPABASE_SERVICE_KEY)
+    )
     console.error(`[createAndConfirmUser] Has Anon Key:`, !!process.env.VITE_SUPABASE_ANON_KEY)
 
     // STOP TEST EXECUTION - throw error immediately
     throw new Error(
       `[AUTH VERIFICATION FAILED] User created but cannot authenticate. ` +
-      `Email: ${email}, Error: ${verifyError.message}, Status: ${verifyError.status || 'N/A'}. ` +
-      `Check logs above for user object dump and auth provider config.`
+        `Email: ${email}, Error: ${verifyError.message}, Status: ${verifyError.status || 'N/A'}. ` +
+        `Check logs above for user object dump and auth provider config.`
     )
   }
 
   if (!signInData.session) {
     console.error(`[createAndConfirmUser] SignIn returned no session!`)
     console.error(`[createAndConfirmUser] SignIn data:`, signInData)
-    throw new Error(`[AUTH VERIFICATION FAILED] SignIn succeeded but no session returned. Email: ${email}`)
+    throw new Error(
+      `[AUTH VERIFICATION FAILED] SignIn succeeded but no session returned. Email: ${email}`
+    )
   }
 
   if (!signInData.session.access_token) {
@@ -215,10 +227,12 @@ export async function createAndConfirmUser(
       refresh_token: signInData.session.refresh_token ? '[PRESENT]' : '[MISSING]',
       expires_in: signInData.session.expires_in,
       token_type: signInData.session.token_type,
-      user: signInData.session.user ? {
-        id: signInData.session.user.id,
-        email: signInData.session.user.email,
-      } : null,
+      user: signInData.session.user
+        ? {
+            id: signInData.session.user.id,
+            email: signInData.session.user.email,
+          }
+        : null,
     })
     throw new Error(`[AUTH VERIFICATION FAILED] Session missing access_token. Email: ${email}`)
   }
@@ -230,7 +244,9 @@ export async function createAndConfirmUser(
     hasRefreshToken: !!signInData.session.refresh_token,
     expiresIn: signInData.session.expires_in,
     tokenType: signInData.session.token_type,
-    expiresAt: signInData.session.expires_at ? new Date(signInData.session.expires_at * 1000).toISOString() : null,
+    expiresAt: signInData.session.expires_at
+      ? new Date(signInData.session.expires_at * 1000).toISOString()
+      : null,
     userId: signInData.session.user?.id,
     userEmail: signInData.session.user?.email,
   })
@@ -378,7 +394,7 @@ export async function createTestTenant(
  */
 /**
  * Login as landlord via UI
- * 
+ *
  * Redirect-aware: Handles both cases:
  * 1. User already authenticated → detects redirect to dashboard → returns early
  * 2. User not authenticated → waits for form → submits credentials → waits for redirect
@@ -394,36 +410,38 @@ export async function loginAsLandlord(page: Page, email: string, password: strin
       // Ignore errors
     }
   })
-  
+
   // Navigate to login page
   await page.goto('/login')
   await page.waitForLoadState('networkidle')
-  
+
   // Wait for either redirect to dashboard OR login form to appear
   // Use Promise.race pattern to handle both cases deterministically
   const expectedDashboardPath = '/landlord/dashboard'
   const formLocator = page.locator('#email')
-  
+
   try {
     // Wait for either redirect to dashboard (user already authenticated) or form to appear
     // Use longer timeout to account for auth loading state
     await Promise.race([
       // Option 1: Redirect to dashboard (user already authenticated)
-      page.waitForURL(url => url.pathname === expectedDashboardPath, { timeout: 10000 }).then(() => 'redirected'),
+      page
+        .waitForURL(url => url.pathname === expectedDashboardPath, { timeout: 10000 })
+        .then(() => 'redirected'),
       // Option 2: Login form appears (user not authenticated)
-      formLocator.waitFor({ state: 'visible', timeout: 10000 }).then(() => 'form')
+      formLocator.waitFor({ state: 'visible', timeout: 10000 }).then(() => 'form'),
     ])
-    
+
     // Check current URL to determine which case occurred
     const currentUrl = page.url()
     const currentPath = new URL(currentUrl).pathname
-    
+
     // Case 1: Already redirected to dashboard (user was authenticated)
     if (currentPath === expectedDashboardPath) {
       // User is already logged in - no action needed
       return
     }
-    
+
     // Case 2: Form is visible - proceed with login
     if (await formLocator.isVisible()) {
       // Fill in login form
@@ -437,16 +455,21 @@ export async function loginAsLandlord(page: Page, email: string, password: strin
       await page.waitForTimeout(2000)
 
       // Check for error message before waiting for navigation
-      const errorElement = page.locator('.text-destructive, [class*="destructive"], [class*="error"]').first()
+      const errorElement = page
+        .locator('.text-destructive, [class*="destructive"], [class*="error"]')
+        .first()
       const hasError = await errorElement.isVisible({ timeout: 3000 }).catch(() => false)
-      
+
       if (hasError) {
         const errorText = await errorElement.textContent()
         const screenshotPath = `test-results/login-error-${Date.now()}.png`
         await page.screenshot({ path: screenshotPath })
-        
+
         // Guard assertion: Fail loudly if credentials are invalid
-        if (errorText?.includes('Invalid login credentials') || errorText?.toLowerCase().includes('invalid')) {
+        if (
+          errorText?.includes('Invalid login credentials') ||
+          errorText?.toLowerCase().includes('invalid')
+        ) {
           throw new Error(
             `[AUTH SEED FAILURE] User exists but cannot authenticate.
      Email: ${email}
@@ -455,7 +478,7 @@ export async function loginAsLandlord(page: Page, email: string, password: strin
      This usually means admin.createUser was used incorrectly or email confirmation failed.`
           )
         }
-        
+
         throw new Error(
           `Login failed: ${errorText || 'Unknown error'} (Email: ${email}, Screenshot: ${screenshotPath})`
         )
@@ -494,7 +517,7 @@ export async function loginAsLandlord(page: Page, email: string, password: strin
     const formVisible = await formLocator.isVisible().catch(() => false)
     const screenshotPath = `test-results/login-timeout-${Date.now()}.png`
     await page.screenshot({ path: screenshotPath })
-    
+
     throw new Error(
       `Login helper timeout: Neither redirect nor form appeared within timeout.
      Current URL: ${currentUrl}
@@ -508,7 +531,7 @@ export async function loginAsLandlord(page: Page, email: string, password: strin
 
 /**
  * Login as tenant via UI
- * 
+ *
  * Redirect-aware: Handles both cases:
  * 1. User already authenticated → detects redirect to dashboard → returns early
  * 2. User not authenticated → waits for form → submits credentials → waits for redirect
@@ -524,41 +547,41 @@ export async function loginAsTenant(page: Page, email: string, password: string)
       // Ignore errors
     }
   })
-  
+
   // Navigate to login page
   await page.goto('/login')
   await page.waitForLoadState('networkidle')
-  
+
   // Wait a moment for auth state to resolve (auth context needs time to check session)
   await page.waitForTimeout(1000)
-  
+
   // Check current URL first - might have redirected already
   const expectedDashboardPath = '/tenant/dashboard'
   let currentUrl = page.url()
   let currentPath = new URL(currentUrl).pathname
-  
+
   // Case 1: Already redirected to dashboard (user was authenticated)
   if (currentPath === expectedDashboardPath) {
     // User is already logged in - no action needed
     return
   }
-  
+
   // Case 2: Still on login page - wait for form to appear
   const formLocator = page.locator('#email')
-  
+
   try {
     // Wait for login form to appear (user not authenticated)
     await formLocator.waitFor({ state: 'visible', timeout: 15000 })
-    
+
     // Verify we're still on login page (should be, but double-check)
     currentUrl = page.url()
     currentPath = new URL(currentUrl).pathname
-    
+
     if (currentPath === expectedDashboardPath) {
       // Redirect happened while waiting - user was authenticated
       return
     }
-    
+
     // Form is visible - proceed with login
     if (await formLocator.isVisible()) {
       // Fill in login form
@@ -572,16 +595,21 @@ export async function loginAsTenant(page: Page, email: string, password: string)
       await page.waitForTimeout(2000)
 
       // Check for error message before waiting for navigation
-      const errorElement = page.locator('.text-destructive, [class*="destructive"], [class*="error"]').first()
+      const errorElement = page
+        .locator('.text-destructive, [class*="destructive"], [class*="error"]')
+        .first()
       const hasError = await errorElement.isVisible({ timeout: 3000 }).catch(() => false)
-      
+
       if (hasError) {
         const errorText = await errorElement.textContent()
         const screenshotPath = `test-results/login-error-${Date.now()}.png`
         await page.screenshot({ path: screenshotPath })
-        
+
         // Guard assertion: Fail loudly if credentials are invalid
-        if (errorText?.includes('Invalid login credentials') || errorText?.toLowerCase().includes('invalid')) {
+        if (
+          errorText?.includes('Invalid login credentials') ||
+          errorText?.toLowerCase().includes('invalid')
+        ) {
           throw new Error(
             `[AUTH SEED FAILURE] User exists but cannot authenticate.
      Email: ${email}
@@ -590,7 +618,7 @@ export async function loginAsTenant(page: Page, email: string, password: string)
      This usually means admin.createUser was used incorrectly or email confirmation failed.`
           )
         }
-        
+
         throw new Error(
           `Login failed: ${errorText || 'Unknown error'} (Email: ${email}, Screenshot: ${screenshotPath})`
         )
@@ -629,7 +657,7 @@ export async function loginAsTenant(page: Page, email: string, password: string)
     const formVisible = await formLocator.isVisible().catch(() => false)
     const screenshotPath = `test-results/login-timeout-${Date.now()}.png`
     await page.screenshot({ path: screenshotPath })
-    
+
     throw new Error(
       `Login helper timeout: Neither redirect nor form appeared within timeout.
      Current URL: ${currentUrl}

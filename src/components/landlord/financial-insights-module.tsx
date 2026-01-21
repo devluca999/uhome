@@ -9,16 +9,7 @@ import { PieChart } from '@/components/ui/pie-chart'
 import { ModalIndicator } from '@/components/ui/modal-indicator'
 import { FullscreenGraphModal } from '@/components/ui/fullscreen-graph-modal'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import {
-  LineChart as LineChartIcon,
-  BarChart3,
-  PieChart as PieChartIcon,
-  FileDown,
-  Image,
-  Calendar,
-  Clock,
-  ChevronDown,
-} from 'lucide-react'
+import { LineChart as LineChartIcon, FileDown, Image, Calendar, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { exportGraphToCSV, exportGraphToPNG, type GraphDataPoint } from '@/utils/export-graph'
 import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
@@ -88,11 +79,11 @@ export function FinancialInsightsModule({
   rentRecords = [],
   expenses = [],
   workOrders = [],
-  dateGranularity = 'monthly',
+  dateGranularity: _dateGranularity = 'monthly',
   timeRange = 'monthToDate',
   selectedPropertyId = 'all',
   properties = [],
-  onPropertyChange,
+  onPropertyChange: _onPropertyChange,
   className,
 }: FinancialInsightsModuleProps) {
   const [viewMode, setViewMode] = useState<InsightsViewMode>('chart')
@@ -168,7 +159,13 @@ export function FinancialInsightsModule({
   // Filter data based on active datasets
   const filteredGraphData = useMemo(() => {
     return graphData.map(point => {
-      const filtered: any = { month: point.month }
+      const filtered: {
+        month: string
+        rentCollected?: number
+        outstandingRent?: number
+        expenses?: number
+        netCashFlow?: number
+      } = { month: point.month }
       if (activeDatasets.rentCollected && point.rentCollected !== undefined) {
         filtered.rentCollected = point.rentCollected
       }

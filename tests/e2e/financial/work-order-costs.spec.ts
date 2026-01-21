@@ -42,7 +42,10 @@ test.describe('Work Order Cost Propagation', () => {
     const { data: workOrders } = await supabase
       .from('maintenance_requests')
       .select('id, status, property_id')
-      .in('property_id', properties.map(p => p.id))
+      .in(
+        'property_id',
+        properties.map(p => p.id)
+      )
       .eq('status', 'closed')
       .limit(1)
 
@@ -60,7 +63,9 @@ test.describe('Work Order Cost Propagation', () => {
 
     // Verify work order is visible
     const workOrderElement = page
-      .locator(`[data-testid="work-order-${workOrders[0].id}"], [data-testid="maintenance-request"]`)
+      .locator(
+        `[data-testid="work-order-${workOrders[0].id}"], [data-testid="maintenance-request"]`
+      )
       .first()
     const isVisible = await workOrderElement.isVisible().catch(() => false)
 
@@ -99,7 +104,10 @@ test.describe('Work Order Cost Propagation', () => {
     const { data: completedWorkOrders } = await supabase
       .from('maintenance_requests')
       .select('id, status')
-      .in('property_id', properties.map(p => p.id))
+      .in(
+        'property_id',
+        properties.map(p => p.id)
+      )
       .in('status', ['resolved', 'closed'])
       .limit(5)
 
@@ -147,7 +155,10 @@ test.describe('Work Order Cost Propagation', () => {
     const { data: workOrders } = await supabase
       .from('maintenance_requests')
       .select('id, status')
-      .in('property_id', properties.map(p => p.id))
+      .in(
+        'property_id',
+        properties.map(p => p.id)
+      )
       .eq('status', 'submitted')
       .limit(1)
 
@@ -162,4 +173,3 @@ test.describe('Work Order Cost Propagation', () => {
     expect(workOrders.length).toBeGreaterThan(0)
   })
 })
-

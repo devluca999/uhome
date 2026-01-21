@@ -21,8 +21,11 @@ import {
   canTenantConfirmResolution,
   type WorkOrderStatus,
 } from '@/lib/work-order-status'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 export function TenantMaintenance() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'TenantMaintenance' })
   const { user } = useAuth()
   const { data: tenantData, loading: tenantLoading } = useTenantData()
   const { leases } = useLeases(undefined, tenantData?.tenant.id)

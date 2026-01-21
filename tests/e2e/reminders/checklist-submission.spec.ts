@@ -1,6 +1,6 @@
 /**
  * Checklist Submission E2E Tests
- * 
+ *
  * Tests checklist completion, deadline handling, and edge cases.
  */
 
@@ -57,7 +57,9 @@ test.describe('Checklist Submission', () => {
     await landlordPage.waitForURL(/\/landlord\/dashboard/, { timeout: 10000 })
 
     // Verify landlord sees completion
-    await expect(landlordPage.locator('text=/completed|submitted/i')).toBeVisible({ timeout: 10000 })
+    await expect(landlordPage.locator('text=/completed|submitted/i')).toBeVisible({
+      timeout: 10000,
+    })
   })
 
   test('submission after deadline', async ({ page }) => {
@@ -83,7 +85,7 @@ test.describe('Checklist Submission', () => {
     // This would require creating a task with deadline in the past
     // For now, we verify that deadline checking works
     const overdueTask = page.locator('[data-task][data-overdue]').first()
-    
+
     if (await overdueTask.isVisible()) {
       // Try to submit
       await overdueTask.locator('button:has-text("Submit")').click()
@@ -159,10 +161,9 @@ test.describe('Checklist Submission', () => {
       // Try to submit again
       const submitButton = taskCard.locator('button:has-text("Submit")')
       const isEnabled = await submitButton.isEnabled()
-      
+
       // Should be disabled or show error
       expect(isEnabled).toBeFalsy()
     }
   })
 })
-

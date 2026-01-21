@@ -68,7 +68,7 @@ export function FileUploader({
     if (!files || files.length === 0) return
 
     const filesToUpload = Array.from(files)
-    
+
     // Validate all files
     for (const file of filesToUpload) {
       const error = validateFile(file)
@@ -98,7 +98,7 @@ export function FileUploader({
         // For now, simulate upload progress
         await new Promise(resolve => setTimeout(resolve, 500))
         setUploadProgress(((i + 1) / filesToUpload.length) * 100)
-        
+
         // Generate a mock URL - in real implementation, this comes from Supabase
         const mockUrl = `https://storage.supabase.co/${bucket}/${scopeId}/${file.name}`
         await onUpload(mockUrl, file)
@@ -166,7 +166,7 @@ export function FileUploader({
             className="hidden"
             disabled={disabled || uploading}
           />
-          
+
           {uploading ? (
             <div className="space-y-4">
               <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
@@ -253,4 +253,3 @@ export function FileUploader({
     </div>
   )
 }
-

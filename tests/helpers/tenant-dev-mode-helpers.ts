@@ -1,6 +1,6 @@
 /**
  * Tenant Dev Mode E2E Test Helpers
- * 
+ *
  * Utilities for testing Tenant Dev Mode functionality with Playwright
  */
 
@@ -10,7 +10,10 @@ import { TENANT_DEV_MODE_STORAGE_KEY } from '../../src/lib/tenant-dev-mode'
 /**
  * Enable Tenant Dev Mode by adding ?dev=tenant URL parameter
  */
-export async function enableTenantDevMode(page: Page, baseUrl: string = 'http://localhost:5173'): Promise<void> {
+export async function enableTenantDevMode(
+  page: Page,
+  baseUrl: string = 'http://localhost:5173'
+): Promise<void> {
   const url = new URL(baseUrl)
   url.searchParams.set('dev', 'tenant')
   await page.goto(url.toString())
@@ -20,7 +23,11 @@ export async function enableTenantDevMode(page: Page, baseUrl: string = 'http://
 /**
  * Navigate to tenant dev mode with URL parameter
  */
-export async function navigateToTenantDevMode(page: Page, path: string = '/', baseUrl: string = 'http://localhost:5173'): Promise<void> {
+export async function navigateToTenantDevMode(
+  page: Page,
+  path: string = '/',
+  baseUrl: string = 'http://localhost:5173'
+): Promise<void> {
   const url = new URL(path, baseUrl)
   url.searchParams.set('dev', 'tenant')
   await page.goto(url.toString())
@@ -31,7 +38,7 @@ export async function navigateToTenantDevMode(page: Page, path: string = '/', ba
  * Reset Tenant Dev Mode state (clear localStorage)
  */
 export async function resetTenantDevModeState(page: Page): Promise<void> {
-  await page.evaluate((storageKey) => {
+  await page.evaluate(storageKey => {
     localStorage.removeItem(storageKey)
   }, TENANT_DEV_MODE_STORAGE_KEY)
 }
@@ -40,12 +47,12 @@ export async function resetTenantDevModeState(page: Page): Promise<void> {
  * Get mock work orders from localStorage
  */
 export async function getMockWorkOrders(page: Page): Promise<any[]> {
-  const state = await page.evaluate((storageKey) => {
+  const state = await page.evaluate(storageKey => {
     const stored = localStorage.getItem(storageKey)
     if (!stored) return null
     return JSON.parse(stored)
   }, TENANT_DEV_MODE_STORAGE_KEY)
-  
+
   return state?.workOrders || []
 }
 
@@ -53,12 +60,12 @@ export async function getMockWorkOrders(page: Page): Promise<any[]> {
  * Get mock notifications from localStorage
  */
 export async function getMockNotifications(page: Page): Promise<any[]> {
-  const state = await page.evaluate((storageKey) => {
+  const state = await page.evaluate(storageKey => {
     const stored = localStorage.getItem(storageKey)
     if (!stored) return null
     return JSON.parse(stored)
   }, TENANT_DEV_MODE_STORAGE_KEY)
-  
+
   return state?.notifications || []
 }
 
@@ -66,7 +73,7 @@ export async function getMockNotifications(page: Page): Promise<any[]> {
  * Get full mock state from localStorage
  */
 export async function getMockState(page: Page): Promise<any> {
-  return await page.evaluate((storageKey) => {
+  return await page.evaluate(storageKey => {
     const stored = localStorage.getItem(storageKey)
     if (!stored) return null
     return JSON.parse(stored)
@@ -136,7 +143,11 @@ export async function getUnreadNotificationCount(page: Page): Promise<number> {
 /**
  * Verify work order status
  */
-export async function verifyWorkOrderStatus(page: Page, id: string, expectedStatus: string): Promise<void> {
+export async function verifyWorkOrderStatus(
+  page: Page,
+  id: string,
+  expectedStatus: string
+): Promise<void> {
   const badge = getWorkOrderStatusBadge(page, id)
   await expect(badge).toContainText(expectedStatus, { ignoreCase: true })
 }
@@ -147,14 +158,14 @@ export async function verifyWorkOrderStatus(page: Page, id: string, expectedStat
 export async function verifyStatePersistsAfterRefresh(page: Page): Promise<void> {
   // Get state before refresh
   const stateBefore = await getMockState(page)
-  
+
   // Refresh page
   await page.reload()
   await page.waitForLoadState('networkidle')
-  
+
   // Get state after refresh
   const stateAfter = await getMockState(page)
-  
+
   // Verify state is the same
   expect(stateAfter).toEqual(stateBefore)
 }
@@ -162,18 +173,25 @@ export async function verifyStatePersistsAfterRefresh(page: Page): Promise<void>
 /**
  * Wait for notification to appear
  */
-export async function waitForNotification(page: Page, bodyText: string, timeout: number = 5000): Promise<void> {
+export async function waitForNotification(
+  page: Page,
+  bodyText: string,
+  timeout: number = 5000
+): Promise<void> {
   await page.waitForSelector(`text=${bodyText}`, { timeout })
 }
 
 /**
  * Setup: Reset dev mode state before test
  */
-export async function setupTenantDevMode(page: Page, baseUrl: string = 'http://localhost:5173'): Promise<void> {
+export async function setupTenantDevMode(
+  page: Page,
+  baseUrl: string = 'http://localhost:5173'
+): Promise<void> {
   // Reset state
   await page.goto(baseUrl)
   await resetTenantDevModeState(page)
-  
+
   // Enable dev mode
   await enableTenantDevMode(page, baseUrl)
 }
@@ -190,7 +208,7 @@ export async function teardownTenantDevMode(page: Page): Promise<void> {
  */
 export async function verifyMockDataLoaded(page: Page): Promise<void> {
   const state = await getMockState(page)
-  
+
   expect(state).toBeTruthy()
   expect(state.workOrders).toBeTruthy()
   expect(state.workOrders.length).toBeGreaterThan(0)
@@ -198,4 +216,3 @@ export async function verifyMockDataLoaded(page: Page): Promise<void> {
   expect(state.tenantData).toBeTruthy()
   expect(state.tenantData.property).toBeTruthy()
 }
-

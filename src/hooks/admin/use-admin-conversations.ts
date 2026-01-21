@@ -41,7 +41,9 @@ export function useAdminConversations() {
       // Fetch all messages grouped by lease_id
       const { data: messages, error: messagesError } = await supabase
         .from('messages')
-        .select('*, leases!messages_lease_id_fkey(property_id, tenant_id, properties!leases_property_id_fkey(name, owner_id))')
+        .select(
+          '*, leases!messages_lease_id_fkey(property_id, tenant_id, properties!leases_property_id_fkey(name, owner_id))'
+        )
         .is('soft_deleted_at', null)
         .order('created_at', { ascending: false })
 
@@ -127,8 +129,8 @@ export function useAdminConversations() {
         }
 
         // Calculate last message timestamp and count
-        const sortedMessages = leaseMessages.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        const sortedMessages = leaseMessages.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         )
         const lastMessage = sortedMessages[0]
         const messageCount = leaseMessages.length

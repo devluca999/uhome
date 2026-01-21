@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { trackUpload } from '@/hooks/admin/use-upload-monitoring'
 
 type BucketType = 'images' | 'avatars'
 
@@ -33,13 +34,33 @@ export function useImageUpload(bucket: BucketType = 'images') {
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
       const filePath = `${scopeId}/${fileName}`
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        })
+      // Track upload with monitoring
+      const { result: publicUrl, error: uploadError } = await trackUpload(
+        async () => {
+          // Upload to Supabase Storage
+          const { error: uploadErr } = await supabase.storage.from(bucket).upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          })
+
+          if (uploadErr) {
+            throw uploadErr
+          }
+
+          // Get public URL
+          const {
+            data: { publicUrl: url },
+          } = supabase.storage.from(bucket).getPublicUrl(filePath)
+
+          return url
+        },
+        {
+          bucket,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+        }
+      )
 
       if (uploadError) {
         console.error('Upload error:', uploadError)
@@ -47,13 +68,8 @@ export function useImageUpload(bucket: BucketType = 'images') {
         return null
       }
 
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucket).getPublicUrl(filePath)
-
       setProgress(100)
-      return publicUrl
+      return publicUrl || null
     } catch (err) {
       console.error('Image upload error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload image'

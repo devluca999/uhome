@@ -35,7 +35,7 @@ export async function authenticateAsMockLandlord(page: Page): Promise<void> {
   // Use real authentication helper with demo credentials
   // This is more reliable than mock authentication
   await loginAsLandlord(page, 'demo-landlord@uhome.internal', 'DemoLandlord2024!')
-  
+
   // Wait for page to be fully loaded after authentication
   await page.waitForLoadState('networkidle')
 }

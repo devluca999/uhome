@@ -1,6 +1,6 @@
 /**
  * Upload Flow E2E Tests
- * 
+ *
  * Tests file uploads, edge cases, and storage integration.
  */
 
@@ -89,7 +89,7 @@ test.describe('Upload Flow', () => {
     // Try to upload unsupported file
     const unsupportedFile = createUnsupportedFile()
     const fileInput = page.locator('input[type="file"]')
-    
+
     if (await fileInput.isVisible()) {
       await uploadFileViaUI(page, 'input[type="file"]', unsupportedFile)
       await page.waitForTimeout(2000)
@@ -121,7 +121,7 @@ test.describe('Upload Flow', () => {
     // Try to upload oversized file (11MB)
     const oversizedFile = createOversizedFile(11)
     const fileInput = page.locator('input[type="file"]')
-    
+
     if (await fileInput.isVisible()) {
       await uploadFileViaUI(page, 'input[type="file"]', oversizedFile)
       await page.waitForTimeout(2000)
@@ -154,7 +154,7 @@ test.describe('Upload Flow', () => {
     // Start upload
     const testFile = createTestFile('test-upload.jpg', 1024 * 500, 'image/jpeg')
     const fileInput = page.locator('input[type="file"]')
-    
+
     if (await fileInput.isVisible()) {
       // Simulate network disconnect mid-upload
       await page.context().setOffline(true)
@@ -166,8 +166,9 @@ test.describe('Upload Flow', () => {
       await page.waitForTimeout(2000)
 
       // Verify error or retry option
-      const hasError = await verifyUploadError(page, 'upload failed') || 
-                       await verifyUploadError(page, 'network')
+      const hasError =
+        (await verifyUploadError(page, 'upload failed')) ||
+        (await verifyUploadError(page, 'network'))
       // Error handling may vary, so we just verify something happened
     }
   })
@@ -194,16 +195,15 @@ test.describe('Upload Flow', () => {
     // Try to upload
     const testFile = createTestFile('test-upload.jpg', 1024 * 100, 'image/jpeg')
     const fileInput = page.locator('input[type="file"]')
-    
+
     if (await fileInput.isVisible()) {
       await uploadFileViaUI(page, 'input[type="file"]', testFile)
       await page.waitForTimeout(2000)
 
       // Should show error about property not found
-      const hasError = await verifyUploadError(page, 'property') || 
-                       await verifyUploadError(page, 'not found')
+      const hasError =
+        (await verifyUploadError(page, 'property')) || (await verifyUploadError(page, 'not found'))
       expect(hasError).toBeTruthy()
     }
   })
 })
-

@@ -46,7 +46,11 @@ test.describe('Cross-Screen Consistency Tests', () => {
     const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
 
     // Calculate expected property revenue
-    const expectedRevenue = await financialAssertions.calculatePropertyRevenue(propertyId, monthStart, monthEnd)
+    const expectedRevenue = await financialAssertions.calculatePropertyRevenue(
+      propertyId,
+      monthStart,
+      monthEnd
+    )
 
     // Check Dashboard property breakdown
     await page.goto(`${baseUrl}/landlord/dashboard`)
@@ -54,9 +58,13 @@ test.describe('Cross-Screen Consistency Tests', () => {
 
     // Find property revenue on dashboard (adjust selector based on actual UI)
     const dashboardPropertyRevenueElement = page
-      .locator(`[data-testid="property-${propertyId}-revenue"], [data-testid="dashboard-property-revenue"]`)
+      .locator(
+        `[data-testid="property-${propertyId}-revenue"], [data-testid="dashboard-property-revenue"]`
+      )
       .first()
-    const dashboardPropertyRevenueText = await dashboardPropertyRevenueElement.textContent().catch(() => null)
+    const dashboardPropertyRevenueText = await dashboardPropertyRevenueElement
+      .textContent()
+      .catch(() => null)
 
     // Check Finances page with property filter
     await page.goto(`${baseUrl}/landlord/finances`)
@@ -64,7 +72,10 @@ test.describe('Cross-Screen Consistency Tests', () => {
 
     // Select property filter
     const propertySelect = page.locator('[data-testid="finances-property-select"]').first()
-    const propertyOptions = await propertySelect.locator('option').allTextContents().catch(() => [])
+    const propertyOptions = await propertySelect
+      .locator('option')
+      .allTextContents()
+      .catch(() => [])
     if (propertyOptions.length > 1) {
       await propertySelect.selectOption({ index: 1 })
       await page.waitForTimeout(1000)
@@ -72,9 +83,12 @@ test.describe('Cross-Screen Consistency Tests', () => {
       const financesPropertyRevenueCard = page.locator('[data-testid="finances-revenue"]').first()
       await financesPropertyRevenueCard.waitFor({ state: 'visible', timeout: 5000 })
       await page.waitForTimeout(500) // Wait for NumberCounter animation
-      
+
       // FIX: Select value element specifically, not entire card (KPI cards use different structure)
-      const financesPropertyRevenueText = await financesPropertyRevenueCard.locator('.text-3xl, .text-2xl').first().textContent()
+      const financesPropertyRevenueText = await financesPropertyRevenueCard
+        .locator('.text-3xl, .text-2xl')
+        .first()
+        .textContent()
 
       if (financesPropertyRevenueText) {
         const financesRevenueValue = parseFloat(financesPropertyRevenueText.replace(/[$,]/g, ''))
@@ -117,11 +131,7 @@ test.describe('Cross-Screen Consistency Tests', () => {
     await loginAsLandlord(page, 'demo-landlord@uhome.internal', 'DemoLandlord2024!')
 
     const supabase = getSupabaseAdminClient()
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('id')
-      .limit(1)
-      .single()
+    const { data: tenant } = await supabase.from('tenants').select('id').limit(1).single()
 
     if (!tenant) {
       test.skip()
@@ -153,7 +163,9 @@ test.describe('Cross-Screen Consistency Tests', () => {
       await page.goto(`${baseUrl}/landlord/leases/${lease.id}`)
       await page.waitForLoadState('networkidle')
 
-      const leaseBalanceElement = page.locator('[data-testid="tenant-balance"], [data-testid="outstanding-balance"]').first()
+      const leaseBalanceElement = page
+        .locator('[data-testid="tenant-balance"], [data-testid="outstanding-balance"]')
+        .first()
       const leaseBalanceText = await leaseBalanceElement.textContent().catch(() => null)
 
       if (leaseBalanceText) {
@@ -168,7 +180,10 @@ test.describe('Cross-Screen Consistency Tests', () => {
     }
   })
 
-  test('net income matches between dashboard and finances page (same filters)', async ({ page, context }) => {
+  test('net income matches between dashboard and finances page (same filters)', async ({
+    page,
+    context,
+  }) => {
     await loginAsLandlord(page, 'demo-landlord@uhome.internal', 'DemoLandlord2024!')
 
     const supabase = getSupabaseAdminClient()
@@ -190,7 +205,7 @@ test.describe('Cross-Screen Consistency Tests', () => {
     const dashboardNetIncomeCard = page.locator('[data-testid="dashboard-net-income"]').first()
     await dashboardNetIncomeCard.waitFor({ state: 'visible', timeout: 5000 })
     await page.waitForTimeout(500) // Wait for NumberCounter animation
-    
+
     // FIX: Select value element specifically, not entire card
     const dashboardNetIncomeText = await dashboardNetIncomeCard.locator('.text-2xl').textContent()
 
@@ -203,7 +218,10 @@ test.describe('Cross-Screen Consistency Tests', () => {
 
     // Calculate expected (current calendar month)
     const currentMonth = new Date()
-    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(landlord.id, currentMonth)
+    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(
+      landlord.id,
+      currentMonth
+    )
 
     // Check finances page with monthly filter
     const financesPage = await context.newPage()
@@ -215,10 +233,12 @@ test.describe('Cross-Screen Consistency Tests', () => {
     await timePeriodSelect.selectOption('monthly')
     await financesPage.waitForTimeout(1000)
 
-    const financesNetIncomeCard = financesPage.locator('[data-testid="finances-net-income"]').first()
+    const financesNetIncomeCard = financesPage
+      .locator('[data-testid="finances-net-income"]')
+      .first()
     await financesNetIncomeCard.waitFor({ state: 'visible', timeout: 5000 })
     await financesPage.waitForTimeout(500) // Wait for NumberCounter animation
-    
+
     // FIX: Select value element specifically, not entire card
     const financesNetIncomeText = await financesNetIncomeCard.locator('.text-2xl').textContent()
 
@@ -234,7 +254,9 @@ test.describe('Cross-Screen Consistency Tests', () => {
     await financesPage.close()
   })
 
-  test('currency formatting is consistent (raw numbers match before formatting)', async ({ page }) => {
+  test('currency formatting is consistent (raw numbers match before formatting)', async ({
+    page,
+  }) => {
     await loginAsLandlord(page, 'demo-landlord@uhome.internal', 'DemoLandlord2024!')
     await page.goto(`${baseUrl}/landlord/dashboard`)
     await page.waitForLoadState('networkidle')
@@ -252,7 +274,10 @@ test.describe('Cross-Screen Consistency Tests', () => {
     }
 
     const currentMonth = new Date()
-    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(landlord.id, currentMonth)
+    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(
+      landlord.id,
+      currentMonth
+    )
 
     // Extract numeric values from formatted text
     const revenueElement = page.locator('[data-testid="dashboard-revenue"]').first()
@@ -274,4 +299,3 @@ test.describe('Cross-Screen Consistency Tests', () => {
     expect(revenueText).toMatch(/[\$£€¥]|USD|dollars?/i)
   })
 })
-

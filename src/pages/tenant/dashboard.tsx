@@ -19,8 +19,11 @@ import { useAuth } from '@/contexts/auth-context'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 export function TenantDashboard() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'TenantDashboard' })
   const { data: tenantData, loading: tenantLoading } = useTenantData()
   const { records: rentRecords, loading: rentLoading } = useRentRecords(tenantData?.tenant.id)
   const { requests, loading: maintenanceLoading } = useMaintenanceRequests(

@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useMemo } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,6 @@ import { LineChart, type LineChartData } from '@/components/ui/line-chart'
 import { BarChart } from '@/components/ui/bar-chart'
 import { DonutChart } from '@/components/ui/donut-chart'
 import { PieChart } from '@/components/ui/pie-chart'
-import { Skeleton } from '@/components/ui/skeleton-loader'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import {
   LineChart as LineChartIcon,

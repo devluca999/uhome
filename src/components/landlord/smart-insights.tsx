@@ -27,14 +27,14 @@ export function SmartInsights({ insights, className }: SmartInsightsProps) {
   const navigate = useNavigate()
   const cardSpring = createSpring('card')
   const [isDismissed, setIsDismissed] = useState(false)
-  
+
   // Check if insights card was previously dismissed
   useEffect(() => {
     const dismissalKey = 'smart-insights-dismissed'
     const wasDismissed = localStorage.getItem(dismissalKey) === 'true'
     setIsDismissed(wasDismissed)
   }, [])
-  
+
   const handleDismiss = () => {
     setIsDismissed(true)
     localStorage.setItem('smart-insights-dismissed', 'true')

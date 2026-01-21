@@ -283,10 +283,14 @@ export function SignupPage() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={loading}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none disabled:opacity-50"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 focus:outline-none disabled:opacity-50 text-muted-foreground hover:text-foreground"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-emerald-700" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
@@ -365,7 +369,10 @@ export function SignupPage() {
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline transition-colors">
+            <Link
+              to="/login"
+              className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline transition-colors"
+            >
               Sign in
             </Link>
           </p>

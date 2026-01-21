@@ -1,6 +1,6 @@
 /**
  * Comprehensive Edge Case Tests
- * 
+ *
  * Tests edge cases:
  * - Rapid actions (spam prevention)
  * - Duplicate submissions
@@ -11,7 +11,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupUATScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupUATScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 
@@ -82,7 +87,7 @@ test.describe('Edge Cases Comprehensive UAT', () => {
       const form = page.locator('form').first()
       if (await form.isVisible({ timeout: 3000 }).catch(() => false)) {
         const submitButton = form.locator('button[type="submit"]').first()
-        
+
         // Double submit
         await submitButton.click()
         await page.waitForTimeout(100)
@@ -202,4 +207,3 @@ test.describe('Edge Cases Comprehensive UAT', () => {
     }
   })
 })
-

@@ -9,7 +9,20 @@ import { CheckCircle, XCircle, Filter } from 'lucide-react'
 // Date formatting helper
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ]
   const hours = date.getHours()
   const minutes = date.getMinutes()
   const ampm = hours >= 12 ? 'PM' : 'AM'
@@ -126,7 +139,8 @@ export function AdminSupport() {
                         <CardDescription>
                           <div className="space-y-1">
                             <p>
-                              <strong>From:</strong> {ticket.email} (User ID: {ticket.user_id.substring(0, 8)}...)
+                              <strong>From:</strong> {ticket.email} (User ID:{' '}
+                              {ticket.user_id.substring(0, 8)}...)
                             </p>
                             <p>
                               <strong>Created:</strong> {formatDateTime(ticket.created_at)}

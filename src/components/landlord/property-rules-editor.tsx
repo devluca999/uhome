@@ -140,7 +140,7 @@ export function PropertyRulesEditor({
         </div>
       ) : (
         <p className="text-sm text-muted-foreground italic p-4 border border-border rounded-md bg-muted/30">
-          No house rules set. Click "Add Rules" to add rules for this property.
+          No house rules set. Click &quot;Add Rules&quot; to add rules for this property.
         </p>
       )}
     </div>

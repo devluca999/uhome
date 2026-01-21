@@ -32,7 +32,11 @@ import { AdminOverview } from '@/pages/admin/overview'
 import { AdminUsers } from '@/pages/admin/users'
 import { AdminConversations } from '@/pages/admin/conversations'
 import { AdminSupport } from '@/pages/admin/support'
+import { AdminMessagesSupport } from '@/pages/admin/messages-support'
 import { AdminSystem } from '@/pages/admin/system'
+import { AdminPerformance } from '@/pages/admin/performance'
+import { AdminPayments } from '@/pages/admin/payments'
+import { AdminAuditSecurity } from '@/pages/admin/audit-security'
 
 export const router = createBrowserRouter(
   [
@@ -186,16 +190,33 @@ export const router = createBrowserRouter(
               element: <AdminUsers />,
             },
             {
+              path: 'messages-support',
+              element: <AdminMessagesSupport />,
+            },
+            // Legacy routes - redirect to merged page
+            {
               path: 'conversations',
-              element: <AdminConversations />,
+              element: <AdminMessagesSupport />,
             },
             {
               path: 'support',
-              element: <AdminSupport />,
+              element: <AdminMessagesSupport />,
+            },
+            {
+              path: 'payments',
+              element: <AdminPayments />,
+            },
+            {
+              path: 'audit-security',
+              element: <AdminAuditSecurity />,
             },
             {
               path: 'system',
               element: <AdminSystem />,
+            },
+            {
+              path: 'performance',
+              element: <AdminPerformance />,
             },
           ],
         },
@@ -209,6 +230,7 @@ export const router = createBrowserRouter(
   {
     future: {
       v7_startTransition: true,
+      v7_relativeSplatPath: true,
     },
   }
 )

@@ -1,6 +1,6 @@
 /**
  * Abuse Guard E2E Tests
- * 
+ *
  * Tests abuse detection, edge cases, and security.
  */
 
@@ -53,11 +53,7 @@ test.describe('Abuse Guard Tests', () => {
     // Then try to accept in multiple tabs (as tenant)
     // This should be handled gracefully
 
-    const pages = await Promise.all([
-      context.newPage(),
-      context.newPage(),
-      context.newPage(),
-    ])
+    const pages = await Promise.all([context.newPage(), context.newPage(), context.newPage()])
 
     // Try to accept same invite in all tabs
     for (const p of pages) {
@@ -67,7 +63,7 @@ test.describe('Abuse Guard Tests', () => {
 
     // Only one should succeed
     await page.waitForTimeout(2000)
-    
+
     const successCount = await Promise.all(
       pages.map(p => p.locator('text=/accepted|success/i').isVisible())
     )
@@ -175,8 +171,9 @@ test.describe('Abuse Guard Tests', () => {
     await page.waitForLoadState('networkidle')
 
     // Should redirect to login or show error
-    const isLoggedOut = page.url().includes('/login') || 
-                        await page.locator('text=/unauthorized|logged out/i').isVisible()
+    const isLoggedOut =
+      page.url().includes('/login') ||
+      (await page.locator('text=/unauthorized|logged out/i').isVisible())
     expect(isLoggedOut).toBeTruthy()
   })
 
@@ -202,4 +199,3 @@ test.describe('Abuse Guard Tests', () => {
     expect(url2.searchParams.get('dev')).toBeNull()
   })
 })
-

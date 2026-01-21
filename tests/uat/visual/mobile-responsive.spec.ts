@@ -1,6 +1,6 @@
 /**
  * Mobile Responsive Visual UAT Tests
- * 
+ *
  * Tests UI responsiveness across breakpoints:
  * - Tablet view
  * - Mobile view
@@ -8,7 +8,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupUATScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupUATScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logVisualMismatch } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 
@@ -62,4 +67,3 @@ test.describe('Mobile Responsive Visual UAT', () => {
     })
   }
 })
-

@@ -59,10 +59,10 @@ export function createFinancialAssertions(): FinancialAssertions {
 
   /**
    * Calculate monthly revenue (rent collected) for a landlord
-   * 
+   *
    * Collected revenue is calculated using paid_date (cash accounting).
    * Only includes records where status='paid' AND paid_date is not null.
-   * 
+   *
    * Formula: SUM(amount + late_fee) WHERE status = 'paid' AND paid_date within month
    */
   async function calculateMonthlyRevenue(landlordId: string, month: Date): Promise<number> {
@@ -101,15 +101,17 @@ export function createFinancialAssertions(): FinancialAssertions {
     // Guard assertion: verify no paid records with null paid_date (data quality check)
     const invalidRecords = rentRecords.filter(r => r.status === 'paid' && !r.paid_date)
     if (invalidRecords.length > 0) {
-      console.warn(`Warning: Found ${invalidRecords.length} paid records with null paid_date:`, invalidRecords)
-      throw new Error(`Data quality issue: Found ${invalidRecords.length} paid records with null paid_date`)
+      console.warn(
+        `Warning: Found ${invalidRecords.length} paid records with null paid_date:`,
+        invalidRecords
+      )
+      throw new Error(
+        `Data quality issue: Found ${invalidRecords.length} paid records with null paid_date`
+      )
     }
 
     // Calculate total (amount + late_fee)
-    return rentRecords.reduce(
-      (sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0),
-      0
-    )
+    return rentRecords.reduce((sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0), 0)
   }
 
   /**
@@ -163,7 +165,7 @@ export function createFinancialAssertions(): FinancialAssertions {
 
   /**
    * Calculate revenue for a date range
-   * 
+   *
    * Collected revenue is calculated using paid_date (cash accounting).
    * Only includes records where status='paid' AND paid_date is not null.
    */
@@ -205,14 +207,16 @@ export function createFinancialAssertions(): FinancialAssertions {
     // Guard assertion: verify no paid records with null paid_date (data quality check)
     const invalidRecords = rentRecords.filter(r => r.status === 'paid' && !r.paid_date)
     if (invalidRecords.length > 0) {
-      console.warn(`Warning: Found ${invalidRecords.length} paid records with null paid_date:`, invalidRecords)
-      throw new Error(`Data quality issue: Found ${invalidRecords.length} paid records with null paid_date`)
+      console.warn(
+        `Warning: Found ${invalidRecords.length} paid records with null paid_date:`,
+        invalidRecords
+      )
+      throw new Error(
+        `Data quality issue: Found ${invalidRecords.length} paid records with null paid_date`
+      )
     }
 
-    return rentRecords.reduce(
-      (sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0),
-      0
-    )
+    return rentRecords.reduce((sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0), 0)
   }
 
   /**
@@ -255,7 +259,7 @@ export function createFinancialAssertions(): FinancialAssertions {
 
   /**
    * Calculate net income for a date range
-   * 
+   *
    * Net income = collected revenue - expenses
    * Collected revenue uses paid_date (cash accounting).
    */
@@ -271,7 +275,7 @@ export function createFinancialAssertions(): FinancialAssertions {
 
   /**
    * Calculate property-specific revenue
-   * 
+   *
    * Collected revenue is calculated using paid_date (cash accounting).
    * Only includes records where status='paid' AND paid_date is not null.
    */
@@ -299,14 +303,16 @@ export function createFinancialAssertions(): FinancialAssertions {
     // Guard assertion: verify no paid records with null paid_date (data quality check)
     const invalidRecords = rentRecords.filter(r => r.status === 'paid' && !r.paid_date)
     if (invalidRecords.length > 0) {
-      console.warn(`Warning: Found ${invalidRecords.length} paid records with null paid_date:`, invalidRecords)
-      throw new Error(`Data quality issue: Found ${invalidRecords.length} paid records with null paid_date`)
+      console.warn(
+        `Warning: Found ${invalidRecords.length} paid records with null paid_date:`,
+        invalidRecords
+      )
+      throw new Error(
+        `Data quality issue: Found ${invalidRecords.length} paid records with null paid_date`
+      )
     }
 
-    return rentRecords.reduce(
-      (sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0),
-      0
-    )
+    return rentRecords.reduce((sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0), 0)
   }
 
   /**
@@ -349,21 +355,14 @@ export function createFinancialAssertions(): FinancialAssertions {
 
     if (!rentRecords) return 0
 
-    return rentRecords.reduce(
-      (sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0),
-      0
-    )
+    return rentRecords.reduce((sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0), 0)
   }
 
   /**
    * Calculate work order costs (if expenses are linked to work orders)
    * Note: This assumes work orders don't directly have costs, but may be tracked in expenses
    */
-  async function calculateWorkOrderCosts(
-    leaseId: string,
-    start: Date,
-    end: Date
-  ): Promise<number> {
+  async function calculateWorkOrderCosts(leaseId: string, start: Date, end: Date): Promise<number> {
     // Work orders don't have direct costs in the current schema
     // Costs would be tracked as expenses linked to work orders
     // For now, return 0 as work orders don't have cost fields
@@ -388,4 +387,3 @@ export function createFinancialAssertions(): FinancialAssertions {
  * Export singleton instance
  */
 export const financialAssertions = createFinancialAssertions()
-

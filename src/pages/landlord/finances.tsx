@@ -28,6 +28,7 @@ import { exportLedgerToCSV } from '@/utils/export-csv'
 import { FileText, Plus, Download, X, Edit } from 'lucide-react'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import type { Database } from '@/types/database'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
 type RentRecordWithRelations = import('@/hooks/use-landlord-rent-records').RentRecordWithRelations
@@ -207,6 +208,9 @@ function generateFallbackExpenses(properties: Array<{ id: string; name: string }
 }
 
 export function LandlordFinances() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'LandlordFinances' })
+
   const { properties } = useProperties()
   const { tenants } = useTenants()
   const { expenses, createExpense, updateExpense, deleteExpense, getProjectedExpenses } =

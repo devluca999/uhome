@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Log client configuration
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-      
+
       console.log(`[AuthContext.signIn] Starting sign in`, {
         email,
         passwordLength: password.length,
@@ -126,7 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`[AuthContext.signIn] Sign in successful`, {
         userId: data?.user?.id,
         userEmail: data?.user?.email,
-        sessionExpiresAt: data?.session?.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : null,
+        sessionExpiresAt: data?.session?.expires_at
+          ? new Date(data.session.expires_at * 1000).toISOString()
+          : null,
       })
 
       // Auto-activate dev mode if demo account

@@ -46,13 +46,10 @@ serve(async req => {
     const { property_id, email } = await req.json()
 
     if (!property_id || !email) {
-      return new Response(
-        JSON.stringify({ error: 'property_id and email are required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return new Response(JSON.stringify({ error: 'property_id and email are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Check invites created in last minute (burst protection)
@@ -150,4 +147,3 @@ serve(async req => {
     })
   }
 })
-

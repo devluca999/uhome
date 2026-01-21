@@ -73,9 +73,13 @@ export function LandlordTenants() {
     } else if (sortFilter === 'name_za') {
       filtered.sort((a, b) => (b.email || '').localeCompare(a.email || ''))
     } else if (sortFilter === 'newest') {
-      filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+      filtered.sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      )
     } else if (sortFilter === 'oldest') {
-      filtered.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime())
+      filtered.sort(
+        (a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+      )
     } else if (sortFilter === 'rent_high') {
       filtered.sort((a, b) => {
         const aProperty = properties.find(p => p.id === a.property_id)
@@ -218,7 +222,9 @@ export function LandlordTenants() {
 
                   {/* Status Filter */}
                   <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">Status:</label>
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Status:
+                    </label>
                     <select
                       value={statusFilter}
                       onChange={e => setStatusFilter(e.target.value as StatusFilter)}
@@ -248,7 +254,9 @@ export function LandlordTenants() {
                   </div>
 
                   {/* Clear Filters */}
-                  {(searchQuery.trim() !== '' || statusFilter !== 'all' || sortFilter !== 'newest') && (
+                  {(searchQuery.trim() !== '' ||
+                    statusFilter !== 'all' ||
+                    sortFilter !== 'newest') && (
                     <Button
                       variant="outline"
                       size="sm"

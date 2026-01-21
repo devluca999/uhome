@@ -5,7 +5,7 @@ import { useProperties } from '@/hooks/use-properties'
 import { useExpenses } from '@/hooks/use-expenses'
 import { DonutChart } from '@/components/ui/donut-chart'
 import { BarChart } from '@/components/ui/bar-chart'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle } from 'lucide-react'
 

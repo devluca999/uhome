@@ -7,7 +7,7 @@ import { BarChart } from '@/components/ui/bar-chart'
 import { ModalIndicator } from '@/components/ui/modal-indicator'
 import { FullscreenGraphModal } from '@/components/ui/fullscreen-graph-modal'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { LineChart as LineChartIcon, BarChart3, Download, FileDown, Image } from 'lucide-react'
+import { LineChart as LineChartIcon, BarChart3, FileDown, Image } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { exportGraphToCSV, exportGraphToPNG, type GraphDataPoint } from '@/utils/export-graph'
 
@@ -111,7 +111,9 @@ export function FinancialGraphEnhanced({
   // Filter data based on active datasets
   const filteredGraphData = useMemo(() => {
     return graphData.map(point => {
-      const filtered: any = { month: point.month }
+      const filtered: { month: string; rentCollected?: number; expenses?: number } = {
+        month: point.month,
+      }
       if (activeDatasets.rentCollected && point.rentCollected !== undefined) {
         filtered.rentCollected = point.rentCollected
       }

@@ -37,20 +37,29 @@ test.describe('Finances Page Filter Assertions', () => {
 
     // Calculate expected values for current month
     const currentMonth = new Date()
-    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(landlord.id, currentMonth)
-    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(landlord.id, currentMonth)
-    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(landlord.id, currentMonth)
+    const expectedRevenue = await financialAssertions.calculateMonthlyRevenue(
+      landlord.id,
+      currentMonth
+    )
+    const expectedExpenses = await financialAssertions.calculateMonthlyExpenses(
+      landlord.id,
+      currentMonth
+    )
+    const expectedNetIncome = await financialAssertions.calculateMonthlyNetIncome(
+      landlord.id,
+      currentMonth
+    )
 
     // Extract values from page (adjust selectors based on actual UI)
     // Wait for elements to be visible and stable (NumberCounter animation completes)
     const revenueElement = page.locator('[data-testid="finances-revenue"]').first()
     const expensesElement = page.locator('[data-testid="finances-expenses"]').first()
     const netIncomeElement = page.locator('[data-testid="finances-net-income"]').first()
-    
+
     await revenueElement.waitFor({ state: 'visible', timeout: 5000 })
     await expensesElement.waitFor({ state: 'visible', timeout: 5000 })
     await netIncomeElement.waitFor({ state: 'visible', timeout: 5000 })
-    
+
     // Wait a bit more for NumberCounter animation to stabilize
     await page.waitForTimeout(500)
 
@@ -102,20 +111,32 @@ test.describe('Finances Page Filter Assertions', () => {
     const quarterStart = new Date(now.getFullYear(), quarterStartMonth, 1)
     const quarterEnd = new Date(now.getFullYear(), quarterStartMonth + 3, 0)
 
-    const expectedRevenue = await financialAssertions.calculateRevenueForRange(landlord.id, quarterStart, quarterEnd)
-    const expectedExpenses = await financialAssertions.calculateExpensesForRange(landlord.id, quarterStart, quarterEnd)
-    const expectedNetIncome = await financialAssertions.calculateNetIncomeForRange(landlord.id, quarterStart, quarterEnd)
+    const expectedRevenue = await financialAssertions.calculateRevenueForRange(
+      landlord.id,
+      quarterStart,
+      quarterEnd
+    )
+    const expectedExpenses = await financialAssertions.calculateExpensesForRange(
+      landlord.id,
+      quarterStart,
+      quarterEnd
+    )
+    const expectedNetIncome = await financialAssertions.calculateNetIncomeForRange(
+      landlord.id,
+      quarterStart,
+      quarterEnd
+    )
 
     // Extract and validate values
     // Wait for elements to be visible and stable (NumberCounter animation completes)
     const revenueElement = page.locator('[data-testid="finances-revenue"]').first()
     const expensesElement = page.locator('[data-testid="finances-expenses"]').first()
     const netIncomeElement = page.locator('[data-testid="finances-net-income"]').first()
-    
+
     await revenueElement.waitFor({ state: 'visible', timeout: 5000 })
     await expensesElement.waitFor({ state: 'visible', timeout: 5000 })
     await netIncomeElement.waitFor({ state: 'visible', timeout: 5000 })
-    
+
     // Wait a bit more for NumberCounter animation to stabilize
     await page.waitForTimeout(500)
 
@@ -166,20 +187,32 @@ test.describe('Finances Page Filter Assertions', () => {
     const yearStart = new Date(now.getFullYear(), 0, 1)
     const yearEnd = new Date(now.getFullYear(), 11, 31)
 
-    const expectedRevenue = await financialAssertions.calculateRevenueForRange(landlord.id, yearStart, yearEnd)
-    const expectedExpenses = await financialAssertions.calculateExpensesForRange(landlord.id, yearStart, yearEnd)
-    const expectedNetIncome = await financialAssertions.calculateNetIncomeForRange(landlord.id, yearStart, yearEnd)
+    const expectedRevenue = await financialAssertions.calculateRevenueForRange(
+      landlord.id,
+      yearStart,
+      yearEnd
+    )
+    const expectedExpenses = await financialAssertions.calculateExpensesForRange(
+      landlord.id,
+      yearStart,
+      yearEnd
+    )
+    const expectedNetIncome = await financialAssertions.calculateNetIncomeForRange(
+      landlord.id,
+      yearStart,
+      yearEnd
+    )
 
     // Extract and validate values
     // Wait for elements to be visible and stable (NumberCounter animation completes)
     const revenueElement = page.locator('[data-testid="finances-revenue"]').first()
     const expensesElement = page.locator('[data-testid="finances-expenses"]').first()
     const netIncomeElement = page.locator('[data-testid="finances-net-income"]').first()
-    
+
     await revenueElement.waitFor({ state: 'visible', timeout: 5000 })
     await expensesElement.waitFor({ state: 'visible', timeout: 5000 })
     await netIncomeElement.waitFor({ state: 'visible', timeout: 5000 })
-    
+
     // Wait a bit more for NumberCounter animation to stabilize
     await page.waitForTimeout(500)
 
@@ -236,7 +269,10 @@ test.describe('Finances Page Filter Assertions', () => {
 
     // Select property filter
     const propertySelect = page.locator('[data-testid="finances-property-select"]').first()
-    const propertyOptions = await propertySelect.locator('option').allTextContents().catch(() => [])
+    const propertyOptions = await propertySelect
+      .locator('option')
+      .allTextContents()
+      .catch(() => [])
     if (propertyOptions.length > 1) {
       // Select first property (skip "All Properties")
       await propertySelect.selectOption({ index: 1 })
@@ -247,17 +283,25 @@ test.describe('Finances Page Filter Assertions', () => {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-      const expectedRevenue = await financialAssertions.calculatePropertyRevenue(propertyId, monthStart, monthEnd)
-      const expectedExpenses = await financialAssertions.calculatePropertyExpenses(propertyId, monthStart, monthEnd)
+      const expectedRevenue = await financialAssertions.calculatePropertyRevenue(
+        propertyId,
+        monthStart,
+        monthEnd
+      )
+      const expectedExpenses = await financialAssertions.calculatePropertyExpenses(
+        propertyId,
+        monthStart,
+        monthEnd
+      )
 
       // Extract and validate values
       // Wait for elements to be visible and stable (NumberCounter animation completes)
       const revenueElement = page.locator('[data-testid="finances-revenue"]').first()
       const expensesElement = page.locator('[data-testid="finances-expenses"]').first()
-      
+
       await revenueElement.waitFor({ state: 'visible', timeout: 5000 })
       await expensesElement.waitFor({ state: 'visible', timeout: 5000 })
-      
+
       // Wait a bit more for NumberCounter animation to stabilize
       await page.waitForTimeout(500)
 
@@ -301,11 +345,12 @@ test.describe('Finances Page Filter Assertions', () => {
 
     // Verify dashboard value hasn't changed
     const dashboardRevenueAfterText = await dashboardRevenueElement.textContent()
-    const dashboardRevenueAfter = parseFloat(dashboardRevenueAfterText?.replace(/[^0-9.-]+/g, '') || '0')
+    const dashboardRevenueAfter = parseFloat(
+      dashboardRevenueAfterText?.replace(/[^0-9.-]+/g, '') || '0'
+    )
 
     expect(Math.abs(dashboardRevenueAfter - dashboardRevenue)).toBeLessThan(0.01)
 
     await financesPage.close()
   })
 })
-

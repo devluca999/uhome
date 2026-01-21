@@ -15,7 +15,10 @@ type ExpenseUpdate = Database['public']['Tables']['expenses']['Update']
 
 interface ExpenseListProps {
   expenses: Expense[]
-  onUpdate: (id: string, data: ExpenseUpdate) => Promise<{ data: any; error: Error | null }>
+  onUpdate: (
+    id: string,
+    data: ExpenseUpdate
+  ) => Promise<{ data: Expense | null; error: Error | null }>
   onDelete: (id: string) => Promise<{ error: Error | null }>
   properties: Array<{ id: string; name: string }>
 }

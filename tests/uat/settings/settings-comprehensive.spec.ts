@@ -1,6 +1,6 @@
 /**
  * Comprehensive Settings UAT Tests
- * 
+ *
  * Tests all settings features:
  * - Dark mode toggle
  * - Navigation preferences
@@ -11,7 +11,13 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupUATScenario, waitForPageReady, cleanupUATTest, verifyToggleState } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupUATScenario,
+  waitForPageReady,
+  cleanupUATTest,
+  verifyToggleState,
+} from '../helpers/uat-helpers'
 import { logTestResult, logVisualMismatch } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 import { createTestFile, uploadFileViaUI } from '../../helpers/upload'
@@ -38,36 +44,45 @@ test.describe('Settings Comprehensive UAT', () => {
 
     try {
       // Find dark mode toggle
-      const darkModeToggle = page.locator('button:has-text("Dark"), [data-theme-toggle], [aria-label*="theme"]').first()
+      const darkModeToggle = page
+        .locator('button:has-text("Dark"), [data-theme-toggle], [aria-label*="theme"]')
+        .first()
       const isVisible = await darkModeToggle.isVisible({ timeout: 3000 }).catch(() => false)
 
       if (isVisible) {
         // Get initial state
-        const initialState = await darkModeToggle.getAttribute('aria-checked') || 
-                            await darkModeToggle.getAttribute('data-state') ||
-                            (await darkModeToggle.isChecked() ? 'true' : 'false')
+        const initialState =
+          (await darkModeToggle.getAttribute('aria-checked')) ||
+          (await darkModeToggle.getAttribute('data-state')) ||
+          ((await darkModeToggle.isChecked()) ? 'true' : 'false')
 
         // Toggle dark mode
         await darkModeToggle.click()
         await page.waitForTimeout(1000)
 
         // Verify state changed
-        const newState = await darkModeToggle.getAttribute('aria-checked') || 
-                       await darkModeToggle.getAttribute('data-state') ||
-                       (await darkModeToggle.isChecked() ? 'true' : 'false')
+        const newState =
+          (await darkModeToggle.getAttribute('aria-checked')) ||
+          (await darkModeToggle.getAttribute('data-state')) ||
+          ((await darkModeToggle.isChecked()) ? 'true' : 'false')
 
         expect(newState).not.toBe(initialState)
 
         // Verify toggle state is visually obvious
-        await verifyToggleState(page, darkModeToggle.locator('..').locator('button, [role="button"]').first() || darkModeToggle, newState === 'true' || newState === 'checked')
+        await verifyToggleState(
+          page,
+          darkModeToggle.locator('..').locator('button, [role="button"]').first() || darkModeToggle,
+          newState === 'true' || newState === 'checked'
+        )
 
         // Refresh and verify persistence
         await page.reload()
         await waitForPageReady(page)
 
-        const persistedState = await darkModeToggle.getAttribute('aria-checked') || 
-                              await darkModeToggle.getAttribute('data-state') ||
-                              (await darkModeToggle.isChecked() ? 'true' : 'false')
+        const persistedState =
+          (await darkModeToggle.getAttribute('aria-checked')) ||
+          (await darkModeToggle.getAttribute('data-state')) ||
+          ((await darkModeToggle.isChecked()) ? 'true' : 'false')
 
         expect(persistedState).toBe(newState)
 
@@ -169,7 +184,9 @@ test.describe('Settings Comprehensive UAT', () => {
 
       if (isVisible) {
         // Verify logout button exists
-        const logoutButton = page.locator('button:has-text("Logout"), button:has-text("Sign Out")').first()
+        const logoutButton = page
+          .locator('button:has-text("Logout"), button:has-text("Sign Out")')
+          .first()
         const logoutVisible = await logoutButton.isVisible({ timeout: 2000 }).catch(() => false)
 
         await logTestResult(page, {
@@ -222,7 +239,7 @@ test.describe('Settings Comprehensive UAT', () => {
 
       if (toggleCount > 0) {
         const firstToggle = toggles.first()
-        
+
         // Verify toggle is visible
         await expect(firstToggle).toBeVisible()
 
@@ -265,4 +282,3 @@ test.describe('Settings Comprehensive UAT', () => {
     }
   })
 })
-

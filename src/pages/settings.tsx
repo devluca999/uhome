@@ -154,13 +154,13 @@ export function SettingsPage() {
                   />
                 ) : (
                   <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-2xl font-semibold text-foreground">
-                    {userName.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                    {userName.charAt(0).toUpperCase() ||
+                      user?.email?.charAt(0).toUpperCase() ||
+                      'U'}
                   </div>
                 )}
                 <div className="flex-1">
-                  {avatarError && (
-                    <p className="text-sm text-destructive mb-2">{avatarError}</p>
-                  )}
+                  {avatarError && <p className="text-sm text-destructive mb-2">{avatarError}</p>}
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -176,10 +176,10 @@ export function SettingsPage() {
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
-                      onChange={async (e) => {
+                      onChange={async e => {
                         const file = e.target.files?.[0]
                         if (!file || !user?.id) return
-                        
+
                         const publicUrl = await uploadImage(file, user.id)
                         if (publicUrl) {
                           setAvatarUrl(publicUrl)
@@ -188,9 +188,7 @@ export function SettingsPage() {
                       }}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    JPG, PNG or WebP. Max 2MB.
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">JPG, PNG or WebP. Max 2MB.</p>
                 </div>
               </div>
             </div>

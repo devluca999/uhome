@@ -45,10 +45,10 @@ if (!isUsingServiceRole || !supabaseAnon) {
 
 /**
  * Create and confirm a demo user with proper password hashing
- * 
+ *
  * Uses signUp (proper password hashing) + admin confirmation, NOT admin.createUser.
  * admin.createUser bypasses password hashing and leads to "Invalid login credentials" errors.
- * 
+ *
  * @param email - User email address
  * @param password - User password (will be properly hashed via signUp)
  * @param role - User role ('landlord' or 'tenant')
@@ -73,7 +73,9 @@ async function createAndConfirmDemoUser(
   if (signUpError) {
     // If user already exists, try to sign in to verify the password works
     if (signUpError.message?.includes('already registered') || signUpError.status === 422) {
-      console.log(`[createAndConfirmDemoUser] User already exists, attempting sign in to verify password...`)
+      console.log(
+        `[createAndConfirmDemoUser] User already exists, attempting sign in to verify password...`
+      )
       const { data: signInData, error: signInError } = await supabaseAnon!.auth.signInWithPassword({
         email,
         password,
@@ -81,35 +83,44 @@ async function createAndConfirmDemoUser(
 
       if (signInError || !signInData.user) {
         // Password doesn't work - user exists but password is wrong
-        console.log(`[createAndConfirmDemoUser] Existing user password invalid, deleting and recreating...`)
-        
+        console.log(
+          `[createAndConfirmDemoUser] Existing user password invalid, deleting and recreating...`
+        )
+
         const { data: usersList } = await supabase.auth.admin.listUsers()
         const existingUser = usersList?.users?.find(u => u.email === email)
-        
+
         if (existingUser) {
           // Delete the existing user via admin API
           const { error: deleteError } = await supabase.auth.admin.deleteUser(existingUser.id)
           if (deleteError) {
-            throw new Error(`User exists but password is invalid. Failed to delete: ${deleteError.message}. Please delete user manually from Supabase Auth dashboard.`)
+            throw new Error(
+              `User exists but password is invalid. Failed to delete: ${deleteError.message}. Please delete user manually from Supabase Auth dashboard.`
+            )
           }
           console.log(`[createAndConfirmDemoUser] Deleted existing invalid user`)
-          
+
           // Wait a moment for deletion to propagate
           await new Promise(resolve => setTimeout(resolve, 1000))
-          
+
           // Now try to sign up again
-          const { data: retrySignUpData, error: retrySignUpError } = await supabaseAnon!.auth.signUp({
-            email,
-            password,
-          })
-          
+          const { data: retrySignUpData, error: retrySignUpError } =
+            await supabaseAnon!.auth.signUp({
+              email,
+              password,
+            })
+
           if (retrySignUpError || !retrySignUpData.user) {
-            throw new Error(`Failed to sign up after deletion: ${retrySignUpError?.message || 'No user returned'}`)
+            throw new Error(
+              `Failed to sign up after deletion: ${retrySignUpError?.message || 'No user returned'}`
+            )
           }
-          
+
           userId = retrySignUpData.user.id
           isNewUser = true
-          console.log(`[createAndConfirmDemoUser] SignUp successful after deletion. User ID: ${userId}`)
+          console.log(
+            `[createAndConfirmDemoUser] SignUp successful after deletion. User ID: ${userId}`
+          )
         } else {
           throw new Error(`User exists but could not find user ID to delete`)
         }
@@ -137,10 +148,9 @@ async function createAndConfirmDemoUser(
   // Step 2: Confirm user via admin API (only for newly created users)
   if (isNewUser) {
     console.log(`[createAndConfirmDemoUser] Confirming user via admin API...`)
-    const { error: confirmError } = await supabase.auth.admin.updateUserById(
-      userId,
-      { email_confirm: true }
-    )
+    const { error: confirmError } = await supabase.auth.admin.updateUserById(userId, {
+      email_confirm: true,
+    })
 
     if (confirmError) {
       throw new Error(`Failed to confirm user: ${confirmError.message}`)
@@ -148,13 +158,13 @@ async function createAndConfirmDemoUser(
 
     console.log(`[createAndConfirmDemoUser] User confirmed successfully`)
   } else {
-    console.log(`[createAndConfirmDemoUser] Skipping confirmation (user already exists and is valid)`)
+    console.log(
+      `[createAndConfirmDemoUser] Skipping confirmation (user already exists and is valid)`
+    )
   }
 
   // Step 3: Create/update user record in users table
-  const { error: userError } = await supabase
-    .from('users')
-    .upsert({ id: userId, email, role })
+  const { error: userError } = await supabase.from('users').upsert({ id: userId, email, role })
 
   if (userError) {
     throw new Error(`Failed to create user record: ${userError.message}`)
@@ -170,7 +180,9 @@ async function createAndConfirmDemoUser(
     })
 
     if (verifyError) {
-      throw new Error(`[AUTH VERIFICATION FAILED] User created but cannot authenticate. Email: ${email}, Error: ${verifyError.message}`)
+      throw new Error(
+        `[AUTH VERIFICATION FAILED] User created but cannot authenticate. Email: ${email}, Error: ${verifyError.message}`
+      )
     }
 
     // Sign out the verification session (we just needed to verify it works)
@@ -184,72 +196,70 @@ async function createAndConfirmDemoUser(
 
 /**
  * Clean up previous demo data before seeding
- * 
+ *
  * Deletes all demo-related data in correct foreign key order to prevent
  * data accumulation across seed runs.
- * 
+ *
  * @param landlordId - Demo landlord user ID
  */
 async function cleanupDemoData(landlordId: string) {
   console.log('🧹 Cleaning up previous demo data...')
-  
+
   // Get all properties owned by demo landlord
   const { data: demoProperties } = await supabase
     .from('properties')
     .select('id')
     .eq('owner_id', landlordId)
-  
+
   const propertyIds = demoProperties?.map(p => p.id) || []
-  
+
   if (propertyIds.length === 0) {
     console.log('   No existing demo data found\n')
     return
   }
-  
+
   // Delete in correct order (respecting foreign keys)
   // Messages → Work Orders → Rent Records → Expenses → Tenant Invites → Leases → Tenants → Properties
-  
+
   // 1. Delete messages (lease-scoped, but we'll delete via property IDs)
-  const { data: leases } = await supabase
-    .from('leases')
-    .select('id')
-    .in('property_id', propertyIds)
-  
+  const { data: leases } = await supabase.from('leases').select('id').in('property_id', propertyIds)
+
   const leaseIds = leases?.map(l => l.id) || []
-  
+
   if (leaseIds.length > 0) {
     await supabase.from('messages').delete().in('lease_id', leaseIds)
   }
-  
+
   // 2. Delete work orders
   await supabase.from('work_orders').delete().in('property_id', propertyIds)
-  
+
   // 3. Delete rent records
   await supabase.from('rent_records').delete().in('property_id', propertyIds)
-  
+
   // 4. Delete expenses
   await supabase.from('expenses').delete().in('property_id', propertyIds)
-  
+
   // 5. Delete tenant invites
   await supabase.from('tenant_invites').delete().eq('created_by', landlordId)
-  
+
   // 6. Delete leases (will cascade to dependent records if any)
   await supabase.from('leases').delete().in('property_id', propertyIds)
-  
+
   // 7. Delete demo tenants (by email pattern)
   // First get tenant user IDs
   const { data: demoTenantUsers } = await supabase.auth.admin.listUsers()
-  const demoTenantUserIds = demoTenantUsers?.users
-    ?.filter(u => u.email?.includes('demo-tenant') && u.email?.includes('@uhome.internal'))
-    .map(u => u.id) || []
-  
+  const demoTenantUserIds =
+    demoTenantUsers?.users
+      ?.filter(u => u.email?.includes('demo-tenant') && u.email?.includes('@uhome.internal'))
+      .map(u => u.id) || []
+
   if (demoTenantUserIds.length > 0) {
     await supabase.from('tenants').delete().in('user_id', demoTenantUserIds)
   }
-  
+
   // 8. Delete properties
   await supabase.from('properties').delete().eq('owner_id', landlordId)
-  
+
   console.log(`   Cleaned up ${propertyIds.length} properties and associated data\n`)
 }
 
@@ -263,9 +273,9 @@ async function seedProductionDemoData() {
     // ========================================================================
     const demoLandlordEmail = 'demo-landlord@uhome.internal'
     const demoLandlordPassword = 'DemoLandlord2024!'
-    
+
     let demoLandlordId: string
-    
+
     const { data: existingLandlord } = await supabase
       .from('users')
       .select('id, email, role')
@@ -275,10 +285,7 @@ async function seedProductionDemoData() {
     if (existingLandlord) {
       demoLandlordId = existingLandlord.id
       if (existingLandlord.role !== 'landlord') {
-        await supabase
-          .from('users')
-          .update({ role: 'landlord' })
-          .eq('id', demoLandlordId)
+        await supabase.from('users').update({ role: 'landlord' }).eq('id', demoLandlordId)
       }
       console.log(`✅ Using existing demo landlord: ${demoLandlordEmail}`)
     } else {
@@ -292,7 +299,7 @@ async function seedProductionDemoData() {
 
     console.log('\n📋 Demo Credentials:')
     console.log(`   Landlord: ${demoLandlordEmail} / ${demoLandlordPassword}\n`)
-    
+
     // ========================================================================
     // Step 0: Clean up previous demo data
     // ========================================================================
@@ -345,12 +352,20 @@ async function seedProductionDemoData() {
     ]
 
     // Check for existing properties to avoid duplicates
-    let createdProperties: Array<{ id: string; name: string; rent_amount: number; rent_due_date: number | null }> = []
+    let createdProperties: Array<{
+      id: string
+      name: string
+      rent_amount: number
+      rent_due_date: number | null
+    }> = []
     const { data: existingProps } = await supabase
       .from('properties')
       .select('id, name, rent_amount, rent_due_date')
       .eq('owner_id', demoLandlordId)
-      .in('name', properties.map(p => p.name))
+      .in(
+        'name',
+        properties.map(p => p.name)
+      )
 
     if (existingProps && existingProps.length > 0) {
       console.log(`✅ Found ${existingProps.length} existing properties, using them`)
@@ -374,167 +389,15 @@ async function seedProductionDemoData() {
     console.log(`✅ Working with ${propertyIds.length} properties\n`)
 
     // ========================================================================
-    // Helper: Create invite programmatically (simulates landlord creating invite)
-    // ========================================================================
-    async function createInviteProgrammatically(
-      propertyId: string,
-      email: string,
-      landlordId: string
-    ): Promise<{ inviteId: string; leaseId: string }> {
-      // Get property data
-      const { data: propertyData, error: propError } = await supabase
-        .from('properties')
-        .select('rent_amount')
-        .eq('id', propertyId)
-        .single()
-
-      if (propError || !propertyData) {
-        throw new Error(`Failed to fetch property: ${propError?.message}`)
-      }
-
-      // Create draft lease
-      const draftLease: any = {
-        property_id: propertyId,
-        tenant_id: null,
-        lease_start_date: null,
-        lease_end_date: null,
-        lease_type: 'long-term',
-        rent_amount: propertyData.rent_amount || null,
-        rent_frequency: 'monthly',
-        security_deposit: null,
-        status: 'draft',
-      }
-
-      const { data: newLease, error: leaseError } = await supabase
-        .from('leases')
-        .insert(draftLease)
-        .select('id')
-        .single()
-
-      if (leaseError) throw leaseError
-
-      // Generate unique token
-      const token = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
-
-      // Set expiration to 30 days from now
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-
-      // Create invite
-      const { data: newInvite, error: inviteError } = await supabase
-        .from('tenant_invites')
-        .insert({
-          property_id: propertyId,
-          email,
-          token,
-          expires_at: expiresAt,
-          created_by: landlordId,
-          lease_id: newLease.id,
-        })
-        .select('id')
-        .single()
-
-      if (inviteError) {
-        // Rollback: delete draft lease
-        await supabase.from('leases').delete().eq('id', newLease.id)
-        throw inviteError
-      }
-
-      return { inviteId: newInvite.id, leaseId: newLease.id }
-    }
-
-    // ========================================================================
-    // Helper: Programmatically accept invite (simulates invite acceptance flow)
-    // ========================================================================
-    async function acceptInviteProgrammatically(
-      inviteId: string,
-      tenantUserId: string,
-      tenantEmail: string
-    ): Promise<{ tenantId: string; leaseId: string }> {
-      // Get invite with lease
-      const { data: invite, error: inviteError } = await supabase
-        .from('tenant_invites')
-        .select('*, leases(*)')
-        .eq('id', inviteId)
-        .single()
-
-      if (inviteError || !invite) {
-        throw new Error(`Failed to fetch invite: ${inviteError?.message}`)
-      }
-
-      const lease = (invite as any).leases
-      if (!lease || !lease.id) {
-        throw new Error('Invite has no associated lease')
-      }
-
-      // Update user role to tenant if needed
-      await supabase
-        .from('users')
-        .update({ role: 'tenant' })
-        .eq('id', tenantUserId)
-
-      // Get or create tenant record
-      let tenantId: string
-      const { data: existingTenant } = await supabase
-        .from('tenants')
-        .select('id')
-        .eq('user_id', tenantUserId)
-        .single()
-
-      if (existingTenant) {
-        tenantId = existingTenant.id
-      } else {
-        const { data: newTenant, error: tenantError} = await supabase
-          .from('tenants')
-          .insert({
-            user_id: tenantUserId,
-            property_id: (invite as any).property_id,
-            move_in_date: new Date().toISOString().split('T')[0],
-          })
-          .select('id')
-          .single()
-
-        if (tenantError) throw tenantError
-        tenantId = newTenant.id
-      }
-
-      // Update lease: link tenant and activate
-      const today = new Date().toISOString().split('T')[0]
-      const leaseStartDate = lease.lease_start_date || today
-      const startDate = new Date(leaseStartDate)
-      const isStartDateTodayOrPast = startDate <= new Date()
-
-      const { error: leaseUpdateError } = await supabase
-        .from('leases')
-        .update({
-          tenant_id: tenantId,
-          status: isStartDateTodayOrPast ? 'active' : 'draft',
-          lease_start_date: leaseStartDate,
-        })
-        .eq('id', lease.id)
-
-      if (leaseUpdateError) throw leaseUpdateError
-
-      // Mark invite as accepted
-      const { error: acceptError } = await supabase
-        .from('tenant_invites')
-        .update({ accepted_at: new Date().toISOString() })
-        .eq('id', inviteId)
-
-      if (acceptError) throw acceptError
-
-      return { tenantId, leaseId: lease.id }
-    }
-
-    // ========================================================================
     // Step 3: Create Demo Tenant via Invite Flow (NO shortcuts)
     // ========================================================================
     const demoTenantEmail = 'demo-tenant@uhome.internal'
     const demoTenantPassword = 'DemoTenant2024!'
-    
+
     let demoTenantUserId: string
     let demoTenantId: string | null = null
     let demoLeaseId: string | null = null
-    
+
     // Check if demo tenant user exists
     const { data: existingDemoTenantUser } = await supabase
       .from('users')
@@ -548,14 +411,14 @@ async function seedProductionDemoData() {
         await supabase.from('users').update({ role: 'tenant' }).eq('id', demoTenantUserId)
       }
       console.log(`✅ Using existing demo tenant user: ${demoTenantEmail}`)
-      
+
       // Check if tenant record and lease exist
       const { data: existingTenant } = await supabase
         .from('tenants')
         .select('id')
         .eq('user_id', demoTenantUserId)
         .single()
-      
+
       if (existingTenant) {
         demoTenantId = existingTenant.id
         // Check for active lease
@@ -581,16 +444,16 @@ async function seedProductionDemoData() {
 
     // Use first property for demo tenant
     const demoPropertyId = propertyIds[0]
-    
+
     // Create invite for demo tenant (using real invite flow)
     if (!demoTenantId || !demoLeaseId) {
       console.log('📧 Creating invite for demo tenant via real invite flow...')
-      const { inviteId, leaseId: draftLeaseId } = await createInviteProgrammatically(
+      const { inviteId } = await createInviteProgrammatically(
         demoPropertyId,
         demoTenantEmail,
         demoLandlordId
       )
-      
+
       // Accept invite programmatically (simulating real acceptance flow)
       console.log('✅ Accepting invite for demo tenant...')
       const { tenantId, leaseId } = await acceptInviteProgrammatically(
@@ -598,12 +461,16 @@ async function seedProductionDemoData() {
         demoTenantUserId,
         demoTenantEmail
       )
-      
+
       demoTenantId = tenantId
       demoLeaseId = leaseId
-      console.log(`✅ Demo tenant added via real invite flow (tenant ID: ${tenantId}, lease ID: ${leaseId})`)
+      console.log(
+        `✅ Demo tenant added via real invite flow (tenant ID: ${tenantId}, lease ID: ${leaseId})`
+      )
     } else {
-      console.log(`✅ Demo tenant already has active lease (tenant ID: ${demoTenantId}, lease ID: ${demoLeaseId})`)
+      console.log(
+        `✅ Demo tenant already has active lease (tenant ID: ${demoTenantId}, lease ID: ${demoLeaseId})`
+      )
     }
 
     console.log(`\n📋 Demo Tenant Credentials:`)
@@ -614,38 +481,44 @@ async function seedProductionDemoData() {
     // ========================================================================
     const additionalTenantsNeeded = 11 // 12 total - 1 demo = 11 more
     const tenantEmails: string[] = []
-    
+
     // Generate tenant emails
     for (let i = 1; i <= additionalTenantsNeeded; i++) {
       tenantEmails.push(`demo-tenant${i}@uhome.internal`)
     }
-    
+
     const tenantUserIds: string[] = [demoTenantUserId]
     const tenantLeases: Array<{ tenantId: string; leaseId: string; propertyId: string }> = []
-    
+
     if (demoTenantId && demoLeaseId) {
-      tenantLeases.push({ tenantId: demoTenantId, leaseId: demoLeaseId, propertyId: demoPropertyId })
+      tenantLeases.push({
+        tenantId: demoTenantId,
+        leaseId: demoLeaseId,
+        propertyId: demoPropertyId,
+      })
     }
-    
+
     console.log(`👥 Creating ${additionalTenantsNeeded} additional tenant users...`)
-    
+
     const tenantCreationErrors: Array<{ email: string; error: string }> = []
-    
+
     for (let i = 0; i < tenantEmails.length; i++) {
       const email = tenantEmails[i]
       const propertyIndex = (i + 1) % propertyIds.length // Distribute across properties
       const propertyId = propertyIds[propertyIndex]
-      
+
       try {
-        console.log(`   📧 Creating tenant ${i + 1}/${additionalTenantsNeeded}: ${email} for property ${propertyIndex + 1}`)
-        
+        console.log(
+          `   📧 Creating tenant ${i + 1}/${additionalTenantsNeeded}: ${email} for property ${propertyIndex + 1}`
+        )
+
         // Check if user exists
-        const { data: existingUser, error: userCheckError } = await supabase
+        const { data: existingUser } = await supabase
           .from('users')
           .select('id')
           .eq('email', email)
           .single()
-        
+
         let userId: string
         if (existingUser) {
           console.log(`      ℹ️  User already exists, using existing user ID`)
@@ -655,40 +528,42 @@ async function seedProductionDemoData() {
           userId = await createAndConfirmDemoUser(email, 'DemoTenant2024!', 'tenant')
           console.log(`      ✅ User created with ID: ${userId}`)
         }
-        
+
         tenantUserIds.push(userId)
-        
+
         // Create invite and accept for this tenant
         console.log(`      📨 Creating invite for property ${propertyId}...`)
-        const { inviteId, leaseId: draftLeaseId } = await createInviteProgrammatically(propertyId, email, demoLandlordId)
-        console.log(`      ✅ Invite created (ID: ${inviteId}, Draft Lease: ${draftLeaseId})`)
-        
+        const { inviteId } = await createInviteProgrammatically(propertyId, email, demoLandlordId)
+        console.log(`      ✅ Invite created (ID: ${inviteId})`)
+
         console.log(`      🔑 Accepting invite and activating lease...`)
         const { tenantId, leaseId } = await acceptInviteProgrammatically(inviteId, userId, email)
         console.log(`      ✅ Lease activated (Tenant ID: ${tenantId}, Lease ID: ${leaseId})`)
-        
+
         tenantLeases.push({ tenantId, leaseId, propertyId })
-        
+
         if ((i + 1) % 3 === 0 || i === tenantEmails.length - 1) {
-          console.log(`   ✅ Progress: ${i + 1}/${additionalTenantsNeeded} tenants created successfully`)
+          console.log(
+            `   ✅ Progress: ${i + 1}/${additionalTenantsNeeded} tenants created successfully`
+          )
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : JSON.stringify(error, null, 2)
         console.error(`   ❌ Failed to create tenant ${email}:`, errorMessage)
         tenantCreationErrors.push({ email, error: errorMessage })
-        
+
         // Log full error object for debugging
         console.error(`      Full error:`, error)
-        
+
         // Log stack trace for debugging
         if (error instanceof Error && error.stack) {
           console.error(`      Stack trace:`, error.stack)
         }
-        
+
         // Continue with next tenant to create as many as possible
       }
     }
-    
+
     // Log summary of tenant creation
     if (tenantCreationErrors.length > 0) {
       console.warn(`\n⚠️  ${tenantCreationErrors.length} tenant creation failures:`)
@@ -696,14 +571,13 @@ async function seedProductionDemoData() {
         console.warn(`   - ${email}: ${error}`)
       })
     }
-    
+
     console.log(`✅ Created ${tenantLeases.length} tenant-lease pairs (including demo tenant)\n`)
 
     // ========================================================================
     // Step 5: Create Rent Records (20+ records)
     // ========================================================================
     console.log('💰 Creating rent records...')
-    const paymentMethods = ['Zelle', 'Cash', 'Check', 'Venmo', 'Bank Transfer']
     const today = new Date()
     const rentRecords: Array<{
       property_id: string
@@ -715,30 +589,30 @@ async function seedProductionDemoData() {
       paid_date: string | null
       late_fee: number
     }> = []
-    
+
     // Track if we've created an overdue record (guarantee at least one for tests)
     let hasOverdueRecord = false
-    
+
     // Create rent records for each tenant-lease pair
     for (let tenantLeaseIdx = 0; tenantLeaseIdx < tenantLeases.length; tenantLeaseIdx++) {
       const { tenantId, leaseId, propertyId } = tenantLeases[tenantLeaseIdx]
       // Get property to get rent amount
       const property = createdProperties.find(p => p.id === propertyId)
       if (!property) continue
-      
+
       const rentAmount = property.rent_amount
       const dueDate = property.rent_due_date || 1
-      
+
       // Create records for last 8 months (distributed)
       for (let monthOffset = 7; monthOffset >= 0; monthOffset--) {
         const dueDateObj = new Date(today.getFullYear(), today.getMonth() - monthOffset, dueDate)
         const isPastMonth = monthOffset > 0
         const isCurrentMonth = monthOffset === 0
-        
+
         let paidDate: string | null = null
         let status: 'paid' | 'pending' | 'overdue' = 'pending'
         let lateFee = 0
-        
+
         // Guarantee at least one overdue record (use first tenant-lease, 2 months ago)
         if (!hasOverdueRecord && tenantLeaseIdx === 0 && monthOffset === 2) {
           status = 'overdue'
@@ -770,7 +644,7 @@ async function seedProductionDemoData() {
           // 85% paid (higher than past months to ensure revenue shows), 15% pending
           if (Math.random() > 0.15) {
             status = 'paid'
-            
+
             // Distribute paid_date throughout the month (days 1 to current day)
             const currentDayOfMonth = today.getDate()
             const randomDay = Math.floor(Math.random() * currentDayOfMonth) + 1
@@ -781,7 +655,7 @@ async function seedProductionDemoData() {
             status = 'pending'
           }
         }
-        
+
         rentRecords.push({
           property_id: propertyId,
           tenant_id: tenantId,
@@ -794,19 +668,19 @@ async function seedProductionDemoData() {
         })
       }
     }
-    
+
     console.log(`   Attempting to insert ${rentRecords.length} rent records...`)
-    
+
     // Try inserting with minimal fields first to identify schema issues
     const { data: insertedRentRecords, error: rentError } = await supabase
       .from('rent_records')
       .insert(rentRecords)
       .select('id, status, paid_date')
-    
+
     if (rentError) {
       console.warn(`   ⚠️  Rent records insertion failed: ${rentError.message}`)
       console.warn(`   Schema issue detected. Trying with minimal fields...`)
-      
+
       // Fallback: try with only required fields
       const minimalRentRecords = rentRecords.map(r => ({
         property_id: r.property_id,
@@ -818,11 +692,11 @@ async function seedProductionDemoData() {
         paid_date: r.paid_date,
         late_fee: r.late_fee || 0,
       }))
-      
+
       const { error: fallbackError } = await supabase
         .from('rent_records')
         .insert(minimalRentRecords)
-      
+
       if (fallbackError) {
         console.error(`   ❌ Rent records creation completely failed: ${fallbackError.message}`)
       } else {
@@ -830,9 +704,11 @@ async function seedProductionDemoData() {
       }
     } else {
       console.log(`✅ Created ${insertedRentRecords.length} rent records\n`)
-      
+
       // Log how many paid records with paid_date we created
-      const paidWithDateCount = insertedRentRecords.filter((r: any) => r.status === 'paid' && r.paid_date).length
+      const paidWithDateCount = insertedRentRecords.filter(
+        (r: { status: string; paid_date?: string | null }) => r.status === 'paid' && r.paid_date
+      ).length
       console.log(`   📊 Of which ${paidWithDateCount} are paid with paid_date set`)
     }
 
@@ -856,7 +732,13 @@ async function seedProductionDemoData() {
         'Snow Removal',
         'Pest Control',
       ],
-      utilities: ['Water Bill', 'Electricity Bill', 'Gas Bill', 'Trash Collection', 'Internet Service'],
+      utilities: [
+        'Water Bill',
+        'Electricity Bill',
+        'Gas Bill',
+        'Trash Collection',
+        'Internet Service',
+      ],
       repairs: [
         'Plumbing Repair',
         'Electrical Repair',
@@ -866,7 +748,7 @@ async function seedProductionDemoData() {
         'Door Lock Replacement',
       ],
     }
-    
+
     const expenses: Array<{
       property_id: string
       name: string
@@ -874,24 +756,25 @@ async function seedProductionDemoData() {
       amount: number
       date: string
     }> = []
-    
+
     // Distribute expenses across 8 months, ensuring current month has expenses for E2E tests
     for (let monthOffset = 7; monthOffset >= 0; monthOffset--) {
       // For current month (monthOffset === 0), ensure expenses are spread throughout the month
       // For past months, use random days
-      const dayOfMonth = monthOffset === 0 
-        ? Math.floor(Math.random() * (today.getDate() + 1)) + 1 // Days 1 to current day (so they appear in current month)
-        : Math.floor(Math.random() * 28) + 1
+      const dayOfMonth =
+        monthOffset === 0
+          ? Math.floor(Math.random() * (today.getDate() + 1)) + 1 // Days 1 to current day (so they appear in current month)
+          : Math.floor(Math.random() * 28) + 1
       const expenseDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, dayOfMonth)
-      
+
       // Create 4-6 expenses per month
       const expensesThisMonth = Math.floor(Math.random() * 3) + 4
-      
+
       for (let e = 0; e < expensesThisMonth; e++) {
         const category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)]
         const names = expenseNames[category]
         const name = names[Math.floor(Math.random() * names.length)]
-        
+
         // Realistic amounts based on category
         let amount: number
         if (category === 'repairs') {
@@ -902,11 +785,11 @@ async function seedProductionDemoData() {
           // maintenance
           amount = Math.floor(Math.random() * 300) + 50 // $50-$350
         }
-        
+
         // Distribute across properties
         const propertyIndex = expenses.length % propertyIds.length
         const propertyId = propertyIds[propertyIndex]
-        
+
         expenses.push({
           property_id: propertyId,
           name,
@@ -916,27 +799,31 @@ async function seedProductionDemoData() {
         })
       }
     }
-    
+
     // Insert expenses with safety guard
     const { data: insertedExpenses, error: expenseError } = await supabase
       .from('expenses')
       .insert(expenses)
       .select('id')
-    
+
     if (expenseError) {
       console.error(`   ❌ Expenses error: ${expenseError.message}`)
       throw new Error(`Failed to insert expenses: ${expenseError.message}`)
     }
-    
+
     // Safety guard: Verify expenses were actually inserted
     if (!insertedExpenses || insertedExpenses.length === 0) {
-      throw new Error(`❌ SAFETY GUARD: No expenses were inserted despite no error. Expected ${expenses.length} expenses.`)
+      throw new Error(
+        `❌ SAFETY GUARD: No expenses were inserted despite no error. Expected ${expenses.length} expenses.`
+      )
     }
-    
+
     if (insertedExpenses.length !== expenses.length) {
-      console.warn(`   ⚠️  Only ${insertedExpenses.length} of ${expenses.length} expenses were inserted`)
+      console.warn(
+        `   ⚠️  Only ${insertedExpenses.length} of ${expenses.length} expenses were inserted`
+      )
     }
-    
+
     console.log(`✅ Created ${insertedExpenses.length} expense records\n`)
 
     // ========================================================================
@@ -944,15 +831,7 @@ async function seedProductionDemoData() {
     // ========================================================================
     console.log('🔧 Creating work orders...')
     const workOrderCategories = ['Plumbing', 'HVAC', 'Electrical', 'Appliance', 'General']
-    const workOrderStatuses: Array<'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'> = [
-      'submitted',
-      'seen',
-      'scheduled',
-      'in_progress',
-      'resolved',
-      'closed',
-    ]
-    
+
     const workOrders: Array<{
       property_id: string | null
       tenant_id: string | null
@@ -967,50 +846,46 @@ async function seedProductionDemoData() {
       scheduled_date: string | null
       visibility_to_tenants: boolean
     }> = []
-    
+
     // Tenant-created work orders (8-10)
     const tenantCreatedCount = 9
     for (let i = 0; i < tenantCreatedCount && i < tenantLeases.length; i++) {
       const { tenantId, leaseId, propertyId } = tenantLeases[i]
       const tenantUserId = tenantUserIds[i + 1] || demoTenantUserId // +1 because first is demo
-      
-      const statusOptions: Array<'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved'> = [
-        'submitted',
-        'seen',
-        'scheduled',
-        'in_progress',
-        'resolved',
-      ]
+
+      const statusOptions: Array<'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved'> =
+        ['submitted', 'seen', 'scheduled', 'in_progress', 'resolved']
       const status = statusOptions[Math.floor(Math.random() * statusOptions.length)]
       const category = workOrderCategories[Math.floor(Math.random() * workOrderCategories.length)]
-      
+
       const descriptions: Record<string, string[]> = {
-        Plumbing: ['Kitchen sink is leaking', 'Toilet not flushing properly', 'Shower head dripping'],
+        Plumbing: [
+          'Kitchen sink is leaking',
+          'Toilet not flushing properly',
+          'Shower head dripping',
+        ],
         HVAC: ['AC not cooling', 'Heating not working', 'Strange noise from furnace'],
         Electrical: ['Outlet not working', 'Light switch broken', 'Circuit breaker keeps tripping'],
         Appliance: ['Dishwasher not draining', 'Refrigerator making noise', 'Oven not heating'],
-        General: ['Door lock is stuck', 'Window won\'t close', 'Carpet stain'],
+        General: ['Door lock is stuck', "Window won't close", 'Carpet stain'],
       }
-      
+
       const descList = descriptions[category] || ['Maintenance request']
       const description = descList[Math.floor(Math.random() * descList.length)]
-      
-      const daysAgo = Math.floor(Math.random() * 30) + 1
-      const createdAt = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
-      
+
       let scheduledDate: string | null = null
       let internalNotes: string | null = null
-      
+
       if (status === 'scheduled' || status === 'in_progress') {
         const daysFromNow = Math.floor(Math.random() * 7) + 1
         scheduledDate = new Date(today.getTime() + daysFromNow * 24 * 60 * 60 * 1000).toISOString()
         internalNotes = 'Scheduled maintenance visit'
       }
-      
+
       if (status === 'resolved') {
         internalNotes = 'Issue resolved'
       }
-      
+
       workOrders.push({
         property_id: propertyId,
         tenant_id: tenantId,
@@ -1026,13 +901,13 @@ async function seedProductionDemoData() {
         visibility_to_tenants: true,
       })
     }
-    
+
     // Landlord-created work orders (5-7)
     const landlordCreatedCount = 6
     let hasClosedWorkOrder = false
     for (let i = 0; i < landlordCreatedCount && i < tenantLeases.length; i++) {
       const { tenantId, leaseId, propertyId } = tenantLeases[i]
-      
+
       const statusOptions: Array<'scheduled' | 'in_progress' | 'resolved' | 'closed'> = [
         'scheduled',
         'in_progress',
@@ -1048,7 +923,7 @@ async function seedProductionDemoData() {
         status = statusOptions[Math.floor(Math.random() * statusOptions.length)]
       }
       const category = workOrderCategories[Math.floor(Math.random() * workOrderCategories.length)]
-      
+
       const descriptions: Record<string, string[]> = {
         Plumbing: ['Routine pipe inspection', 'Annual plumbing maintenance'],
         HVAC: ['HVAC system maintenance', 'Filter replacement'],
@@ -1056,19 +931,16 @@ async function seedProductionDemoData() {
         Appliance: ['Appliance inspection', 'Maintenance check'],
         General: ['Property inspection', 'General maintenance'],
       }
-      
+
       const descList = descriptions[category] || ['Maintenance task']
       const description = descList[Math.floor(Math.random() * descList.length)]
-      
-      const daysAgo = Math.floor(Math.random() * 20) + 1
-      const createdAt = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
-      
+
       let scheduledDate: string | null = null
       if (status === 'scheduled' || status === 'in_progress') {
         const daysFromNow = Math.floor(Math.random() * 10) + 1
         scheduledDate = new Date(today.getTime() + daysFromNow * 24 * 60 * 60 * 1000).toISOString()
       }
-      
+
       workOrders.push({
         property_id: propertyId,
         tenant_id: tenantId,
@@ -1084,12 +956,14 @@ async function seedProductionDemoData() {
         visibility_to_tenants: true,
       })
     }
-    
+
     const { error: workOrderError } = await supabase.from('maintenance_requests').insert(workOrders)
     if (workOrderError) {
       console.warn(`   ⚠️  Work orders error: ${workOrderError.message}`)
     } else {
-      console.log(`✅ Created ${workOrders.length} work orders (${tenantCreatedCount} tenant-created, ${landlordCreatedCount} landlord-created)\n`)
+      console.log(
+        `✅ Created ${workOrders.length} work orders (${tenantCreatedCount} tenant-created, ${landlordCreatedCount} landlord-created)\n`
+      )
     }
 
     // ========================================================================
@@ -1102,7 +976,7 @@ async function seedProductionDemoData() {
       'billing',
       'notice',
     ]
-    
+
     const messages: Array<{
       lease_id: string
       sender_id: string | null
@@ -1111,21 +985,24 @@ async function seedProductionDemoData() {
       intent: string
       status: 'open' | 'acknowledged' | 'resolved' | null
     }> = []
-    
+
     // Create message threads for each lease (back-and-forth conversations)
     const leasesForMessages = tenantLeases.slice(0, Math.min(tenantLeases.length, 8))
     for (let leaseIdx = 0; leaseIdx < leasesForMessages.length; leaseIdx++) {
-      const { tenantId, leaseId, propertyId } = leasesForMessages[leaseIdx]
+      const { tenantId, leaseId } = leasesForMessages[leaseIdx]
       // Get tenant user ID for this lease (find matching index in full tenantLeases array)
-      const fullLeaseIdx = tenantLeases.findIndex(l => l.leaseId === leaseId && l.tenantId === tenantId)
-      const tenantUserId = fullLeaseIdx >= 0 && fullLeaseIdx < tenantUserIds.length 
-        ? tenantUserIds[fullLeaseIdx] 
-        : demoTenantUserId
-      
+      const fullLeaseIdx = tenantLeases.findIndex(
+        l => l.leaseId === leaseId && l.tenantId === tenantId
+      )
+      const tenantUserId =
+        fullLeaseIdx >= 0 && fullLeaseIdx < tenantUserIds.length
+          ? tenantUserIds[fullLeaseIdx]
+          : demoTenantUserId
+
       // Create 5-8 messages per lease (back-and-forth)
       const messagesPerLease = Math.floor(Math.random() * 4) + 5
       const intent = messageIntents[Math.floor(Math.random() * messageIntents.length)]
-      
+
       const sampleMessages: Record<string, string[]> = {
         general: [
           'Hello, just wanted to check in about the property.',
@@ -1134,7 +1011,7 @@ async function seedProductionDemoData() {
         ],
         maintenance: [
           'I noticed the sink is leaking in the kitchen.',
-          'I\'ll schedule a plumber to take a look this week.',
+          "I'll schedule a plumber to take a look this week.",
           'Great, thank you!',
           'The plumber has been scheduled for Thursday.',
         ],
@@ -1148,20 +1025,18 @@ async function seedProductionDemoData() {
           'Noted, thanks for letting me know.',
         ],
       }
-      
+
       const messagePool = sampleMessages[intent] || sampleMessages['general']
-      
+
       for (let i = 0; i < messagesPerLease; i++) {
         const isTenantMessage = i % 2 === 0
         const senderId = isTenantMessage ? tenantUserId : demoLandlordId
         const senderRole = isTenantMessage ? 'tenant' : 'landlord'
-        
+
         const messageText = messagePool[i % messagePool.length] || 'Message'
-        
+
         // Create timestamp spread over last 30 days
-        const daysAgo = Math.floor(Math.random() * 30) + (messagesPerLease - i)
-        const createdAt = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
-        
+
         messages.push({
           lease_id: leaseId,
           sender_id: senderId,
@@ -1172,22 +1047,24 @@ async function seedProductionDemoData() {
         })
       }
     }
-    
+
     // Insert messages with created_at (if possible, otherwise rely on default)
     const messageInserts = messages.map((msg, idx) => {
       const daysAgo = Math.floor(Math.random() * 30) + (messages.length - idx)
-      const createdAt = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
+      const _createdAt = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
       return {
         ...msg,
-        created_at: createdAt.toISOString(),
+        created_at: _createdAt.toISOString(),
       }
     })
-    
+
     const { error: messageError } = await supabase.from('messages').insert(messageInserts)
     if (messageError) {
       console.warn(`   ⚠️  Messages error: ${messageError.message}`)
     } else {
-      console.log(`✅ Created ${messages.length} messages across ${Math.min(tenantLeases.length, 8)} lease threads\n`)
+      console.log(
+        `✅ Created ${messages.length} messages across ${Math.min(tenantLeases.length, 8)} lease threads\n`
+      )
     }
 
     // ========================================================================
@@ -1200,33 +1077,34 @@ async function seedProductionDemoData() {
     console.log(`   ✅ Expenses: ${expenses.length}`)
     console.log(`   ✅ Work Orders: ${workOrders.length}`)
     console.log(`   ✅ Messages: ${messages.length}\n`)
-    
+
     // ========================================================================
     // Verification: Query actual counts from database
     // ========================================================================
     console.log('🔍 Verifying seeded data in database...\n')
-    
+
     try {
       // Verify tenants (query via user_id since tenants table doesn't have email)
       // Get all demo tenant user IDs from auth
       const { data: allAuthUsers } = await supabase.auth.admin.listUsers()
-      const demoTenantUserIds = allAuthUsers?.users
-        ?.filter(u => u.email?.includes('demo-tenant') && u.email?.includes('@uhome.internal'))
-        .map(u => u.id) || []
-      
+      const demoTenantUserIds =
+        allAuthUsers?.users
+          ?.filter(u => u.email?.includes('demo-tenant') && u.email?.includes('@uhome.internal'))
+          .map(u => u.id) || []
+
       let actualTenantCount = 0
       let tenantCountError = null
-      
+
       if (demoTenantUserIds.length > 0) {
         const { count, error } = await supabase
           .from('tenants')
           .select('*', { count: 'exact', head: true })
           .in('user_id', demoTenantUserIds)
-        
+
         actualTenantCount = count || 0
         tenantCountError = error
       }
-      
+
       if (tenantCountError) {
         console.warn(`   ⚠️  Failed to query tenant count: ${tenantCountError.message}`)
       } else {
@@ -1235,27 +1113,33 @@ async function seedProductionDemoData() {
           console.warn(`   ⚠️  WARNING: Fewer tenants in DB than expected!`)
         }
       }
-      
+
       // Verify paid rent records with paid_date
       const { count: paidRentCount, error: paidRentError } = await supabase
         .from('rent_records')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'paid')
         .not('paid_date', 'is', null)
-      
+
       if (paidRentError) {
         console.warn(`   ⚠️  Failed to query paid rent count: ${paidRentError.message}`)
       } else {
         console.log(`   📊 Paid rent records with paid_date: ${paidRentCount || 0}`)
         if ((paidRentCount || 0) < 10) {
-          console.warn(`   ⚠️  WARNING: Expected at least 10 paid rent records, found ${paidRentCount || 0}`)
+          console.warn(
+            `   ⚠️  WARNING: Expected at least 10 paid rent records, found ${paidRentCount || 0}`
+          )
         }
       }
-      
+
       // Verify paid rent in current month (January 2026)
-      const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
-      const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0]
-      
+      const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        .toISOString()
+        .split('T')[0]
+      const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+        .toISOString()
+        .split('T')[0]
+
       const { count: currentMonthPaidCount, error: currentMonthError } = await supabase
         .from('rent_records')
         .select('*', { count: 'exact', head: true })
@@ -1263,49 +1147,60 @@ async function seedProductionDemoData() {
         .not('paid_date', 'is', null)
         .gte('paid_date', currentMonthStart)
         .lte('paid_date', currentMonthEnd)
-      
+
       if (currentMonthError) {
         console.warn(`   ⚠️  Failed to query current month rent: ${currentMonthError.message}`)
       } else {
-        console.log(`   📊 Paid rent in current month (${currentMonthStart} to ${currentMonthEnd}): ${currentMonthPaidCount || 0}`)
+        console.log(
+          `   📊 Paid rent in current month (${currentMonthStart} to ${currentMonthEnd}): ${currentMonthPaidCount || 0}`
+        )
         if ((currentMonthPaidCount || 0) === 0) {
-          console.error(`   ❌ CRITICAL: No paid rent records in current month! Dashboard will show $0 revenue.`)
+          console.error(
+            `   ❌ CRITICAL: No paid rent records in current month! Dashboard will show $0 revenue.`
+          )
         }
       }
-      
+
       // Verify properties
       const { count: propertyCount, error: propertyCountError } = await supabase
         .from('properties')
         .select('*', { count: 'exact', head: true })
         .eq('owner_id', demoLandlordId)
-      
+
       if (propertyCountError) {
         console.warn(`   ⚠️  Failed to query property count: ${propertyCountError.message}`)
       } else {
-        console.log(`   📊 Properties in DB: ${propertyCount || 0} (expected: ${propertyIds.length})`)
+        console.log(
+          `   📊 Properties in DB: ${propertyCount || 0} (expected: ${propertyIds.length})`
+        )
       }
-      
+
       // Final assertions
       console.log('\n✅ Verification complete\n')
-      
+
       if ((actualTenantCount || 0) < 8) {
-        console.error('❌ FAILED: Expected at least 8 tenants, but only found', actualTenantCount || 0)
+        console.error(
+          '❌ FAILED: Expected at least 8 tenants, but only found',
+          actualTenantCount || 0
+        )
         console.error('   This indicates tenant creation loop failed. Check error logs above.')
       }
-      
+
       if ((currentMonthPaidCount || 0) === 0) {
         console.error('❌ FAILED: No paid rent in current month')
         console.error('   Dashboard will show $0 revenue. Check rent record creation logic.')
       }
-      
+
       if ((actualTenantCount || 0) >= 8 && (currentMonthPaidCount || 0) > 0) {
         console.log('✅ All critical verifications passed!')
       }
-      
     } catch (verifyError) {
-      console.error('❌ Verification failed:', verifyError instanceof Error ? verifyError.message : String(verifyError))
+      console.error(
+        '❌ Verification failed:',
+        verifyError instanceof Error ? verifyError.message : String(verifyError)
+      )
     }
-    
+
     console.log('\n🎉 Demo data seeding complete!')
     console.log('\n💡 Demo Credentials:')
     console.log(`   Landlord: ${demoLandlordEmail} / ${demoLandlordPassword}`)
@@ -1322,4 +1217,3 @@ async function seedProductionDemoData() {
 
 // Run the seeding function
 seedProductionDemoData()
-

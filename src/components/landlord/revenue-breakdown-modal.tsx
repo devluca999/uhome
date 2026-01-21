@@ -11,10 +11,7 @@ interface RevenueBreakdownModalProps {
   onClose: () => void
 }
 
-export function RevenueBreakdownModal({
-  isOpen,
-  onClose,
-}: RevenueBreakdownModalProps) {
+export function RevenueBreakdownModal({ isOpen, onClose }: RevenueBreakdownModalProps) {
   const navigate = useNavigate()
   const { properties } = useProperties()
   const { records: rentRecords } = useLandlordRentRecords()

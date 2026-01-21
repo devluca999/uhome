@@ -1,6 +1,6 @@
 /**
  * Storage Buckets Verification Script
- * 
+ *
  * Verifies that storage buckets are correctly configured in both staging and production
  * Checks:
  * - Buckets exist (documents, images, avatars)
@@ -44,14 +44,12 @@ async function verifyEnvironment(envName: string, url: string, serviceKey: strin
   log('\n📦 Checking Storage Buckets...', 'blue')
   try {
     const { data: buckets, error } = await supabase.storage.listBuckets()
-    
+
     if (error) {
       log(`  ❌ Error listing buckets: ${error.message}`, 'red')
       allChecks = false
     } else {
       const requiredBuckets = ['documents', 'images', 'avatars']
-      const foundBuckets = buckets?.map(b => b.name) || []
-      
       for (const bucketName of requiredBuckets) {
         const bucket = buckets?.find(b => b.name === bucketName)
         if (bucket) {
@@ -90,7 +88,7 @@ async function verifyEnvironment(envName: string, url: string, serviceKey: strin
       ]
 
       const foundPolicies = policies?.map(p => p.policyname) || []
-      
+
       for (const policyName of requiredPolicies) {
         if (foundPolicies.includes(policyName)) {
           log(`  ✅ ${policyName}`, 'green')
@@ -107,10 +105,7 @@ async function verifyEnvironment(envName: string, url: string, serviceKey: strin
   // Check 3: Verify image_urls column exists
   log('\n📋 Checking Database Schema...', 'blue')
   try {
-    const { data, error } = await supabase
-      .from('maintenance_requests')
-      .select('image_urls')
-      .limit(1)
+    const { error } = await supabase.from('maintenance_requests').select('image_urls').limit(1)
 
     if (error) {
       if (error.message.includes('column') && error.message.includes('does not exist')) {
@@ -150,10 +145,11 @@ async function main() {
   // Get environment variables
   const stagingUrl = process.env.VITE_SUPABASE_URL || ''
   const stagingKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  
+
   // You'll need to set these for production verification
   const productionUrl = process.env.VITE_SUPABASE_URL_PROD || process.env.PROD_SUPABASE_URL || ''
-  const productionKey = process.env.SUPABASE_SERVICE_ROLE_KEY_PROD || process.env.PROD_SUPABASE_SERVICE_KEY || ''
+  const productionKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY_PROD || process.env.PROD_SUPABASE_SERVICE_KEY || ''
 
   let stagingOk = false
   let productionOk = false
@@ -170,21 +166,24 @@ async function main() {
     productionOk = await verifyEnvironment('Production', productionUrl, productionKey)
   } else {
     log('\n⚠️  Production credentials not found in environment', 'yellow')
-    log('   Set VITE_SUPABASE_URL_PROD and SUPABASE_SERVICE_ROLE_KEY_PROD to verify production', 'yellow')
+    log(
+      '   Set VITE_SUPABASE_URL_PROD and SUPABASE_SERVICE_ROLE_KEY_PROD to verify production',
+      'yellow'
+    )
   }
 
   // Final summary
   log('\n' + '='.repeat(60), 'cyan')
   log('FINAL SUMMARY', 'cyan')
   log('='.repeat(60), 'cyan')
-  
+
   if (stagingUrl) {
     log(`Staging:    ${stagingOk ? '✅ PASS' : '❌ FAIL'}`, stagingOk ? 'green' : 'red')
   }
   if (productionUrl) {
     log(`Production: ${productionOk ? '✅ PASS' : '❌ FAIL'}`, productionOk ? 'green' : 'red')
   }
-  
+
   log('='.repeat(60) + '\n', 'cyan')
 
   // Exit with appropriate code

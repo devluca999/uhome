@@ -1,6 +1,6 @@
 /**
  * Comprehensive Documents UAT Tests
- * 
+ *
  * Tests all document features:
  * - Upload/download files
  * - Persistent storage
@@ -11,10 +11,20 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupMultiTabScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupMultiTabScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
-import { createTestFile, uploadFileViaUI, verifyFileInStorage, verifyFileInDatabase } from '../../helpers/upload'
+import {
+  createTestFile,
+  uploadFileViaUI,
+  verifyFileInStorage,
+  verifyFileInDatabase,
+} from '../../helpers/upload'
 
 test.describe('Documents Comprehensive UAT', () => {
   const baseUrl = process.env.VISUAL_TEST_BASE_URL || 'http://localhost:1000'
@@ -145,7 +155,7 @@ test.describe('Documents Comprehensive UAT', () => {
 
       // Verify tenant can see documents (if they have access)
       const documentsList = tenantPage.locator('[class*="document"], [class*="file"]')
-      const hasDocuments = await documentsList.count() > 0
+      const hasDocuments = (await documentsList.count()) > 0
 
       await logTestResult(tenantPage, {
         page: 'documents',
@@ -212,4 +222,3 @@ test.describe('Documents Comprehensive UAT', () => {
     }
   })
 })
-

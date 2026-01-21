@@ -1,6 +1,6 @@
 /**
  * Mobile Breakpoints Visual Tests
- * 
+ *
  * Validates responsive design across breakpoints:
  * - Mobile (375px)
  * - Tablet (768px)
@@ -8,10 +8,7 @@
  */
 
 import { test, expect } from '@playwright/test'
-import {
-  setupVisualTest,
-  waitForPageReady,
-} from './helpers/visual-helpers'
+import { setupVisualTest, waitForPageReady } from './helpers/visual-helpers'
 
 test.describe('Mobile Breakpoints Visual Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -70,14 +67,16 @@ test.describe('Mobile Breakpoints Visual Tests', () => {
     await waitForPageReady(page)
 
     // Verify mobile menu (hamburger) is visible
-    const mobileMenu = page.locator('[aria-label="Menu"], [class*="hamburger"], button:has-text("☰")')
+    const mobileMenu = page.locator(
+      '[aria-label="Menu"], [class*="hamburger"], button:has-text("☰")'
+    )
     const isVisible = await mobileMenu.isVisible()
-    
+
     // Mobile menu should be visible on small screens
     if (isVisible) {
       await mobileMenu.click()
       await page.waitForTimeout(500)
-      
+
       // Verify menu opens
       const navMenu = page.locator('nav, [role="navigation"]')
       await expect(navMenu).toBeVisible()
@@ -98,11 +97,11 @@ test.describe('Mobile Breakpoints Visual Tests', () => {
       // Verify form inputs are large enough to tap
       const inputs = page.locator('input, textarea, select')
       const firstInput = inputs.first()
-      
+
       if (await firstInput.isVisible()) {
         const box = await firstInput.boundingBox()
         expect(box).toBeTruthy()
-        
+
         // Inputs should be at least 44px tall (touch target size)
         if (box) {
           expect(box.height).toBeGreaterThanOrEqual(44)
@@ -111,4 +110,3 @@ test.describe('Mobile Breakpoints Visual Tests', () => {
     }
   })
 })
-

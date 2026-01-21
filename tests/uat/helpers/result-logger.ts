@@ -1,6 +1,6 @@
 /**
  * Result Logger for UAT Tests
- * 
+ *
  * Structured logging for test results with:
  * - Page, feature, role, action tracking
  * - Automatic screenshot capture on failures
@@ -81,7 +81,9 @@ class ResultLogger {
   /**
    * Log a functional failure
    */
-  logFunctionalFailure(failure: Omit<FunctionalFailure, 'screenshot'> & { screenshot?: string }): void {
+  logFunctionalFailure(
+    failure: Omit<FunctionalFailure, 'screenshot'> & { screenshot?: string }
+  ): void {
     this.functionalFailures.push({
       ...failure,
       screenshot: failure.screenshot || '',
@@ -91,10 +93,7 @@ class ResultLogger {
   /**
    * Capture screenshot and return path
    */
-  async captureScreenshot(
-    page: Page,
-    name: string
-  ): Promise<string> {
+  async captureScreenshot(page: Page, name: string): Promise<string> {
     const timestamp = Date.now()
     const filename = `${name}_${timestamp}.png`
     const filepath = path.join(this.screenshotDir, filename)
@@ -216,4 +215,3 @@ export async function logFunctionalFailure(
     screenshot,
   })
 }
-

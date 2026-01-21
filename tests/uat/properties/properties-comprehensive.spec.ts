@@ -1,6 +1,6 @@
 /**
  * Comprehensive Properties UAT Tests
- * 
+ *
  * Tests all property features:
  * - Property cards display
  * - Card expansion to property page
@@ -14,7 +14,13 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupUATScenario, waitForPageReady, cleanupUATTest, verifyModalOpens } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupUATScenario,
+  waitForPageReady,
+  cleanupUATTest,
+  verifyModalOpens,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure, logVisualMismatch } from '../helpers/result-logger'
 import { captureUATScreenshot, captureElementScreenshot } from '../helpers/screenshot-manager'
 import { createTestFile, uploadFileViaUI } from '../../helpers/upload'
@@ -45,8 +51,14 @@ test.describe('Properties Comprehensive UAT', () => {
       await expect(propertyCard).toBeVisible({ timeout: 5000 })
 
       // Verify required fields are displayed
-      const nameVisible = await propertyCard.locator('text=/Properties Test Property/i').isVisible().catch(() => false)
-      const rentVisible = await propertyCard.locator('text=/\\$|rent/i').isVisible().catch(() => false)
+      const nameVisible = await propertyCard
+        .locator('text=/Properties Test Property/i')
+        .isVisible()
+        .catch(() => false)
+      const rentVisible = await propertyCard
+        .locator('text=/\\$|rent/i')
+        .isVisible()
+        .catch(() => false)
 
       expect(nameVisible || rentVisible).toBeTruthy()
 
@@ -84,13 +96,19 @@ test.describe('Properties Comprehensive UAT', () => {
 
     try {
       // Click property card
-      const propertyCard = page.locator('[class*="property"], [class*="card"], a[href*="properties"]').first()
+      const propertyCard = page
+        .locator('[class*="property"], [class*="card"], a[href*="properties"]')
+        .first()
       await propertyCard.click()
       await waitForPageReady(page)
 
       // Verify property detail page loaded
-      const isPropertyDetail = page.url().includes('/properties/') || 
-                                await page.locator('text=/Properties Test Property/i').isVisible().catch(() => false)
+      const isPropertyDetail =
+        page.url().includes('/properties/') ||
+        (await page
+          .locator('text=/Properties Test Property/i')
+          .isVisible()
+          .catch(() => false))
 
       expect(isPropertyDetail).toBeTruthy()
 
@@ -176,7 +194,9 @@ test.describe('Properties Comprehensive UAT', () => {
 
       try {
         // Find notes panel or textarea
-        const notesInput = page.locator('textarea[name="notes"], [class*="notes"], [data-notes]').first()
+        const notesInput = page
+          .locator('textarea[name="notes"], [class*="notes"], [data-notes]')
+          .first()
         const isVisible = await notesInput.isVisible({ timeout: 3000 }).catch(() => false)
 
         if (isVisible) {
@@ -196,7 +216,9 @@ test.describe('Properties Comprehensive UAT', () => {
           await waitForPageReady(page)
 
           const noteAfterRefresh = page.locator('text=/Test note for UAT/i')
-          const notePersists = await noteAfterRefresh.isVisible({ timeout: 3000 }).catch(() => false)
+          const notePersists = await noteAfterRefresh
+            .isVisible({ timeout: 3000 })
+            .catch(() => false)
 
           await logTestResult(page, {
             page: 'properties',
@@ -246,7 +268,9 @@ test.describe('Properties Comprehensive UAT', () => {
       try {
         // Find upload button or file input
         const fileInput = page.locator('input[type="file"]').first()
-        const uploadButton = page.locator('button:has-text("Upload"), button:has-text("Add Document")').first()
+        const uploadButton = page
+          .locator('button:has-text("Upload"), button:has-text("Add Document")')
+          .first()
 
         const hasFileInput = await fileInput.isVisible({ timeout: 2000 }).catch(() => false)
         const hasUploadButton = await uploadButton.isVisible({ timeout: 2000 }).catch(() => false)
@@ -290,7 +314,13 @@ test.describe('Properties Comprehensive UAT', () => {
           })
         }
       } catch (error) {
-        const screenshot = await captureUATScreenshot(page, 'properties', 'documents_upload', {}, 'error')
+        const screenshot = await captureUATScreenshot(
+          page,
+          'properties',
+          'documents_upload',
+          {},
+          'error'
+        )
         await logFunctionalFailure(page, {
           page: 'properties',
           feature: 'documents',
@@ -365,4 +395,3 @@ test.describe('Properties Comprehensive UAT', () => {
     }
   })
 })
-

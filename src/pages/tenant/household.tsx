@@ -16,8 +16,11 @@ import { Home, Users, FileText } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useDocuments } from '@/hooks/use-documents'
 import { DocumentCard } from '@/components/ui/document-card'
+import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 export function TenantHousehold() {
+  // Track performance metrics
+  usePerformanceTracker({ componentName: 'TenantHousehold' })
   const { data: tenantData, loading: tenantLoading } = useTenantData()
   const { role } = useAuth()
   const navigate = useNavigate()
@@ -66,7 +69,9 @@ export function TenantHousehold() {
           >
             <div className="mb-8">
               <h1 className="text-4xl font-semibold text-foreground mb-2">Household</h1>
-              <p className="text-muted-foreground">Join a household to access your property information</p>
+              <p className="text-muted-foreground">
+                Join a household to access your property information
+              </p>
             </div>
 
             {showJoinForm ? (
@@ -117,7 +122,11 @@ export function TenantHousehold() {
             <p className="text-muted-foreground">{tenantData.property.name}</p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as typeof activeTab)} className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={val => setActiveTab(val as typeof activeTab)}
+            className="space-y-6"
+          >
             <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
               <TabsTrigger value="home" className="flex items-center gap-2">
                 <Home className="w-4 h-4" />
@@ -145,7 +154,10 @@ export function TenantHousehold() {
                 className="grid gap-6 md:grid-cols-2"
               >
                 <PropertyDetailsCard property={tenantData.property} lease={activeLease} />
-                <LandlordContactCard propertyId={tenantData.property.id} leaseId={activeLease?.id} />
+                <LandlordContactCard
+                  propertyId={tenantData.property.id}
+                  leaseId={activeLease?.id}
+                />
               </motion.div>
             </TabsContent>
 
@@ -159,8 +171,8 @@ export function TenantHousehold() {
                   delay: 0.1,
                 }}
               >
-                <HousematesList 
-                  propertyId={tenantData.property.id} 
+                <HousematesList
+                  propertyId={tenantData.property.id}
                   currentTenantId={tenantData.tenant.id}
                 />
               </motion.div>
@@ -184,7 +196,9 @@ export function TenantHousehold() {
                       <FileText className="w-5 h-5" />
                       Property Documents
                     </CardTitle>
-                    <CardDescription>Shared documents for your property (read-only)</CardDescription>
+                    <CardDescription>
+                      Shared documents for your property (read-only)
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {documentsLoading ? (
@@ -212,4 +226,3 @@ export function TenantHousehold() {
     </div>
   )
 }
-

@@ -1,6 +1,6 @@
 /**
  * UAT Test Helpers
- * 
+ *
  * Common utilities for comprehensive UAT tests including:
  * - Environment verification
  * - Test data setup
@@ -12,7 +12,12 @@ import { Page, BrowserContext, expect } from '@playwright/test'
 import { enforceStagingOnly } from '../../helpers/env-guard'
 import { seedTestScenario, type SeededData } from '../../helpers/seed'
 import { resetAll } from '../../helpers/reset'
-import { createTestLandlord, loginAsLandlord, loginAsTenant, generateTestEmail } from '../../helpers/auth-helpers'
+import {
+  createTestLandlord,
+  loginAsLandlord,
+  loginAsTenant,
+  generateTestEmail,
+} from '../../helpers/auth-helpers'
 
 /**
  * Verify staging environment before test execution
@@ -58,9 +63,9 @@ export async function setupMultiTabScenario(
   seeded: SeededData
 }> {
   verifyStagingEnvironment()
-  
+
   const seeded = await setupUATScenario(options)
-  
+
   if (!seeded.tenant) {
     throw new Error('Failed to seed tenant for multi-tab scenario')
   }
@@ -167,7 +172,7 @@ export async function verifyModalOpens(
   if (await modalContent.isVisible()) {
     const box = await modalContent.boundingBox()
     const viewport = page.viewportSize()
-    
+
     if (box && viewport) {
       // Content should fit within viewport
       expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
@@ -203,10 +208,11 @@ export async function verifyToggleState(
   await expect(toggle).toBeVisible()
 
   // Check aria-checked or data-state
-  const state = await toggle.getAttribute('aria-checked') || 
-                await toggle.getAttribute('data-state') ||
-                (await toggle.isChecked() ? 'true' : 'false')
-  
+  const state =
+    (await toggle.getAttribute('aria-checked')) ||
+    (await toggle.getAttribute('data-state')) ||
+    ((await toggle.isChecked()) ? 'true' : 'false')
+
   expect(state === 'true' || state === 'checked').toBe(expectedState)
 
   // Verify visual state (opacity, color, etc.)
@@ -229,4 +235,3 @@ export async function cleanupUATTest(page?: Page): Promise<void> {
     await resetStagingFixtures()
   }
 }
-

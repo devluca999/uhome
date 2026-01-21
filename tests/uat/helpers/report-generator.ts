@@ -1,6 +1,6 @@
 /**
  * Report Generator for UAT Tests
- * 
+ *
  * Generates markdown reports from test results:
  * - Visual test results
  * - Functional test results
@@ -35,13 +35,16 @@ export function generateVisualTestResults(): string {
   report += `## Visual Mismatches\n\n`
 
   // Group by page
-  const byPage = mismatches.reduce((acc, mismatch) => {
-    if (!acc[mismatch.page]) {
-      acc[mismatch.page] = []
-    }
-    acc[mismatch.page].push(mismatch)
-    return acc
-  }, {} as Record<string, VisualMismatch[]>)
+  const byPage = mismatches.reduce(
+    (acc, mismatch) => {
+      if (!acc[mismatch.page]) {
+        acc[mismatch.page] = []
+      }
+      acc[mismatch.page].push(mismatch)
+      return acc
+    },
+    {} as Record<string, VisualMismatch[]>
+  )
 
   for (const [page, pageMismatches] of Object.entries(byPage)) {
     report += `### ${page}\n\n`
@@ -49,11 +52,11 @@ export function generateVisualTestResults(): string {
     for (const mismatch of pageMismatches) {
       report += `#### ${mismatch.feature} - ${mismatch.element}\n\n`
       report += `**Issue:** ${mismatch.issue}\n\n`
-      
+
       if (mismatch.expected) {
         report += `**Expected:** ${mismatch.expected}\n\n`
       }
-      
+
       if (mismatch.actual) {
         report += `**Actual:** ${mismatch.actual}\n\n`
       }
@@ -93,13 +96,16 @@ export function generateFunctionalTestResults(): string {
   report += `## Functional Failures\n\n`
 
   // Group by page
-  const byPage = failures.reduce((acc, failure) => {
-    if (!acc[failure.page]) {
-      acc[failure.page] = []
-    }
-    acc[failure.page].push(failure)
-    return acc
-  }, {} as Record<string, FunctionalFailure[]>)
+  const byPage = failures.reduce(
+    (acc, failure) => {
+      if (!acc[failure.page]) {
+        acc[failure.page] = []
+      }
+      acc[failure.page].push(failure)
+      return acc
+    },
+    {} as Record<string, FunctionalFailure[]>
+  )
 
   for (const [page, pageFailures] of Object.entries(byPage)) {
     report += `### ${page}\n\n`
@@ -107,7 +113,7 @@ export function generateFunctionalTestResults(): string {
     for (const failure of pageFailures) {
       report += `#### ${failure.feature} - ${failure.workflow}\n\n`
       report += `**Error:** ${failure.error}\n\n`
-      
+
       if (failure.steps.length > 0) {
         report += `**Steps:**\n`
         for (const step of failure.steps) {
@@ -130,10 +136,7 @@ export function generateFunctionalTestResults(): string {
 /**
  * Generate product readiness report
  */
-export function generateProductReadinessReport(
-  mvpPages: string[],
-  testedPages: string[]
-): string {
+export function generateProductReadinessReport(mvpPages: string[], testedPages: string[]): string {
   const summary = resultLogger.getSummary()
   const failures = resultLogger.getFunctionalFailures()
   const mismatches = resultLogger.getVisualMismatches()
@@ -176,10 +179,11 @@ export function generateProductReadinessReport(
 
   report += `## Critical Issues\n\n`
 
-  const criticalFailures = failures.filter(f => 
-    f.error.toLowerCase().includes('crash') ||
-    f.error.toLowerCase().includes('data loss') ||
-    f.error.toLowerCase().includes('security')
+  const criticalFailures = failures.filter(
+    f =>
+      f.error.toLowerCase().includes('crash') ||
+      f.error.toLowerCase().includes('data loss') ||
+      f.error.toLowerCase().includes('security')
   )
 
   if (criticalFailures.length === 0) {
@@ -198,9 +202,8 @@ export function generateProductReadinessReport(
     report += `✅ No fixes needed. All tests passed.\n\n`
   } else {
     // Group recommendations by priority
-    const highPriority = failures.filter(f => 
-      f.error.toLowerCase().includes('crash') ||
-      f.error.toLowerCase().includes('data loss')
+    const highPriority = failures.filter(
+      f => f.error.toLowerCase().includes('crash') || f.error.toLowerCase().includes('data loss')
     )
 
     if (highPriority.length > 0) {
@@ -253,7 +256,7 @@ export function generateProductReadinessReport(
  */
 export function writeReport(filename: string, content: string): void {
   const reportsDir = path.join(process.cwd(), 'docs', 'uat')
-  
+
   if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true })
   }
@@ -274,4 +277,3 @@ export function generateAllReports(mvpPages: string[] = [], testedPages: string[
   writeReport('functional-test-results.md', functionalReport)
   writeReport('product-readiness.md', readinessReport)
 }
-

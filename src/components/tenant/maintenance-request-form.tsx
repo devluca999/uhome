@@ -131,12 +131,10 @@ export function MaintenanceRequestForm({
               className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          
+
           {/* Image Upload */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-stone-700">
-              Photos (optional)
-            </label>
+            <label className="text-sm font-medium text-stone-700">Photos (optional)</label>
             <div className="space-y-3">
               {imageUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
@@ -176,13 +174,11 @@ export function MaintenanceRequestForm({
                   className="hidden"
                   onChange={handleImageUpload}
                 />
-                <span className="text-xs text-muted-foreground">
-                  {imageUrls.length}/5 photos
-                </span>
+                <span className="text-xs text-muted-foreground">{imageUrls.length}/5 photos</span>
               </div>
             </div>
           </div>
-          
+
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={loading} className="flex-1">
               {loading ? 'Submitting...' : 'Submit Request'}

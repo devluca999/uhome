@@ -1,6 +1,6 @@
 /**
  * Comprehensive Finances UAT Tests
- * 
+ *
  * Tests all finances features:
  * - Ledger: add/edit/delete rent records
  * - Overview: expenses, collections, net profit
@@ -11,7 +11,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupUATScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupUATScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 
@@ -140,7 +145,9 @@ test.describe('Finances Comprehensive UAT', () => {
 
     try {
       // Find graph toggle buttons
-      const toggleButtons = page.locator('button:has-text("Donut"), button:has-text("Pie"), button:has-text("Line"), button:has-text("Trend"), [data-view-type]')
+      const toggleButtons = page.locator(
+        'button:has-text("Donut"), button:has-text("Pie"), button:has-text("Line"), button:has-text("Trend"), [data-view-type]'
+      )
       const toggleCount = await toggleButtons.count()
 
       if (toggleCount > 0) {
@@ -323,4 +330,3 @@ test.describe('Finances Comprehensive UAT', () => {
     }
   })
 })
-

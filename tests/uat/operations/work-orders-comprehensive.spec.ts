@@ -1,6 +1,6 @@
 /**
  * Comprehensive Operations (Work Orders) UAT Tests
- * 
+ *
  * Tests all work order features:
  * - Create work order (tenant and landlord)
  * - Edit work order details
@@ -12,7 +12,12 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { verifyStagingEnvironment, setupMultiTabScenario, waitForPageReady, cleanupUATTest } from '../helpers/uat-helpers'
+import {
+  verifyStagingEnvironment,
+  setupMultiTabScenario,
+  waitForPageReady,
+  cleanupUATTest,
+} from '../helpers/uat-helpers'
 import { logTestResult, logFunctionalFailure } from '../helpers/result-logger'
 import { captureUATScreenshot } from '../helpers/screenshot-manager'
 
@@ -35,7 +40,9 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
 
     try {
       // Find create work order button
-      const createButton = page.locator('button:has-text("Create"), button:has-text("Add Work Order")').first()
+      const createButton = page
+        .locator('button:has-text("Create"), button:has-text("Add Work Order")')
+        .first()
       const isVisible = await createButton.isVisible({ timeout: 3000 }).catch(() => false)
 
       if (isVisible) {
@@ -64,7 +71,13 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
         })
       }
     } catch (error) {
-      const screenshot = await captureUATScreenshot(page, 'operations', 'create_work_order', {}, 'error')
+      const screenshot = await captureUATScreenshot(
+        page,
+        'operations',
+        'create_work_order',
+        {},
+        'error'
+      )
       await logFunctionalFailure(page, {
         page: 'operations',
         feature: 'create_work_order',
@@ -92,7 +105,9 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
 
     try {
       // Find create maintenance request button
-      const createButton = page.locator('button:has-text("Create"), button:has-text("Request")').first()
+      const createButton = page
+        .locator('button:has-text("Create"), button:has-text("Request")')
+        .first()
       const isVisible = await createButton.isVisible({ timeout: 3000 }).catch(() => false)
 
       if (isVisible) {
@@ -121,7 +136,13 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
         })
       }
     } catch (error) {
-      const screenshot = await captureUATScreenshot(page, 'operations', 'create_work_order_tenant', {}, 'error')
+      const screenshot = await captureUATScreenshot(
+        page,
+        'operations',
+        'create_work_order_tenant',
+        {},
+        'error'
+      )
       await logFunctionalFailure(page, {
         page: 'operations',
         feature: 'create_work_order',
@@ -145,12 +166,16 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
 
     try {
       // Find work order
-      const workOrder = page.locator('[class*="work-order"], [class*="maintenance"], [data-work-order]').first()
+      const workOrder = page
+        .locator('[class*="work-order"], [class*="maintenance"], [data-work-order]')
+        .first()
       const isVisible = await workOrder.isVisible({ timeout: 5000 }).catch(() => false)
 
       if (isVisible) {
         // Find status button/dropdown
-        const statusButton = workOrder.locator('button:has-text("Status"), select[name="status"], [data-status]').first()
+        const statusButton = workOrder
+          .locator('button:has-text("Status"), select[name="status"], [data-status]')
+          .first()
         if (await statusButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await statusButton.click()
           await page.waitForTimeout(500)
@@ -211,7 +236,9 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
       await tenantPage.goto(`${baseUrl}/tenant/maintenance`)
       await waitForPageReady(tenantPage)
 
-      const createButton = tenantPage.locator('button:has-text("Create"), button:has-text("Request")').first()
+      const createButton = tenantPage
+        .locator('button:has-text("Create"), button:has-text("Request")')
+        .first()
       if (await createButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await createButton.click()
         await tenantPage.waitForTimeout(500)
@@ -229,8 +256,12 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
       await landlordPage.waitForTimeout(2000) // Wait for notification
 
       // Check for notification indicator
-      const notificationIndicator = landlordPage.locator('[data-notification], [class*="notification"], [aria-label*="notification"]')
-      const hasNotification = await notificationIndicator.isVisible({ timeout: 5000 }).catch(() => false)
+      const notificationIndicator = landlordPage.locator(
+        '[data-notification], [class*="notification"], [aria-label*="notification"]'
+      )
+      const hasNotification = await notificationIndicator
+        .isVisible({ timeout: 5000 })
+        .catch(() => false)
 
       await logTestResult(landlordPage, {
         page: 'operations',
@@ -300,4 +331,3 @@ test.describe('Operations (Work Orders) Comprehensive UAT', () => {
     }
   })
 })
-
