@@ -1497,33 +1497,34 @@ async function seedProductionDemoData() {
     console.log('🔍 Verifying seeded data in database...\n')
 
     try {
-      // Verify tenants (query via user_id since tenants table doesn't have email)
-      // Get all demo tenant user IDs from auth
-      const { data: allAuthUsers } = await supabase.auth.admin.listUsers()
-      const demoTenantUserIds =
-        allAuthUsers?.users
-          ?.filter(u => u.email?.includes('demo-tenant') && u.email?.includes('@uhome.internal'))
-          .map(u => u.id) || []
-
-      let actualTenantCount = 0
-      let tenantCountError = null
-
-      if (demoTenantUserIds.length > 0) {
-        const { count, error } = await supabase
-          .from('tenants')
-          .select('*', { count: 'exact', head: true })
-          .in('user_id', demoTenantUserIds)
-
-        actualTenantCount = count || 0
-        tenantCountError = error
-      }
+      // Verify tenants - query by property_id (simpler and more reliable than user_id lookup)
+      const propertyIds = createdProperties.map(p => p.id)
+      const { count: actualTenantCount, error: tenantCountError } = await supabase
+        .from('tenants')
+        .select('*', { count: 'exact', head: true })
+        .in('property_id', propertyIds)
 
       if (tenantCountError) {
         console.warn(`   ⚠️  Failed to query tenant count: ${tenantCountError.message}`)
+        console.warn(`   Error details:`, tenantCountError)
       } else {
-        console.log(`   📊 Tenants in DB: ${actualTenantCount} (expected: ${tenantLeases.length})`)
-        if (actualTenantCount < tenantLeases.length) {
+        console.log(`   📊 Tenants in DB: ${actualTenantCount || 0} (expected: ${tenantLeases.length})`)
+        if ((actualTenantCount || 0) < tenantLeases.length) {
           console.warn(`   ⚠️  WARNING: Fewer tenants in DB than expected!`)
+          
+          // Debug: Try to get actual tenant records to see what's there
+          const { data: actualTenants, error: debugError } = await supabase
+            .from('tenants')
+            .select('id, user_id, property_id, lease_id')
+            .in('property_id', propertyIds)
+            .limit(20)
+          
+          if (!debugError && actualTenants) {
+            console.log(`   🔍 Debug: Found ${actualTenants.length} tenant records:`)
+            actualTenants.slice(0, 5).forEach((t, i) => {
+              console.log(`      ${i + 1}. Tenant ID: ${t.id}, Property: ${t.property_id}, Lease: ${t.lease_id || 'none'}`)
+            })
+          }
         }
       }
 
