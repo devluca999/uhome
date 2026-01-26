@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { useNotes, type NoteEntityType } from '@/hooks/use-notes'
-import { Plus, Trash2, Edit2, X } from 'lucide-react'
+import { Plus, Trash2, Edit2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { motion as motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 
