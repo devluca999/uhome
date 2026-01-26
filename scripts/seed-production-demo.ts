@@ -908,25 +908,34 @@ async function seedProductionDemoData() {
       const { tenantId, leaseId, propertyId } = tenantLeases[tenantLeaseIdx]
       
       // Get lease to get rent amount (leases have rent_amount from their unit)
-      const { data: lease } = await supabase
+      const { data: lease, error: leaseError } = await supabase
         .from('leases')
         .select('rent_amount, unit_id')
         .eq('id', leaseId)
         .single()
 
-      if (!lease) {
-        console.warn(`   ⚠️  Lease ${leaseId} not found, skipping rent records`)
+      if (leaseError || !lease) {
+        console.warn(`   ⚠️  Lease ${leaseId} not found: ${leaseError?.message || 'No lease data'}, skipping rent records`)
+        continue
+      }
+
+      if (!lease.rent_amount || lease.rent_amount === 0) {
+        console.warn(`   ⚠️  Lease ${leaseId} has invalid rent_amount (${lease.rent_amount}), skipping rent records`)
         continue
       }
 
       // Get unit to get rent_due_date
-      const { data: unit } = await supabase
+      const { data: unit, error: unitError } = await supabase
         .from('units')
         .select('rent_due_date')
         .eq('id', lease.unit_id)
         .single()
 
-      const rentAmount = lease.rent_amount || 0
+      if (unitError) {
+        console.warn(`   ⚠️  Unit ${lease.unit_id} not found: ${unitError.message}, using default due_date`)
+      }
+
+      const rentAmount = lease.rent_amount
       const dueDate = unit?.rent_due_date || 1
 
       // Create records for last 8 months (distributed)
@@ -980,6 +989,12 @@ async function seedProductionDemoData() {
           } else {
             status = 'pending'
           }
+        }
+
+        // Validate rent amount before creating record
+        if (!rentAmount || rentAmount <= 0) {
+          console.warn(`   ⚠️  Skipping rent record: invalid rent amount (${rentAmount}) for lease ${leaseId}`)
+          continue
         }
 
         rentRecords.push({

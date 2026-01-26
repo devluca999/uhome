@@ -190,12 +190,18 @@ class PerformanceTracker {
       })
 
       if (error) {
-        console.error('Failed to log performance metrics:', error)
+        // Silently fail in production/dev - performance tracking is non-critical
+        if (import.meta.env.DEV) {
+          console.debug('Performance metrics logging failed (non-critical):', error.message)
+        }
         // Re-queue metrics on error (optional - might cause duplicates)
         // this.metricQueue.unshift(...metrics)
       }
     } catch (err) {
-      console.error('Error logging performance metrics:', err)
+      // Silently fail - performance tracking is non-critical
+      if (import.meta.env.DEV) {
+        console.debug('Performance metrics logging error (non-critical):', err)
+      }
       // Re-queue metrics on error (optional)
       // this.metricQueue.unshift(...metrics)
     }
