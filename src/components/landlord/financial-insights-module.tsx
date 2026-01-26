@@ -29,8 +29,7 @@ type MaintenanceRequest = {
 
 import type { GraphViewType as EnhancedGraphViewType } from './financial-graph-enhanced'
 // Internal type for this component (includes area and pie)
-type InternalGraphViewType = EnhancedGraphViewType | 'area' | 'pie'
-export type GraphViewType = InternalGraphViewType
+export type GraphViewType = EnhancedGraphViewType | 'area' | 'pie'
 export type CurveType = 'smooth' | 'sharp'
 export type InsightsViewMode = 'chart' | 'timeline'
 
@@ -824,7 +823,7 @@ export function FinancialInsightsModule({
         onClose={() => setShowFullscreen(false)}
         graphData={graphData}
         filteredGraphData={filteredGraphData}
-        viewType={graphViewType}
+        viewType={graphViewType === 'area' || graphViewType === 'pie' ? 'line' : (graphViewType as EnhancedGraphViewType)}
         timeRange={effectiveTimeRange} // Use effective time range (local override or page-wide)
         curveType={curveType}
         activeDatasets={activeDatasets}
