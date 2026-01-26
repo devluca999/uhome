@@ -32,9 +32,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let timeoutId: NodeJS.Timeout | null = null
     
     // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
+    timeoutId = setTimeout(() => {
       if (mounted) {
         console.warn('[AuthContext] Session fetch timeout - setting loading to false')
         setLoading(false)
@@ -45,7 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted) return
       
-      clearTimeout(timeoutId)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
       
       if (error) {
         console.error('[AuthContext] Error getting session:', error)
@@ -62,7 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }).catch((error) => {
       if (!mounted) return
-      clearTimeout(timeoutId)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
       console.error('[AuthContext] Exception getting session:', error)
       setLoading(false)
     })
@@ -98,7 +105,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false
-      clearTimeout(timeoutId)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
       subscription.unsubscribe()
     }
   }, [])
