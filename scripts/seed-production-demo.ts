@@ -904,6 +904,12 @@ async function seedProductionDemoData() {
     let hasOverdueRecord = false
 
     // Create rent records for each tenant-lease pair
+    if (tenantLeases.length === 0) {
+      console.warn(`   ⚠️  No tenant-lease pairs found, skipping rent records creation`)
+    } else {
+      console.log(`   Creating rent records for ${tenantLeases.length} tenant-lease pairs...`)
+    }
+    
     for (let tenantLeaseIdx = 0; tenantLeaseIdx < tenantLeases.length; tenantLeaseIdx++) {
       const { tenantId, leaseId, propertyId } = tenantLeases[tenantLeaseIdx]
       
@@ -1010,41 +1016,58 @@ async function seedProductionDemoData() {
       }
     }
 
-    console.log(`   Attempting to insert ${rentRecords.length} rent records...`)
-
-    // Try inserting with minimal fields first to identify schema issues
-    const { data: insertedRentRecords, error: rentError } = await supabase
-      .from('rent_records')
-      .insert(rentRecords)
-      .select('id, status, paid_date')
-
-    if (rentError) {
-      console.warn(`   ⚠️  Rent records insertion failed: ${rentError.message}`)
-      console.warn(`   Schema issue detected. Trying with minimal fields...`)
-
-      // Fallback: try with only required fields
-      const minimalRentRecords = rentRecords.map(r => ({
-        property_id: r.property_id,
-        tenant_id: r.tenant_id,
-        lease_id: r.lease_id,
-        amount: r.amount,
-        due_date: r.due_date,
-        status: r.status,
-        paid_date: r.paid_date,
-        late_fee: r.late_fee || 0,
-      }))
-
-      const { error: fallbackError } = await supabase
-        .from('rent_records')
-        .insert(minimalRentRecords)
-
-      if (fallbackError) {
-        console.error(`   ❌ Rent records creation completely failed: ${fallbackError.message}`)
-      } else {
-        console.log(`✅ Created ${minimalRentRecords.length} rent records (minimal fields)\n`)
-      }
+    if (rentRecords.length === 0) {
+      console.error(`   ❌ No rent records to insert! tenantLeases.length: ${tenantLeases.length}`)
+      console.error(`   This usually means all leases were skipped due to invalid rent_amount or missing lease data.`)
     } else {
-      console.log(`✅ Created ${insertedRentRecords.length} rent records\n`)
+      console.log(`   Attempting to insert ${rentRecords.length} rent records...`)
+
+      // Log sample record for debugging
+      console.log(`   Sample rent record:`, {
+        property_id: rentRecords[0].property_id,
+        tenant_id: rentRecords[0].tenant_id,
+        lease_id: rentRecords[0].lease_id,
+        amount: rentRecords[0].amount,
+        status: rentRecords[0].status,
+        due_date: rentRecords[0].due_date,
+      })
+
+      // Try inserting with minimal fields first to identify schema issues
+      const { data: insertedRentRecords, error: rentError } = await supabase
+        .from('rent_records')
+        .insert(rentRecords)
+        .select('id, status, paid_date')
+
+      if (rentError) {
+        console.error(`   ❌ Rent records insertion failed: ${rentError.message}`)
+        console.error(`   Error details:`, rentError)
+        console.warn(`   Schema issue detected. Trying with minimal fields...`)
+
+        // Fallback: try with only required fields
+        const minimalRentRecords = rentRecords.map(r => ({
+          property_id: r.property_id,
+          tenant_id: r.tenant_id,
+          lease_id: r.lease_id,
+          amount: r.amount,
+          due_date: r.due_date,
+          status: r.status,
+          paid_date: r.paid_date,
+          late_fee: r.late_fee || 0,
+        }))
+
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('rent_records')
+          .insert(minimalRentRecords)
+          .select('id')
+
+        if (fallbackError) {
+          console.error(`   ❌ Rent records creation completely failed: ${fallbackError.message}`)
+          console.error(`   Fallback error details:`, fallbackError)
+        } else {
+          console.log(`✅ Created ${fallbackData?.length || minimalRentRecords.length} rent records (minimal fields)\n`)
+        }
+      } else {
+        console.log(`✅ Created ${insertedRentRecords?.length || rentRecords.length} rent records\n`)
 
       // Log how many paid records with paid_date we created
       const paidWithDateCount = insertedRentRecords.filter(
