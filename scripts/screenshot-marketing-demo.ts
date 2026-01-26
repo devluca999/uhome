@@ -21,11 +21,36 @@ const outputDir = resolve(process.cwd(), 'screenshots/marketing')
 
 // Pages to screenshot
 const pages = [
-  { name: 'landlord-dashboard', path: '/landlord/dashboard', requiresAuth: true, role: 'landlord' },
-  { name: 'landlord-finances', path: '/landlord/finances', requiresAuth: true, role: 'landlord' },
-  { name: 'landlord-properties', path: '/landlord/properties', requiresAuth: true, role: 'landlord' },
-  { name: 'landlord-tenants', path: '/landlord/tenants', requiresAuth: true, role: 'landlord' },
-  { name: 'landlord-maintenance', path: '/landlord/maintenance', requiresAuth: true, role: 'landlord' },
+  {
+    name: 'landlord-dashboard',
+    path: '/landlord/dashboard',
+    requiresAuth: true,
+    role: 'landlord',
+  },
+  {
+    name: 'landlord-finances',
+    path: '/landlord/finances',
+    requiresAuth: true,
+    role: 'landlord',
+  },
+  {
+    name: 'landlord-properties',
+    path: '/landlord/properties',
+    requiresAuth: true,
+    role: 'landlord',
+  },
+  {
+    name: 'landlord-tenants',
+    path: '/landlord/tenants',
+    requiresAuth: true,
+    role: 'landlord',
+  },
+  {
+    name: 'landlord-maintenance',
+    path: '/landlord/maintenance',
+    requiresAuth: true,
+    role: 'landlord',
+  },
   { name: 'tenant-dashboard', path: '/tenant/dashboard', requiresAuth: true, role: 'tenant' },
   { name: 'tenant-finances', path: '/tenant/finances', requiresAuth: true, role: 'tenant' },
   { name: 'tenant-maintenance', path: '/tenant/maintenance', requiresAuth: true, role: 'tenant' },
@@ -45,11 +70,11 @@ const demoTenant = {
 async function loginAs(page: Page, email: string, password: string) {
   await page.goto(`${baseURL}/login`)
   await page.waitForLoadState('networkidle')
-  
+
   await page.fill('input[type="email"]', email)
   await page.fill('input[type="password"]', password)
   await page.click('button[type="submit"]')
-  
+
   // Wait for redirect after login
   await page.waitForURL(/\/landlord\/|\/tenant\//, { timeout: 10000 })
   await page.waitForLoadState('networkidle')
@@ -57,11 +82,11 @@ async function loginAs(page: Page, email: string, password: string) {
 
 async function setTheme(page: Page, theme: 'light' | 'dark') {
   // Set theme via localStorage
-  await page.evaluate((t) => {
+  await page.evaluate(t => {
     localStorage.setItem('theme', t)
     document.documentElement.setAttribute('data-theme', t)
   }, theme)
-  
+
   // Wait for theme to apply
   await page.waitForTimeout(500)
 }
@@ -74,12 +99,12 @@ async function takeScreenshot(
 ) {
   const filename = `${name}-${theme}.png`
   const filepath = resolve(outputDir, filename)
-  
+
   await page.screenshot({
     path: filepath,
     fullPage,
   })
-  
+
   console.log(`✅ Screenshot saved: ${filename}`)
 }
 
@@ -98,23 +123,23 @@ async function screenshotPage(
   try {
     // Set theme first
     await setTheme(page, theme)
-    
+
     if (pageConfig.requiresAuth) {
       // Login based on role
       const credentials = pageConfig.role === 'landlord' ? demoLandlord : demoTenant
       await loginAs(page, credentials.email, credentials.password)
     }
-    
+
     // Navigate to page
     await page.goto(`${baseURL}${pageConfig.path}`)
     await page.waitForLoadState('networkidle')
-    
+
     // Wait for content to load (charts, data, etc.)
     await page.waitForTimeout(2000)
-    
+
     // Take screenshot
     await takeScreenshot(page, pageConfig.name, theme, true)
-    
+
     await context.close()
   } catch (error) {
     console.error(`❌ Error screenshotting ${pageConfig.name} (${theme}):`, error)
@@ -141,16 +166,16 @@ async function main() {
     // Screenshot each page in both themes
     for (const pageConfig of pages) {
       console.log(`\n📄 Processing: ${pageConfig.name}`)
-      
+
       // Light mode
       console.log(`  🌞 Taking light mode screenshot...`)
       await screenshotPage(browser, pageConfig, 'light')
-      
+
       // Dark mode
       console.log(`  🌙 Taking dark mode screenshot...`)
       await screenshotPage(browser, pageConfig, 'dark')
     }
-    
+
     console.log(`\n✅ All screenshots completed!`)
     console.log(`📁 Output directory: ${outputDir}`)
   } catch (error) {

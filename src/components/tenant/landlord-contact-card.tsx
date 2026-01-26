@@ -52,7 +52,7 @@ export function LandlordContactCard({ lease }: LandlordContactCardProps) {
         </div>
 
         <div className="text-xs text-muted-foreground border-t pt-2">
-          For urgent maintenance issues, please use the Messages tab above with the "maintenance"
+          For urgent maintenance issues, please use the Messages tab above with the &quot;maintenance&quot;
           intent.
         </div>
       </CardContent>

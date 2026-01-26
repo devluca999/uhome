@@ -7,6 +7,13 @@ import { Skeleton } from '@/components/ui/skeleton-loader'
 import { useLeaseMessages } from '@/hooks/use-lease-messages'
 import { useAuth } from '@/contexts/auth-context'
 import { MessageSquare } from 'lucide-react'
+import type { Database } from '@/types/database'
+
+type Message = Database['public']['Tables']['messages']['Row'] & {
+  sender?: {
+    email: string | null
+  }
+}
 
 interface LeaseThreadProps {
   leaseId: string
@@ -83,7 +90,7 @@ export function LeaseThread({
                 {messages.map(message => (
                   <MessageBubble
                     key={message.id}
-                    message={message as any}
+                    message={message as Message}
                     currentUserId={user?.id}
                   />
                 ))}

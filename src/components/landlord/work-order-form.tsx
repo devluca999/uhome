@@ -11,6 +11,9 @@ import { useImageUpload } from '@/hooks/use-image-upload'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { X, Upload } from 'lucide-react'
+import type { Database } from '@/types/database'
+
+type MaintenanceRequestInsert = Database['public']['Tables']['maintenance_requests']['Insert']
 
 interface WorkOrderFormProps {
   onSubmit: () => void
@@ -67,7 +70,7 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
     try {
       setLoading(true)
 
-      const workOrderData: any = {
+      const workOrderData: MaintenanceRequestInsert = {
         property_id: selectedPropertyId,
         public_description: publicDescription.trim(),
         status: 'scheduled', // Landlord-created work orders start as scheduled

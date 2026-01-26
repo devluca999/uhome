@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTenants } from '@/hooks/use-tenants'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
-import type { TaskInsert, TaskUpdate, TaskAssignedToType, TaskContextType } from '@/hooks/use-tasks'
+import type { TaskInsert, TaskUpdate, TaskAssignedToType, TaskContextType, Task } from '@/hooks/use-tasks'
 import { Plus, X, Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 interface TaskFormProps {
-  onSubmit: (data: TaskInsert | TaskUpdate) => Promise<{ data: any; error: Error | null }>
+  onSubmit: (data: TaskInsert | TaskUpdate) => Promise<{ data: Task | null; error: Error | null }>
   onCancel?: () => void
   initialData?: TaskInsert & { id?: string }
   contextType: TaskContextType

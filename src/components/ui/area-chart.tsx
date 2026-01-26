@@ -50,12 +50,22 @@ export function AreaChart({
   const expensesColor = '#ef4444' // Red
   const netColor = '#6b7280' // Neutral gray
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipProps {
+    active?: boolean
+    payload?: Array<{
+      name?: string
+      value?: number
+      color?: string
+    }>
+    label?: string
+  }
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg z-50">
           <p className="text-sm font-semibold text-foreground mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: ${Number(entry.value).toLocaleString()}
             </p>

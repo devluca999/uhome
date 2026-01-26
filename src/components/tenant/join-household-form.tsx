@@ -34,7 +34,7 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
       }
     } catch {
       // If it's not a full URL, try extracting token from path-like string
-      const match = url.match(/accept-invite[\/]?([a-zA-Z0-9\-_]+)/)
+      const match = url.match(/accept-invite\/?([a-zA-Z0-9\-_]+)/)
       if (match && match[1]) {
         return match[1]
       }

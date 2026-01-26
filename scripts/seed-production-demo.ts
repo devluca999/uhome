@@ -540,7 +540,7 @@ async function seedProductionDemoData() {
     ]
 
     // Check for existing properties to avoid duplicates
-    let createdProperties: Array<{
+    const createdProperties: Array<{
       id: string
       name: string
       address: string
