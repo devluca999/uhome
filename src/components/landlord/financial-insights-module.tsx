@@ -27,7 +27,8 @@ type MaintenanceRequest = {
   property?: { name: string }
 }
 
-export type GraphViewType = 'line' | 'bar' | 'area' | 'pie'
+import type { GraphViewType as EnhancedGraphViewType } from './financial-graph-enhanced'
+export type GraphViewType = EnhancedGraphViewType | 'area' | 'pie'
 export type CurveType = 'smooth' | 'sharp'
 export type InsightsViewMode = 'chart' | 'timeline'
 
