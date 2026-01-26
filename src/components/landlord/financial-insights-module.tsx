@@ -28,7 +28,9 @@ type MaintenanceRequest = {
 }
 
 import type { GraphViewType as EnhancedGraphViewType } from './financial-graph-enhanced'
-export type GraphViewType = EnhancedGraphViewType | 'area' | 'pie'
+// Internal type for this component (includes area and pie)
+type InternalGraphViewType = EnhancedGraphViewType | 'area' | 'pie'
+export type GraphViewType = InternalGraphViewType
 export type CurveType = 'smooth' | 'sharp'
 export type InsightsViewMode = 'chart' | 'timeline'
 
