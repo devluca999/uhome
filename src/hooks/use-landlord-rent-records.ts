@@ -103,7 +103,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
       } else {
         // If no specific filter, get all records for landlord's properties
         // RLS will handle access control
-        query = query.or(`property_id.in.(${propertyIds.join(',')})`)
+        query = query.in('property_id', propertyIds)
       }
 
       if (filter?.status) {
@@ -120,7 +120,26 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.error('[useLandlordRentRecords] Query error:', error)
+        throw error
+      }
+      
+      if (import.meta.env.DEV) {
+        console.debug('[useLandlordRentRecords] Fetched records:', {
+          count: data?.length || 0,
+          propertyIds,
+          sampleRecords: data?.slice(0, 3).map(r => ({
+            id: r.id,
+            property_id: r.property_id,
+            amount: r.amount,
+            status: r.status,
+            paid_date: r.paid_date,
+            due_date: r.due_date,
+          })),
+        })
+      }
+      
       setRecords(data || [])
     } catch (err) {
       setError(err as Error)

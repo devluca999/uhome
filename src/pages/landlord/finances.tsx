@@ -218,7 +218,7 @@ export function LandlordFinances() {
   const [searchParams, setSearchParams] = useSearchParams()
   // Page-level filter state
   // These two filters control ALL financial data on the page: KPIs, Ledger, Graph (default state)
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthToDate')
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('yearToDate') // Default to year-to-date for better demo showcase
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
   // Legacy filter state (for ledger section)
   const [selectedCategory, setSelectedCategory] = useState<string>('')

@@ -18,8 +18,8 @@ The production demo seed script creates comprehensive, production-realistic demo
 - **12+ Tenant** user accounts (including `demo-tenant@uhome.internal`)
 - **5 Properties** with varied rent amounts ($1,200 - $3,500) and due dates
 - **12+ Tenant-lease pairs** created via real invite flow (validates invite logic)
-- **20+ Rent records** distributed across 8 months with realistic payment statuses
-- **30+ Expenses** across multiple categories distributed across 8 months
+- **100+ Rent records** distributed across 12 months with realistic payment statuses
+- **50+ Expenses** across multiple categories distributed across 12 months
 - **15+ Work orders** (bidirectional: tenant and landlord created) with various statuses
 - **50+ Messages** across lease-scoped threads with back-and-forth conversations
 

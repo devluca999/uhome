@@ -264,6 +264,8 @@ See detailed plans in:
 - ✅ Notes system (polymorphic, markdown support)
 - ✅ Expense tracking
 - ✅ Financial summaries and charts
+- ✅ **Messaging system (lease-scoped, landlord-tenant and household threads)**
+- ✅ **Canonical data model (Property → Unit → Lease → Tenants)**
 - ✅ UI polish and accessibility
 - ✅ Design philosophy and standards documentation
 - ✅ Deployment documentation

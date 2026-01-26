@@ -938,8 +938,8 @@ async function seedProductionDemoData() {
       const rentAmount = lease.rent_amount
       const dueDate = unit?.rent_due_date || 1
 
-      // Create records for last 8 months (distributed)
-      for (let monthOffset = 7; monthOffset >= 0; monthOffset--) {
+      // Create records for last 12 months (for comprehensive demo showcase)
+      for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
         const dueDateObj = new Date(today.getFullYear(), today.getMonth() - monthOffset, dueDate)
         const isPastMonth = monthOffset > 0
         const isCurrentMonth = monthOffset === 0
@@ -1098,8 +1098,8 @@ async function seedProductionDemoData() {
       date: string
     }> = []
 
-    // Distribute expenses across 8 months, ensuring current month has expenses for E2E tests
-    for (let monthOffset = 7; monthOffset >= 0; monthOffset--) {
+    // Distribute expenses across 12 months, ensuring current month has expenses for E2E tests
+    for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
       // For current month (monthOffset === 0), ensure expenses are spread throughout the month
       // For past months, use random days
       const dayOfMonth =
