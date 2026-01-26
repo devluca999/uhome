@@ -185,25 +185,19 @@ class PerformanceTracker {
 
     try {
       // Call Edge Function to insert metrics (service role access)
+      // Silently catch all errors - performance tracking is non-critical
+      // Browser will log CORS errors, but we won't add to the noise
       const { error } = await supabase.functions.invoke('log-metrics', {
         body: { metrics },
       })
 
+      // Silently ignore errors - performance tracking is optional
       if (error) {
-        // Silently fail in production/dev - performance tracking is non-critical
-        if (import.meta.env.DEV) {
-          console.debug('Performance metrics logging failed (non-critical):', error.message)
-        }
-        // Re-queue metrics on error (optional - might cause duplicates)
-        // this.metricQueue.unshift(...metrics)
+        // No logging - browser already logs CORS errors
       }
     } catch (err) {
-      // Silently fail - performance tracking is non-critical
-      if (import.meta.env.DEV) {
-        console.debug('Performance metrics logging error (non-critical):', err)
-      }
-      // Re-queue metrics on error (optional)
-      // this.metricQueue.unshift(...metrics)
+      // Silently ignore - browser already logs network errors
+      // Performance tracking is non-critical and should not pollute console
     }
   }
 

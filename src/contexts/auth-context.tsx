@@ -46,12 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(`[AuthContext] Auth state change: ${event}`, {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        userId: session?.user?.id,
-        userEmail: session?.user?.email,
-      })
+      // Only log auth state changes in verbose debug mode
+      if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_AUTH === 'true') {
+        console.debug(`[AuthContext] Auth state change: ${event}`, {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email,
+        })
+      }
 
       // Detect immediate SIGNED_OUT after SIGNED_IN (indicates unwanted signOut)
       if (event === 'SIGNED_OUT' && session === null) {
@@ -95,41 +98,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-      console.log(`[AuthContext.signIn] Starting sign in`, {
-        email,
-        passwordLength: password.length,
-        supabaseUrl: supabaseUrl || '[NOT SET]',
-        anonKeyPrefix: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : '[NOT SET]',
-      })
+      // Only log in verbose debug mode
+      if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_AUTH === 'true') {
+        console.debug(`[AuthContext.signIn] Starting sign in`, {
+          email,
+          passwordLength: password.length,
+          supabaseUrl: supabaseUrl || '[NOT SET]',
+          anonKeyPrefix: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : '[NOT SET]',
+        })
+      }
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      console.log(`[AuthContext.signIn] signInWithPassword result:`, {
-        hasData: !!data,
-        hasSession: !!data?.session,
-        hasUser: !!data?.user,
-        hasError: !!error,
-        errorMessage: error?.message,
-        errorStatus: error?.status,
-        errorName: error?.name,
-        rawError: error, // Raw error object
-      })
+      if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_AUTH === 'true') {
+        console.debug(`[AuthContext.signIn] signInWithPassword result:`, {
+          hasData: !!data,
+          hasSession: !!data?.session,
+          hasUser: !!data?.user,
+          hasError: !!error,
+          errorMessage: error?.message,
+          errorStatus: error?.status,
+          errorName: error?.name,
+          rawError: error, // Raw error object
+        })
+      }
 
       if (error) {
         console.error(`[AuthContext.signIn] Sign in failed:`, error)
         return { error }
       }
 
-      console.log(`[AuthContext.signIn] Sign in successful`, {
-        userId: data?.user?.id,
-        userEmail: data?.user?.email,
-        sessionExpiresAt: data?.session?.expires_at
-          ? new Date(data.session.expires_at * 1000).toISOString()
-          : null,
-      })
+      if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_AUTH === 'true') {
+        console.debug(`[AuthContext.signIn] Sign in successful`, {
+          userId: data?.user?.id,
+          userEmail: data?.user?.email,
+          sessionExpiresAt: data?.session?.expires_at
+            ? new Date(data.session.expires_at * 1000).toISOString()
+            : null,
+        })
+      }
 
       // Auto-activate dev mode if demo account
       if (isDevModeAvailable()) {

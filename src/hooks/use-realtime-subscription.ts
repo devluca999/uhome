@@ -89,8 +89,9 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
           filter: filterString || undefined,
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          if (import.meta.env.DEV) {
-            console.log(`[Realtime] ${payload.eventType} on ${table}:`, payload)
+          // Silently handle realtime events (only log in verbose debug mode)
+          if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_REALTIME === 'true') {
+            console.debug(`[Realtime] ${payload.eventType} on ${table}:`, payload)
           }
 
           switch (payload.eventType) {
@@ -113,11 +114,11 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
         }
       )
       .subscribe(status => {
-        if (status === 'SUBSCRIBED' && import.meta.env.DEV) {
-          console.log(`[Realtime] Subscribed to ${table} changes`)
-        } else if (status === 'CHANNEL_ERROR' && import.meta.env.DEV) {
-          console.error(`[Realtime] Error subscribing to ${table} changes`)
+        // Only log errors, and only in verbose debug mode
+        if (status === 'CHANNEL_ERROR' && import.meta.env.DEV && import.meta.env.VITE_DEBUG_REALTIME === 'true') {
+          console.debug(`[Realtime] Error subscribing to ${table} changes`)
         }
+        // Silently handle successful subscriptions
       })
 
     channelRef.current = channel
@@ -126,9 +127,7 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current)
-        if (import.meta.env.DEV) {
-          console.log(`[Realtime] Unsubscribed from ${table} changes`)
-        }
+        // Silently unsubscribe (no logging needed)
       }
     }
   }, [table, JSON.stringify(filter), JSON.stringify(events), onInsert, onUpdate, onDelete])
