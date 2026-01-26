@@ -121,6 +121,12 @@
 -- 6.3: Create message triggers
 -- FILE: create_message_triggers.sql
 
+-- 6.4: Add unit_id to leases (leases belong to units, not properties)
+-- FILE: add_unit_id_to_leases.sql
+
+-- 6.5: Add message_type to messages (landlord_tenant vs household)
+-- FILE: add_message_type_to_messages.sql
+
 -- ============================================================================
 -- STEP 7: ORGANIZATION HELPERS AND POLICIES
 -- ============================================================================

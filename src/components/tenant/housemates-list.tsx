@@ -1,126 +1,73 @@
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Users, Calendar } from 'lucide-react'
-import { GrainOverlay } from '@/components/ui/grain-overlay'
-import { MatteLayer } from '@/components/ui/matte-layer'
-import { supabase } from '@/lib/supabase/client'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton-loader'
+import { supabase } from '@/lib/supabase/client'
+import { Users, User } from 'lucide-react'
+import type { Database } from '@/types/database'
 
-interface Housemate {
-  id: string
-  user_id: string
-  move_in_date: string
-  lease_end_date: string | null
-  user: {
+type Tenant = Database['public']['Tables']['tenants']['Row'] & {
+  user?: {
     email: string | null
   }
 }
 
 interface HousematesListProps {
-  propertyId: string
-  currentTenantId?: string
+  leaseId: string
 }
 
-export function HousematesList({ propertyId, currentTenantId }: HousematesListProps) {
-  const [housemates, setHousemates] = useState<Housemate[]>([])
+export function HousematesList({ leaseId }: HousematesListProps) {
+  const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     async function fetchHousemates() {
       try {
         setLoading(true)
-        setError(null)
 
-        // Query all tenants at the same property
-        const { data: tenants, error: tenantsError } = await supabase
+        // Get all tenants on this lease
+        const { data, error: fetchError } = await supabase
           .from('tenants')
-          .select('id, user_id, move_in_date, lease_end_date')
-          .eq('property_id', propertyId)
-          .order('move_in_date', { ascending: true })
+          .select(
+            `
+            *,
+            user:users(email)
+          `
+          )
+          .eq('lease_id', leaseId)
 
-        if (tenantsError) throw tenantsError
+        if (fetchError) throw fetchError
 
-        if (!tenants || tenants.length === 0) {
-          setHousemates([])
-          setLoading(false)
-          return
-        }
-
-        // Fetch user info for each tenant
-        const housematesWithUsers = await Promise.all(
-          tenants.map(async tenant => {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('email')
-              .eq('id', tenant.user_id)
-              .maybeSingle()
-
-            // Handle RLS restrictions gracefully
-            if (userError || !userData) {
-              return {
-                ...tenant,
-                user: { email: null },
-              }
-            }
-
-            return {
-              ...tenant,
-              user: userData,
-            }
-          })
-        )
-
-        setHousemates(housematesWithUsers)
+        setTenants(data || [])
       } catch (err) {
         console.error('Error fetching housemates:', err)
-        setError('Failed to load housemates')
+        setError(err as Error)
       } finally {
         setLoading(false)
       }
     }
 
-    if (propertyId) {
+    if (leaseId) {
       fetchHousemates()
     }
-  }, [propertyId])
-
-  function getInitials(email: string | null): string {
-    if (!email) return '?'
-    const parts = email.split('@')[0].split('.')
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase()
-    }
-    return email.substring(0, 2).toUpperCase()
-  }
-
-  function formatName(email: string | null): string {
-    if (!email) return 'Unknown'
-    const localPart = email.split('@')[0]
-    // Convert firstname.lastname or firstname_lastname to "Firstname Lastname"
-    const name = localPart
-      .split(/[._]/)
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ')
-    return name
-  }
+  }, [leaseId])
 
   if (loading) {
     return (
-      <Card className="glass-card relative overflow-hidden">
-        <GrainOverlay />
-        <MatteLayer intensity="subtle" />
+      <Card className="glass-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+            <Users className="h-5 w-5" />
             Housemates
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+          <div className="space-y-3">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
           </div>
         </CardContent>
       </Card>
@@ -129,78 +76,70 @@ export function HousematesList({ propertyId, currentTenantId }: HousematesListPr
 
   if (error) {
     return (
-      <Card className="glass-card relative overflow-hidden">
-        <GrainOverlay />
-        <MatteLayer intensity="subtle" />
+      <Card className="glass-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+            <Users className="h-5 w-5" />
             Housemates
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-muted-foreground">
+            Error loading housemates. Please try refreshing the page.
+          </p>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="glass-card relative overflow-hidden">
-      <GrainOverlay />
-      <MatteLayer intensity="subtle" />
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Users className="w-5 h-5" />
-          Housemates
+          <Users className="h-5 w-5" />
+          Housemates ({tenants.length})
         </CardTitle>
-        <CardDescription>
-          {housemates.length === 1
-            ? 'You are the only tenant at this property'
-            : `${housemates.length} tenant${housemates.length > 1 ? 's' : ''} at this property`}
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        {housemates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No tenants found</p>
+        {tenants.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No other housemates found on this lease.</p>
         ) : (
-          <div className="space-y-4">
-            {housemates.map(housemate => {
-              const isCurrentTenant = housemate.id === currentTenantId
-              const moveInDate = new Date(housemate.move_in_date).toLocaleDateString()
+          <div className="space-y-3">
+            {tenants.map(tenant => {
+              const email = tenant.user?.email || 'Unknown'
+              const initials = email.substring(0, 2).toUpperCase()
 
               return (
                 <div
-                  key={housemate.id}
-                  className={`flex items-start gap-4 p-3 rounded-lg border ${
-                    isCurrentTenant ? 'bg-primary/5 border-primary/20' : 'bg-matte/30 border-border'
-                  }`}
+                  key={tenant.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-muted/20"
                 >
-                  <Avatar className="w-12 h-12">
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {getInitials(housemate.user.email)}
-                    </AvatarFallback>
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                   </Avatar>
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-medium text-foreground">
-                        {formatName(housemate.user.email)}
-                      </h3>
-                      {isCurrentTenant && (
-                        <span className="text-xs text-primary font-medium">(You)</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">{housemate.user.email}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                      <Calendar className="w-3 h-3" />
-                      <span>Moved in {moveInDate}</span>
-                    </div>
+                    <p className="text-sm font-medium truncate">{email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Tenant since{' '}
+                      {tenant.move_in_date
+                        ? new Date(tenant.move_in_date).toLocaleDateString()
+                        : 'Unknown'}
+                    </p>
                   </div>
+
+                  <Badge variant="outline" className="text-xs">
+                    Roommate
+                  </Badge>
                 </div>
               )
             })}
           </div>
         )}
+
+        <div className="text-xs text-muted-foreground border-t pt-3 mt-4">
+          All housemates share the same lease and have access to household messaging.
+        </div>
       </CardContent>
     </Card>
   )

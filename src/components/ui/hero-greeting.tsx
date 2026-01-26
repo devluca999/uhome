@@ -28,7 +28,7 @@ export function HeroGreeting({ name, className }: HeroGreetingProps) {
       <h1 className="text-4xl font-semibold text-foreground mb-2">
         {timeOfDay()}, {name}
       </h1>
-      <p className="text-muted-foreground">Welcome back</p>
+      <p className="text-muted-foreground">Welcome back, {name}</p>
     </motion.div>
   )
 }

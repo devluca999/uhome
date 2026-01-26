@@ -17,6 +17,7 @@ interface LeaseThreadProps {
   emptyStateDescription?: string
   className?: string
   leaseStatus?: 'draft' | 'active' | 'ended'
+  messageType?: 'landlord_tenant' | 'household'
 }
 
 export function LeaseThread({
@@ -28,8 +29,9 @@ export function LeaseThread({
   emptyStateDescription = 'Start the conversation.',
   className,
   leaseStatus,
+  messageType,
 }: LeaseThreadProps) {
-  const { messages, loading, sendMessage, refetch } = useLeaseMessages(leaseId)
+  const { messages, loading, sendMessage, refetch } = useLeaseMessages(leaseId, messageType)
   const { user } = useAuth()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -43,7 +45,7 @@ export function LeaseThread({
     intent: 'general' | 'maintenance' | 'billing' | 'notice',
     status?: 'open' | 'acknowledged' | 'resolved' | null
   ) {
-    const result = await sendMessage(body, intent, status)
+    const result = await sendMessage(body, intent, status, messageType)
     if (!result.error) {
       refetch()
     }

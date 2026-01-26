@@ -11,7 +11,65 @@ type MessageUpdate = Database['public']['Tables']['messages']['Update']
 export type MessageIntent = 'general' | 'maintenance' | 'billing' | 'notice'
 export type MessageStatus = 'open' | 'acknowledged' | 'resolved' | null
 
-export function useLeaseMessages(leaseId: string) {
+// Hook to resolve active lease for current user
+export function useActiveLease() {
+  const [lease, setLease] = useState<Database['public']['Tables']['leases']['Row'] | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const { user, role } = useAuth()
+
+  useEffect(() => {
+    if (!user || role !== 'tenant') {
+      setLease(null)
+      setLoading(false)
+      return
+    }
+
+    async function fetchActiveLease() {
+      try {
+        setLoading(true)
+
+        // Get tenant record
+        const { data: tenant, error: tenantError } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('user_id', user.id)
+          .single()
+
+        if (tenantError || !tenant) {
+          setLease(null)
+          setLoading(false)
+          return
+        }
+
+        // Get active lease for this tenant
+        const { data: activeLease, error: leaseError } = await supabase
+          .from('leases')
+          .select('*')
+          .eq('tenant_id', tenant.id)
+          .or('status.eq.active,status.eq.draft')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (leaseError) throw leaseError
+
+        setLease(activeLease)
+      } catch (err) {
+        setError(err as Error)
+        console.error('Error fetching active lease:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchActiveLease()
+  }, [user, role])
+
+  return { lease, loading, error }
+}
+
+export function useLeaseMessages(leaseId: string, messageType?: 'landlord_tenant' | 'household') {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -29,18 +87,43 @@ export function useLeaseMessages(leaseId: string) {
 
     try {
       setLoading(true)
-      const { data, error: fetchError } = await supabase
+
+      // Build query with message type filter
+      let query = supabase
         .from('messages')
         .select('*')
         .eq('lease_id', leaseId)
         .is('soft_deleted_at', null) // Only fetch non-deleted messages
-        .order('created_at', { ascending: true })
+
+      // Apply message type filter if specified
+      if (messageType) {
+        query = query.eq('message_type', messageType)
+      }
+
+      const { data, error: fetchError } = await query.order('created_at', { ascending: true })
 
       if (fetchError) throw fetchError
 
+      const filteredMessages = data || []
+
+      // Dev-mode validation: ensure messages match requested type
+      if (process.env.NODE_ENV === 'development' && messageType && filteredMessages.length > 0) {
+        const mismatchedMessages = filteredMessages.filter(msg => msg.message_type !== messageType)
+        if (mismatchedMessages.length > 0) {
+          console.warn('[useLeaseMessages] Message type mismatch detected:', {
+            requestedType: messageType,
+            mismatchedCount: mismatchedMessages.length,
+            leaseId,
+            sampleMismatched: mismatchedMessages
+              .slice(0, 2)
+              .map(m => ({ id: m.id, type: m.message_type })),
+          })
+        }
+      }
+
       // Fetch sender information for non-system messages
       const messagesWithSenders = await Promise.all(
-        (data || []).map(async msg => {
+        filteredMessages.map(async msg => {
           if (msg.sender_id) {
             const { data: userData } = await supabase
               .from('users')
@@ -71,7 +154,12 @@ export function useLeaseMessages(leaseId: string) {
     filter: leaseId ? { lease_id: leaseId } : undefined,
     events: ['INSERT', 'UPDATE'],
     onInsert: async payload => {
-      if (payload.new && payload.new.lease_id === leaseId && !payload.new.soft_deleted_at) {
+      if (
+        payload.new &&
+        payload.new.lease_id === leaseId &&
+        !payload.new.soft_deleted_at &&
+        (!messageType || payload.new.message_type === messageType)
+      ) {
         // Fetch sender information for new message
         let messageWithSender = payload.new as Message
         if (payload.new.sender_id) {
@@ -99,7 +187,11 @@ export function useLeaseMessages(leaseId: string) {
       }
     },
     onUpdate: payload => {
-      if (payload.new && payload.new.lease_id === leaseId) {
+      if (
+        payload.new &&
+        payload.new.lease_id === leaseId &&
+        (!messageType || payload.new.message_type === messageType)
+      ) {
         setMessages(prev => prev.map(m => (m.id === payload.new.id ? (payload.new as Message) : m)))
       }
     },
@@ -108,7 +200,8 @@ export function useLeaseMessages(leaseId: string) {
   async function sendMessage(
     body: string,
     intent: MessageIntent = 'general',
-    status?: MessageStatus
+    status?: MessageStatus,
+    messageType?: 'landlord_tenant' | 'household'
   ) {
     if (!user || !role || !leaseId) {
       throw new Error('User must be authenticated to send messages')
@@ -140,6 +233,25 @@ export function useLeaseMessages(leaseId: string) {
         }
       }
 
+      const finalMessageType = messageType || 'landlord_tenant' // Default to landlord_tenant for backward compatibility
+
+      // Dev-mode validation: ensure role and message type are compatible
+      if (process.env.NODE_ENV === 'development') {
+        if (role === 'tenant' && finalMessageType === 'landlord_tenant') {
+          // Valid: tenant sending to landlord
+        } else if (role === 'tenant' && finalMessageType === 'household') {
+          // Valid: tenant sending household message
+        } else if (role === 'landlord' && finalMessageType === 'landlord_tenant') {
+          // Valid: landlord sending to tenant
+        } else {
+          console.warn('[useLeaseMessages] Invalid message type for role:', {
+            role,
+            messageType: finalMessageType,
+            leaseId,
+          })
+        }
+      }
+
       const messageData: MessageInsert = {
         lease_id: leaseId,
         sender_id: user.id,
@@ -147,6 +259,7 @@ export function useLeaseMessages(leaseId: string) {
         body,
         intent,
         status: status || null,
+        message_type: finalMessageType,
       }
 
       const { data: newMessage, error: insertError } = await supabase

@@ -1,115 +1,60 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { User, Mail, MessageSquare } from 'lucide-react'
-import { GrainOverlay } from '@/components/ui/grain-overlay'
-import { MatteLayer } from '@/components/ui/matte-layer'
-import { supabase } from '@/lib/supabase/client'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { User, MessageSquare } from 'lucide-react'
+import type { Database } from '@/types/database'
 
-interface LandlordContactCardProps {
-  propertyId: string
-  leaseId?: string
+type Lease = Database['public']['Tables']['leases']['Row'] & {
+  property?: Database['public']['Tables']['properties']['Row']
+  unit?: Database['public']['Tables']['units']['Row']
 }
 
-export function LandlordContactCard({ propertyId, leaseId }: LandlordContactCardProps) {
-  const [landlordEmail, setLandlordEmail] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+interface LandlordContactCardProps {
+  lease: Lease
+}
 
-  useEffect(() => {
-    async function fetchLandlordContact() {
-      try {
-        setLoading(true)
-        // Get property owner
-        const { data: property, error: propertyError } = await supabase
-          .from('properties')
-          .select('owner_id')
-          .eq('id', propertyId)
-          .single()
+export function LandlordContactCard({ lease }: LandlordContactCardProps) {
+  const navigate = useNavigate()
+  const property = lease.property
 
-        if (propertyError) throw propertyError
-
-        // Get landlord user email
-        const { data: landlordUser, error: userError } = await supabase
-          .from('users')
-          .select('email')
-          .eq('id', property.owner_id)
-          .maybeSingle()
-
-        // Handle RLS restrictions gracefully
-        if (userError || !landlordUser) {
-          console.warn('Unable to fetch landlord contact info (RLS restriction)')
-          setLandlordEmail(null)
-          return
-        }
-
-        setLandlordEmail(landlordUser.email)
-      } catch (error) {
-        console.error('Error fetching landlord contact:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (propertyId) {
-      fetchLandlordContact()
-    }
-  }, [propertyId])
-
-  if (loading) {
-    return (
-      <Card className="glass-card relative overflow-hidden">
-        <GrainOverlay />
-        <MatteLayer intensity="subtle" />
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Landlord Contact
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </CardContent>
-      </Card>
-    )
+  // For now, we don't have landlord contact info directly accessible
+  // This would need to be added to the property or user relationships
+  const landlordContact = {
+    name: property?.owner_name || 'Property Owner',
+    email: 'Contact through messages', // Placeholder until we add landlord contact fields
   }
 
   return (
-    <Card className="glass-card relative overflow-hidden">
-      <GrainOverlay />
-      <MatteLayer intensity="subtle" />
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <User className="w-5 h-5" />
+          <User className="h-5 w-5" />
           Landlord Contact
         </CardTitle>
-        <CardDescription>Your property manager</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {landlordEmail ? (
-          <>
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-muted-foreground" />
-              <a
-                href={`mailto:${landlordEmail}`}
-                className="text-foreground hover:text-primary transition-colors"
-              >
-                {landlordEmail}
-              </a>
-            </div>
+        <div>
+          <h3 className="font-semibold">{landlordContact.name}</h3>
+          <p className="text-sm text-muted-foreground">{landlordContact.email}</p>
+        </div>
 
-            {leaseId && (
-              <Button asChild className="w-full">
-                <Link to={`/tenant/messages/${leaseId}`}>
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Send Message
-                </Link>
-              </Button>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">Contact information unavailable</p>
-        )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/tenant/messages')}
+            className="flex items-center gap-2"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Send Message
+          </Button>
+        </div>
+
+        <div className="text-xs text-muted-foreground border-t pt-2">
+          For urgent maintenance issues, please use the Messages tab above with the "maintenance"
+          intent.
+        </div>
       </CardContent>
     </Card>
   )

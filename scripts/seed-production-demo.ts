@@ -306,48 +306,54 @@ async function seedProductionDemoData() {
     await cleanupDemoData(demoLandlordId)
 
     // ========================================================================
-    // Step 2: Create Properties (3-5 properties)
+    // Step 2: Create Properties, Units, and Leases (Property → Unit → Lease hierarchy)
     // ========================================================================
-    const properties = [
+    const propertyTemplates = [
       {
-        owner_id: demoLandlordId,
-        name: 'Oak Street Apartments - Unit 2A',
+        name: 'Oak Street Apartments',
         address: '123 Oak Street, San Francisco, CA 94102',
-        rent_amount: 1450,
-        rent_due_date: 1,
         rules: 'No smoking. Quiet hours after 10 PM. Pets allowed with deposit.',
+        units: [
+          { unit_name: '2A', rent_amount: 1450, rent_due_date: 1 },
+          { unit_name: '2B', rent_amount: 1500, rent_due_date: 1 },
+          { unit_name: '3A', rent_amount: 1550, rent_due_date: 1 },
+        ]
       },
       {
-        owner_id: demoLandlordId,
-        name: 'Pine Avenue Complex - Unit 5B',
-        address: '456 Pine Avenue, Apt 5B, San Francisco, CA 94103',
-        rent_amount: 2800,
-        rent_due_date: 5,
+        name: 'Pine Avenue Complex',
+        address: '456 Pine Avenue, San Francisco, CA 94103',
         rules: 'No pets. Street parking available. Building has laundry facilities.',
+        units: [
+          { unit_name: '5B', rent_amount: 2800, rent_due_date: 5 },
+          { unit_name: '5C', rent_amount: 2750, rent_due_date: 5 },
+        ]
       },
       {
-        owner_id: demoLandlordId,
         name: 'Elm Drive House',
-        address: '789 Elm Drive, Unit 5, San Francisco, CA 94104',
-        rent_amount: 1850,
-        rent_due_date: 15,
+        address: '789 Elm Drive, San Francisco, CA 94104',
         rules: 'Garden access. Bicycle storage available. Tenant responsible for utilities.',
+        units: [
+          { unit_name: 'Main', rent_amount: 1850, rent_due_date: 15 },
+        ]
       },
       {
-        owner_id: demoLandlordId,
-        name: 'Maple Heights - Unit 3C',
-        address: '321 Maple Heights, Unit 3C, San Francisco, CA 94105',
-        rent_amount: 3200,
-        rent_due_date: 1,
+        name: 'Maple Heights',
+        address: '321 Maple Heights, San Francisco, CA 94105',
         rules: 'Pet-friendly. Covered parking. Modern amenities.',
+        units: [
+          { unit_name: '3C', rent_amount: 3200, rent_due_date: 1 },
+          { unit_name: '3D', rent_amount: 3100, rent_due_date: 1 },
+          { unit_name: '4A', rent_amount: 3300, rent_due_date: 1 },
+        ]
       },
       {
-        owner_id: demoLandlordId,
-        name: 'Cedar Lane Studio',
-        address: '654 Cedar Lane, Studio 12, San Francisco, CA 94106',
-        rent_amount: 2100,
-        rent_due_date: 10,
+        name: 'Cedar Lane Studios',
+        address: '654 Cedar Lane, San Francisco, CA 94106',
         rules: 'Utilities included. No pets. Quiet building.',
+        units: [
+          { unit_name: 'Studio 12', rent_amount: 2100, rent_due_date: 10 },
+          { unit_name: 'Studio 15', rent_amount: 2050, rent_due_date: 10 },
+        ]
       },
     ]
 
@@ -355,30 +361,79 @@ async function seedProductionDemoData() {
     let createdProperties: Array<{
       id: string
       name: string
-      rent_amount: number
-      rent_due_date: number | null
+      address: string
+      rules: string
+      units: Array<{
+        id: string
+        unit_name: string
+        rent_amount: number
+        rent_due_date: number
+      }>
     }> = []
+
+    const propertyNames = propertyTemplates.map(p => p.name)
     const { data: existingProps } = await supabase
       .from('properties')
-      .select('id, name, rent_amount, rent_due_date')
+      .select('id, name, address, rules')
       .eq('owner_id', demoLandlordId)
-      .in(
-        'name',
-        properties.map(p => p.name)
-      )
+      .in('name', propertyNames)
 
     if (existingProps && existingProps.length > 0) {
-      console.log(`✅ Found ${existingProps.length} existing properties, using them`)
-      createdProperties = existingProps
-    } else {
-      const { data: insertedProps, error: propError } = await supabase
-        .from('properties')
-        .insert(properties)
-        .select('id, name, rent_amount, rent_due_date')
+      console.log(`✅ Found ${existingProps.length} existing properties, using them with units`)
 
-      if (propError) throw propError
-      createdProperties = insertedProps || []
-      console.log(`✅ Created ${createdProperties.length} properties`)
+      // Load existing units for these properties
+      for (const property of existingProps) {
+        const { data: existingUnits } = await supabase
+          .from('units')
+          .select('id, unit_name, rent_amount, rent_due_date')
+          .eq('property_id', property.id)
+
+        createdProperties.push({
+          ...property,
+          units: existingUnits || []
+        })
+      }
+    } else {
+      // Create new properties and units
+      for (const propertyTemplate of propertyTemplates) {
+        // Create property (keeping rent_amount for now until properties table is migrated)
+        const { data: property, error: propError } = await supabase
+          .from('properties')
+          .insert({
+            owner_id: demoLandlordId,
+            name: propertyTemplate.name,
+            address: propertyTemplate.address,
+            rules: propertyTemplate.rules,
+            rent_amount: 0, // Default value, rent_amount now comes from units
+            rent_due_date: 1, // Default value
+          })
+          .select('id, name, address, rules')
+          .single()
+
+        if (propError) throw propError
+
+        // Create units for this property
+        const unitsToCreate = propertyTemplate.units.map(unit => ({
+          property_id: property.id,
+          unit_name: unit.unit_name,
+          rent_amount: unit.rent_amount,
+          rent_due_date: unit.rent_due_date,
+        }))
+
+        const { data: createdUnits, error: unitError } = await supabase
+          .from('units')
+          .insert(unitsToCreate)
+          .select('id, unit_name, rent_amount, rent_due_date')
+
+        if (unitError) throw unitError
+
+        createdProperties.push({
+          ...property,
+          units: createdUnits || []
+        })
+
+        console.log(`✅ Created property "${property.name}" with ${createdUnits?.length || 0} units`)
+      }
     }
 
     if (createdProperties.length === 0) {
@@ -502,14 +557,30 @@ async function seedProductionDemoData() {
 
     const tenantCreationErrors: Array<{ email: string; error: string }> = []
 
+    // Get all units from all properties
+    const allUnits = createdProperties.flatMap(p => p.units)
+
+    // Create roommates: some units will have multiple tenants
+    const unitsForRoommates = allUnits.filter(unit => unit.unit_name.includes('A') || unit.unit_name.includes('Main'))
+
     for (let i = 0; i < tenantEmails.length; i++) {
       const email = tenantEmails[i]
-      const propertyIndex = (i + 1) % propertyIds.length // Distribute across properties
-      const propertyId = propertyIds[propertyIndex]
+
+      // For some tenants, create roommates in the same unit
+      let selectedUnit
+      if (i < 3 && unitsForRoommates.length > 0) {
+        // First 3 tenants go to units that will have roommates
+        selectedUnit = unitsForRoommates[i % unitsForRoommates.length]
+      } else {
+        // Others get their own units
+        selectedUnit = allUnits[i % allUnits.length]
+      }
+
+      const property = createdProperties.find(p => p.units.some(u => u.id === selectedUnit.id))
 
       try {
         console.log(
-          `   📧 Creating tenant ${i + 1}/${additionalTenantsNeeded}: ${email} for property ${propertyIndex + 1}`
+          `   👤 Creating tenant ${i + 1}/${additionalTenantsNeeded}: ${email} for unit ${selectedUnit.unit_name} in ${property?.name}`
         )
 
         // Check if user exists
@@ -531,16 +602,65 @@ async function seedProductionDemoData() {
 
         tenantUserIds.push(userId)
 
-        // Create invite and accept for this tenant
-        console.log(`      📨 Creating invite for property ${propertyId}...`)
-        const { inviteId } = await createInviteProgrammatically(propertyId, email, demoLandlordId)
-        console.log(`      ✅ Invite created (ID: ${inviteId})`)
+        // Create tenant record directly (simplified for seeding)
+        const { data: tenant, error: tenantError } = await supabase
+          .from('tenants')
+          .insert({
+            user_id: userId,
+            lease_id: null, // Will be set when lease is created/updated
+            move_in_date: new Date().toISOString().split('T')[0],
+          })
+          .select('id')
+          .single()
 
-        console.log(`      🔑 Accepting invite and activating lease...`)
-        const { tenantId, leaseId } = await acceptInviteProgrammatically(inviteId, userId, email)
-        console.log(`      ✅ Lease activated (Tenant ID: ${tenantId}, Lease ID: ${leaseId})`)
+        if (tenantError) throw tenantError
+        const tenantId = tenant.id
 
-        tenantLeases.push({ tenantId, leaseId, propertyId })
+        // Check if unit already has a lease
+        const { data: existingLease } = await supabase
+          .from('leases')
+          .select('id, tenant_id')
+          .eq('unit_id', selectedUnit.id)
+          .eq('status', 'active')
+          .maybeSingle()
+
+        let leaseId: string
+
+        if (existingLease) {
+          // Add this tenant to existing lease (roommates)
+          leaseId = existingLease.id
+          console.log(`      🏠 Adding roommate to existing lease`)
+        } else {
+          // Create new lease for this unit
+          const { data: lease, error: leaseError } = await supabase
+            .from('leases')
+            .insert({
+              unit_id: selectedUnit.id,
+              tenant_id: tenantId,
+              status: 'active',
+              lease_start_date: new Date().toISOString().split('T')[0],
+              lease_end_date: null, // Month-to-month
+              rent_amount: selectedUnit.rent_amount,
+              rent_frequency: 'monthly',
+              security_deposit: selectedUnit.rent_amount, // 1 month's rent
+            })
+            .select('id')
+            .single()
+
+          if (leaseError) throw leaseError
+          leaseId = lease.id
+          console.log(`      🏠 Created new lease for unit`)
+        }
+
+        // Update tenant with lease_id
+        await supabase
+          .from('tenants')
+          .update({ lease_id: leaseId })
+          .eq('id', tenantId)
+
+        console.log(`      ✅ Tenant created (ID: ${tenantId}, Lease ID: ${leaseId})`)
+
+        tenantLeases.push({ tenantId, leaseId, propertyId: selectedUnit.property_id })
 
         if ((i + 1) % 3 === 0 || i === tenantEmails.length - 1) {
           console.log(
@@ -984,23 +1104,33 @@ async function seedProductionDemoData() {
       body: string
       intent: string
       status: 'open' | 'acknowledged' | 'resolved' | null
+      message_type: 'landlord_tenant' | 'household'
     }> = []
 
     // Create message threads for each lease (back-and-forth conversations)
     const leasesForMessages = tenantLeases.slice(0, Math.min(tenantLeases.length, 8))
     for (let leaseIdx = 0; leaseIdx < leasesForMessages.length; leaseIdx++) {
       const { tenantId, leaseId } = leasesForMessages[leaseIdx]
+
+      // Get all tenant user IDs for this lease (including roommates)
+      const leaseTenants = await supabase
+        .from('tenants')
+        .select('user_id')
+        .eq('lease_id', leaseId)
+
+      const leaseTenantUserIds = (leaseTenants.data || []).map(t => t.user_id).filter(Boolean)
+
       // Get tenant user ID for this lease (find matching index in full tenantLeases array)
       const fullLeaseIdx = tenantLeases.findIndex(
         l => l.leaseId === leaseId && l.tenantId === tenantId
       )
-      const tenantUserId =
+      const primaryTenantUserId =
         fullLeaseIdx >= 0 && fullLeaseIdx < tenantUserIds.length
           ? tenantUserIds[fullLeaseIdx]
           : demoTenantUserId
 
-      // Create 5-8 messages per lease (back-and-forth)
-      const messagesPerLease = Math.floor(Math.random() * 4) + 5
+      // Create landlord-tenant messages (5-8 messages per lease)
+      const landlordMessagesPerLease = Math.floor(Math.random() * 4) + 5
       const intent = messageIntents[Math.floor(Math.random() * messageIntents.length)]
 
       const sampleMessages: Record<string, string[]> = {
@@ -1028,14 +1158,13 @@ async function seedProductionDemoData() {
 
       const messagePool = sampleMessages[intent] || sampleMessages['general']
 
-      for (let i = 0; i < messagesPerLease; i++) {
+      // Landlord-tenant messages
+      for (let i = 0; i < landlordMessagesPerLease; i++) {
         const isTenantMessage = i % 2 === 0
-        const senderId = isTenantMessage ? tenantUserId : demoLandlordId
+        const senderId = isTenantMessage ? primaryTenantUserId : demoLandlordId
         const senderRole = isTenantMessage ? 'tenant' : 'landlord'
 
         const messageText = messagePool[i % messagePool.length] || 'Message'
-
-        // Create timestamp spread over last 30 days
 
         messages.push({
           lease_id: leaseId,
@@ -1043,8 +1172,41 @@ async function seedProductionDemoData() {
           sender_role: senderRole,
           body: messageText,
           intent,
-          status: i === messagesPerLease - 1 && !isTenantMessage ? 'acknowledged' : null,
+          status: i === landlordMessagesPerLease - 1 && !isTenantMessage ? 'acknowledged' : null,
+          message_type: 'landlord_tenant',
         })
+      }
+
+      // Create household messages if there are multiple tenants on this lease
+      if (leaseTenantUserIds.length > 1) {
+        const householdMessagesPerLease = Math.floor(Math.random() * 3) + 2 // 2-4 household messages
+
+        const householdSampleMessages = [
+          'Hey, the kitchen light bulb needs replacing.',
+          'I replaced it, no problem!',
+          'Thanks for taking care of that.',
+          'When is trash day this week?',
+          'Thursday, same as usual.',
+          'Got it, thanks!',
+          'The WiFi password is written on the router.',
+          'Perfect, thanks for the reminder.',
+        ]
+
+        for (let i = 0; i < householdMessagesPerLease; i++) {
+          const senderIdx = i % leaseTenantUserIds.length
+          const senderId = leaseTenantUserIds[senderIdx]
+          const messageText = householdSampleMessages[i % householdSampleMessages.length]
+
+          messages.push({
+            lease_id: leaseId,
+            sender_id: senderId,
+            sender_role: 'tenant',
+            body: messageText,
+            intent: 'general',
+            status: null,
+            message_type: 'household',
+          })
+        }
       }
     }
 

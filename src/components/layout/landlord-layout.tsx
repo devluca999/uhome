@@ -30,6 +30,9 @@ export function LandlordLayout() {
   const [isMobile, setIsMobile] = useState(false)
   const prefersReducedMotion = useReducedMotion()
 
+  const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
+  const { user, signOut } = authContext || {}
+
   // Reset scroll on route changes
   useScrollReset()
 
@@ -143,7 +146,7 @@ export function LandlordLayout() {
         </div>
       </nav>
       <main
-        className="overscroll-contain"
+        className="overscroll-contain pt-16"
         style={{
           overscrollBehavior: 'contain',
           WebkitOverflowScrolling: 'touch',

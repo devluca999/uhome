@@ -1,98 +1,71 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Home, MapPin, Calendar, DollarSign } from 'lucide-react'
-import { GrainOverlay } from '@/components/ui/grain-overlay'
-import { MatteLayer } from '@/components/ui/matte-layer'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { MapPin, Calendar, DollarSign } from 'lucide-react'
+import type { Database } from '@/types/database'
 
-interface PropertyDetailsCardProps {
-  property: {
-    id: string
-    name: string
-    address?: string | null
-    rules?: string | null
-    rent_amount?: number
-    rent_due_date?: number | null
-    rules_visible_to_tenants?: boolean
-  }
-  lease?: {
-    rent_amount: number
-    rent_frequency: 'monthly' | 'weekly' | 'biweekly' | 'yearly'
-  }
+type Lease = Database['public']['Tables']['leases']['Row'] & {
+  property?: Database['public']['Tables']['properties']['Row']
+  unit?: Database['public']['Tables']['units']['Row']
 }
 
-export function PropertyDetailsCard({ property, lease }: PropertyDetailsCardProps) {
-  const rentAmount = lease?.rent_amount || property.rent_amount || 0
-  const rentFrequency = lease?.rent_frequency || 'monthly'
-  const rentDueDate = property.rent_due_date
+interface PropertyDetailsCardProps {
+  lease: Lease
+}
 
-  const frequencyLabel: Record<string, string> = {
-    monthly: 'month',
-    weekly: 'week',
-    biweekly: 'bi-weekly',
-    yearly: 'year',
-  }
+export function PropertyDetailsCard({ lease }: PropertyDetailsCardProps) {
+  const property = lease.property
+  const unit = lease.unit
 
   return (
-    <Card className="glass-card relative overflow-hidden">
-      <GrainOverlay />
-      <MatteLayer intensity="subtle" />
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Home className="w-5 h-5" />
+          <MapPin className="h-5 w-5" />
           Property Details
         </CardTitle>
-        <CardDescription>Information about your home</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Property Name */}
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Property Name</h3>
-          <p className="text-foreground font-semibold">{property.name}</p>
-        </div>
-
-        {/* Address */}
-        {property.address && (
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Address</h3>
-              <p className="text-foreground">{property.address}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Rent Information */}
-        <div className="flex items-start gap-2">
-          <DollarSign className="w-4 h-4 text-muted-foreground mt-0.5" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Rent</h3>
-            <p className="text-foreground">
-              ${rentAmount.toLocaleString()} / {frequencyLabel[rentFrequency]}
-            </p>
-            {rentDueDate && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Due on the {rentDueDate}
-                {rentDueDate === 1 || rentDueDate === 21 || rentDueDate === 31
-                  ? 'st'
-                  : rentDueDate === 2 || rentDueDate === 22
-                    ? 'nd'
-                    : rentDueDate === 3 || rentDueDate === 23
-                      ? 'rd'
-                      : 'th'}{' '}
-                of each month
-              </p>
-            )}
+            <h3 className="font-semibold text-lg">{property?.name || 'Property Name'}</h3>
+            <p className="text-muted-foreground">{property?.address || 'Address not available'}</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Unit:</span>
+              <Badge variant="outline">{unit?.unit_name || 'Unit Name'}</Badge>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                Lease:{' '}
+                {lease.lease_start_date
+                  ? new Date(lease.lease_start_date).toLocaleDateString()
+                  : 'Start date not set'}
+                {lease.lease_end_date &&
+                  ` - ${new Date(lease.lease_end_date).toLocaleDateString()}`}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                ${lease.rent_amount || 0} / {lease.rent_frequency || 'month'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Rules / Policies */}
-        {property.rules && property.rules_visible_to_tenants !== false && (
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">House Rules</h3>
-            <div className="bg-muted/50 rounded-md p-3 border border-border">
-              <p className="text-sm text-foreground whitespace-pre-wrap">{property.rules}</p>
-            </div>
-          </div>
-        )}
+        {/* House Rules section */}
+        <div className="border-t pt-4">
+          <h4 className="font-semibold mb-2">House Rules</h4>
+          <p className="text-sm text-muted-foreground">
+            House rules and property guidelines will be displayed here once configured by your
+            landlord.
+          </p>
+        </div>
       </CardContent>
     </Card>
   )

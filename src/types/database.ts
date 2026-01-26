@@ -332,6 +332,7 @@ export type Database = {
         Row: {
           id: string
           property_id: string
+          unit_id: string
           tenant_id: string | null
           status: 'draft' | 'active' | 'ended'
           lease_start_date: string | null
@@ -342,10 +343,12 @@ export type Database = {
           security_deposit: number | null
           created_at: string
           updated_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           property_id: string
+          unit_id: string
           tenant_id?: string | null
           status?: 'draft' | 'active' | 'ended'
           lease_start_date?: string | null
@@ -360,6 +363,7 @@ export type Database = {
         Update: {
           id?: string
           property_id?: string
+          unit_id?: string
           tenant_id?: string | null
           status?: 'draft' | 'active' | 'ended'
           lease_start_date?: string | null
@@ -381,6 +385,7 @@ export type Database = {
           body: string
           intent: 'general' | 'maintenance' | 'billing' | 'notice'
           status: 'open' | 'acknowledged' | 'resolved' | null
+          message_type: 'landlord_tenant' | 'household'
           created_at: string
           soft_deleted_at: string | null
         }
@@ -392,6 +397,7 @@ export type Database = {
           body: string
           intent?: 'general' | 'maintenance' | 'billing' | 'notice'
           status?: 'open' | 'acknowledged' | 'resolved' | null
+          message_type?: 'landlord_tenant' | 'household'
           created_at?: string
           soft_deleted_at?: string | null
         }
@@ -403,6 +409,7 @@ export type Database = {
           body?: string
           intent?: 'general' | 'maintenance' | 'billing' | 'notice'
           status?: 'open' | 'acknowledged' | 'resolved' | null
+          message_type?: 'landlord_tenant' | 'household'
           created_at?: string
           soft_deleted_at?: string | null
         }
