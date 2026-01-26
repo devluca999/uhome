@@ -462,7 +462,7 @@ export function LandlordFinances() {
   // Calculate KPI change subtexts
   const kpiChanges = useMemo(() => {
     // Simple change calculation (can be enhanced with historical data)
-    const collectedChange = records.length > 0 ? 'â†‘ new tenant added' : undefined
+    const collectedChange = recordsForKPIs.length > 0 ? 'â†‘ new tenant added' : undefined
     const expensesChange = filteredExpenses.length > 0 ? 'â†‘ expense recorded' : undefined
     const netChange =
       metrics.netProfit > 0
@@ -640,8 +640,8 @@ export function LandlordFinances() {
       status?: string
     }> = []
 
-    // Add rent records
-    records.forEach(record => {
+    // Add rent records (use filtered records for ledger - respects dateRange filter)
+    recordsForKPIs.forEach(record => {
       ledgerRows.push({
         date: record.due_date,
         type: 'rent',
@@ -666,7 +666,7 @@ export function LandlordFinances() {
 
     // Sort by date
     return ledgerRows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [records, filteredExpenses, properties])
+  }, [recordsForKPIs, filteredExpenses, properties])
 
   const handleExportCSV = () => {
     exportLedgerToCSV(
@@ -839,7 +839,7 @@ export function LandlordFinances() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardDescription>
-                    {records.length} rent record{records.length !== 1 ? 's' : ''}
+                    {recordsForKPIs.length} rent record{recordsForKPIs.length !== 1 ? 's' : ''}
                     {selectedCategory && ` â€¢ Filtered by ${selectedCategory}`}
                   </CardDescription>
                 </div>
@@ -865,7 +865,7 @@ export function LandlordFinances() {
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
-              ) : records.length === 0 ? (
+              ) : recordsForKPIs.length === 0 ? (
                 <div className="p-6">
                   <EmptyState
                     icon={<FileText className="h-8 w-8" />}
@@ -876,7 +876,7 @@ export function LandlordFinances() {
               ) : (
                 <AnimatePresence initial={false}>
                   <div className="divide-y divide-border">
-                    {records.map(record => (
+                    {recordsForKPIs.map(record => (
                       <motion.div
                         key={`rent-${record.id}`}
                         initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
