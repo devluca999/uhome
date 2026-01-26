@@ -479,7 +479,7 @@ export function LandlordFinances() {
       netChange,
       projectedChange,
     }
-  }, [records, filteredExpenses, metrics])
+  }, [recordsForKPIs, filteredExpenses, metrics])
 
   // Prepare graph data
   const lineChartData = useMemo(() => {
@@ -755,7 +755,7 @@ export function LandlordFinances() {
         dateRange={dateRange}
         propertyId={selectedPropertyId || undefined}
         properties={properties}
-        rentRecords={records}
+        rentRecords={recordsForCharts}
         expenses={expensesWithFallback}
         tenants={tenants}
       />
@@ -812,7 +812,7 @@ export function LandlordFinances() {
                   month: item.month,
                   amount: item.net,
                 }))}
-                rentRecords={records}
+                rentRecords={recordsForCharts}
                 expenses={expensesWithFallback}
                 workOrders={workOrdersForTimeline}
                 dateGranularity={dateGranularity}
