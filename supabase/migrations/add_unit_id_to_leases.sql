@@ -203,6 +203,64 @@ CREATE POLICY "Landlords can delete leases for their units"
     )
   );
 
+-- Add lease_id to tenants table if it doesn't exist (tenants belong to leases)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'tenants' 
+    AND column_name = 'lease_id'
+  ) THEN
+    ALTER TABLE public.tenants ADD COLUMN lease_id UUID;
+    
+    -- Create index for performance
+    CREATE INDEX IF NOT EXISTS idx_tenants_lease_id ON public.tenants(lease_id);
+  END IF;
+END $$;
+
+-- Add foreign key constraint for tenants.lease_id if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'tenants_lease_id_fkey'
+  ) THEN
+    ALTER TABLE public.tenants 
+    ADD CONSTRAINT tenants_lease_id_fkey 
+    FOREIGN KEY (lease_id) REFERENCES public.leases(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+-- Migrate existing tenant-lease relationships
+-- For tenants that don't have lease_id, try to find their lease based on property_id
+DO $$
+DECLARE
+  tenant_record RECORD;
+  lease_id_val UUID;
+BEGIN
+  FOR tenant_record IN 
+    SELECT t.id, t.property_id, t.user_id 
+    FROM public.tenants t 
+    WHERE t.lease_id IS NULL AND t.property_id IS NOT NULL
+  LOOP
+    -- Try to find a lease for this tenant's property
+    SELECT l.id INTO lease_id_val
+    FROM public.leases l
+    JOIN public.units u ON u.id = l.unit_id
+    WHERE u.property_id = tenant_record.property_id
+    AND l.status = 'active'
+    LIMIT 1;
+    
+    -- If found, update tenant
+    IF lease_id_val IS NOT NULL THEN
+      UPDATE public.tenants
+      SET lease_id = lease_id_val
+      WHERE id = tenant_record.id;
+    END IF;
+  END LOOP;
+END $$;
+
 -- Update tenant policies to work through units
 DROP POLICY IF EXISTS "Tenants can view their leases" ON public.leases;
 DROP POLICY IF EXISTS "Tenants can update their lease status" ON public.leases;
