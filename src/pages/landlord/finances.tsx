@@ -322,9 +322,22 @@ export function LandlordFinances() {
     }
   }, [timePeriod])
 
-  const filter: RentRecordFilter = useMemo(() => {
+  // CRITICAL: For chart data, we need ALL historical records (no dateRange filter)
+  // DateRange filter is only applied to KPI calculations, not chart data
+  // This ensures charts show at least 6-12 months of data regardless of timePeriod selection
+  const chartFilter: RentRecordFilter = useMemo(() => {
     const filter: RentRecordFilter = {}
     // Only filter by property if a specific property is selected (not empty or 'all')
+    if (selectedPropertyId && selectedPropertyId !== 'all') {
+      filter.propertyId = selectedPropertyId
+    }
+    // NO dateRange filter for charts - we need all historical data
+    return filter
+  }, [selectedPropertyId])
+
+  // Filter for KPI calculations (includes dateRange)
+  const kpiFilter: RentRecordFilter = useMemo(() => {
+    const filter: RentRecordFilter = {}
     if (selectedPropertyId && selectedPropertyId !== 'all') {
       filter.propertyId = selectedPropertyId
     }
@@ -334,7 +347,11 @@ export function LandlordFinances() {
     return filter
   }, [selectedPropertyId, dateRange])
 
-  const { records: realRecords, loading, refetch } = useLandlordRentRecords(filter)
+  // Fetch ALL records for charts (no dateRange filter)
+  const { records: allRecords, loading, refetch } = useLandlordRentRecords(chartFilter)
+  
+  // Fetch filtered records for KPI calculations
+  const { records: filteredRecords } = useLandlordRentRecords(kpiFilter)
 
   // Map dateGranularity to graphTimeRange (derived from timePeriod)
   const graphTimeRange = useMemo(() => {
@@ -350,14 +367,23 @@ export function LandlordFinances() {
     }
   }, [dateGranularity])
 
+  // Use ALL records for charts (no dateRange filter) - ensures charts show full historical data
   // Use fallback data if no real data exists (for mock mode / power-user simulation)
   // IMPORTANT: Pass properties so fallback data uses real property IDs
-  const records = useMemo(() => {
-    if (realRecords.length === 0 && !loading) {
+  const recordsForCharts = useMemo(() => {
+    if (allRecords.length === 0 && !loading) {
       return generateFallbackRentRecords(properties)
     }
-    return realRecords
-  }, [realRecords, loading, properties])
+    return allRecords
+  }, [allRecords, loading, properties])
+
+  // Use filtered records for KPI calculations (with dateRange filter)
+  const recordsForKPIs = useMemo(() => {
+    if (filteredRecords.length === 0 && !loading) {
+      return generateFallbackRentRecords(properties)
+    }
+    return filteredRecords
+  }, [filteredRecords, loading, properties])
 
   // Use fallback expenses if no real expenses exist
   // IMPORTANT: Pass properties so fallback data uses real property IDs
@@ -373,14 +399,34 @@ export function LandlordFinances() {
     selectedPropertyId && selectedPropertyId !== 'all' ? selectedPropertyId : undefined
 
   // Use 12 months for better data visualization
-  const metrics = useFinancialMetrics(
-    records,
+  // CRITICAL: Use recordsForCharts (all historical data) for chart metrics
+  // This ensures charts show at least 6-12 months regardless of timePeriod selection
+  const chartMetrics = useFinancialMetrics(
+    recordsForCharts,
     expensesWithFallback,
     12,
     propertyFilter,
     graphTimeRange,
-    dateRange
+    undefined // No dateRange filter - charts need all historical data
   )
+
+  // Use filtered records for KPI calculations (respects dateRange filter)
+  const kpiMetrics = useFinancialMetrics(
+    recordsForKPIs,
+    expensesWithFallback,
+    12,
+    propertyFilter,
+    graphTimeRange,
+    dateRange // Apply dateRange filter for KPI calculations
+  )
+
+  // Combine: use chartMetrics for charts, kpiMetrics for KPIs
+  const metrics = useMemo(() => ({
+    ...kpiMetrics, // KPIs use filtered data
+    monthlyRentCollected: chartMetrics.monthlyRentCollected, // Charts use all historical data
+    monthlyExpenses: chartMetrics.monthlyExpenses, // Charts use all historical data
+    monthlyNet: chartMetrics.monthlyNet, // Charts use all historical data
+  }), [kpiMetrics, chartMetrics])
 
   // Calculate v1 canon KPIs using centralized calculations
   const activeProperties = useMemo(() => {
