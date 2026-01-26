@@ -315,11 +315,12 @@ async function createInviteProgrammatically(
     unitId = newUnit.id
   }
 
-  // Create draft lease
+  // Create draft lease (include property_id as it's still required)
   const { data: draftLease, error: leaseError } = await supabase
     .from('leases')
     .insert({
       unit_id: unitId,
+      property_id: propertyId, // Still required until migration removes it
       status: 'draft',
       lease_start_date: new Date().toISOString().split('T')[0],
       lease_end_date: null,
@@ -784,10 +785,14 @@ async function seedProductionDemoData() {
         tenantUserIds.push(userId)
 
         // Create tenant record directly (simplified for seeding)
+        if (!property) {
+          throw new Error(`Property not found for unit ${selectedUnit.id}`)
+        }
         const { data: tenant, error: tenantError } = await supabase
           .from('tenants')
           .insert({
             user_id: userId,
+            property_id: property.id,
             lease_id: null, // Will be set when lease is created/updated
             move_in_date: new Date().toISOString().split('T')[0],
           })
@@ -813,10 +818,14 @@ async function seedProductionDemoData() {
           console.log(`      🏠 Adding roommate to existing lease`)
         } else {
           // Create new lease for this unit
+          if (!property) {
+            throw new Error(`Property not found for unit ${selectedUnit.id}`)
+          }
           const { data: lease, error: leaseError } = await supabase
             .from('leases')
             .insert({
               unit_id: selectedUnit.id,
+              property_id: property.id, // Still required until migration removes it
               tenant_id: tenantId,
               status: 'active',
               lease_start_date: new Date().toISOString().split('T')[0],
