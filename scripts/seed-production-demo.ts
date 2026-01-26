@@ -906,12 +906,28 @@ async function seedProductionDemoData() {
     // Create rent records for each tenant-lease pair
     for (let tenantLeaseIdx = 0; tenantLeaseIdx < tenantLeases.length; tenantLeaseIdx++) {
       const { tenantId, leaseId, propertyId } = tenantLeases[tenantLeaseIdx]
-      // Get property to get rent amount
-      const property = createdProperties.find(p => p.id === propertyId)
-      if (!property) continue
+      
+      // Get lease to get rent amount (leases have rent_amount from their unit)
+      const { data: lease } = await supabase
+        .from('leases')
+        .select('rent_amount, unit_id')
+        .eq('id', leaseId)
+        .single()
 
-      const rentAmount = property.rent_amount
-      const dueDate = property.rent_due_date || 1
+      if (!lease) {
+        console.warn(`   ⚠️  Lease ${leaseId} not found, skipping rent records`)
+        continue
+      }
+
+      // Get unit to get rent_due_date
+      const { data: unit } = await supabase
+        .from('units')
+        .select('rent_due_date')
+        .eq('id', lease.unit_id)
+        .single()
+
+      const rentAmount = lease.rent_amount || 0
+      const dueDate = unit?.rent_due_date || 1
 
       // Create records for last 8 months (distributed)
       for (let monthOffset = 7; monthOffset >= 0; monthOffset--) {

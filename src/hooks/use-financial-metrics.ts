@@ -98,14 +98,34 @@ export function useFinancialMetrics(
     const marginPercentage =
       rentCollected > 0 ? ((rentCollected - totalExpenses) / rentCollected) * 100 : 0
 
-    // For monthly calculations, we still need to filter by property for chart data
-    const filteredRentRecords = propertyId
+    // For monthly calculations, filter by property and dateRange for chart data
+    let filteredRentRecords = propertyId
       ? rentRecords.filter(r => r.property_id === propertyId)
       : rentRecords
 
-    const filteredExpenses = propertyId
+    let filteredExpenses = propertyId
       ? expenses.filter(e => e.property_id === propertyId)
       : expenses
+
+    // Apply dateRange filter if provided
+    if (dateRangeFilter) {
+      const { start, end } = dateRangeFilter
+      const startStr = start.toISOString().split('T')[0]
+      const endStr = end.toISOString().split('T')[0]
+
+      filteredRentRecords = filteredRentRecords.filter(r => {
+        // For paid records, use paid_date; for others, use due_date
+        const dateStr = r.status === 'paid' && r.paid_date
+          ? r.paid_date.split('T')[0]
+          : r.due_date.split('T')[0]
+        return dateStr >= startStr && dateStr <= endStr
+      })
+
+      filteredExpenses = filteredExpenses.filter(e => {
+        const expenseDateStr = e.date.split('T')[0]
+        return expenseDateStr >= startStr && expenseDateStr <= endStr
+      })
+    }
 
     // Calculate monthly rent collected for chart (always calculate monthly first, then aggregate)
     const monthlyRentCollected: Array<{ month: string; amount: number; date: Date }> = []

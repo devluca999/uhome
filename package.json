@@ -15,6 +15,7 @@
     "seed:tenant-dev": "tsx scripts/seed-mock-data.ts --tenant-dev-mode",
     "seed:full-dev": "tsx scripts/seed-mock-data.ts --full-dev-mode",
     "seed:demo": "tsx scripts/seed-production-demo.ts",
+    "screenshot:marketing": "tsx scripts/screenshot-marketing-demo.ts",
     "test:e2e": "playwright test --headed",
     "test:e2e:headless": "playwright test",
     "test:e2e:ui": "playwright test --ui",

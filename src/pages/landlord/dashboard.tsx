@@ -45,7 +45,7 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { calculateOccupancyRate } from '@/lib/finance-calculations'
+import { calculateOccupancyRate, calculateRentCollected } from '@/lib/finance-calculations'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 export function LandlordDashboard() {
@@ -117,54 +117,11 @@ export function LandlordDashboard() {
   }, [tenants])
 
   // Calculate monthly revenue (collected rent in current month)
-  // Collected revenue uses paid_date (cash accounting)
-  // Use date string comparison (YYYY-MM-DD) to match test helper formatDate logic
+  // Use centralized calculation function for consistency with finances page
   const monthlyRevenue = useMemo(() => {
-    const monthStart = currentMonthRange.start
-    const monthEnd = currentMonthRange.end
-
-    // Format dates as YYYY-MM-DD for comparison (matches test helper formatDate)
-    const formatDateString = (date: Date) => date.toISOString().split('T')[0]
-    const monthStartStr = formatDateString(monthStart)
-    const monthEndStr = formatDateString(monthEnd)
-
-    if (import.meta.env.DEV) {
-      const matchingRecords = rentRecords.filter(r => {
-        if (r.status !== 'paid') return false
-        if (!r.paid_date) return false
-        const paidDateStr = r.paid_date.split('T')[0]
-        return paidDateStr >= monthStartStr && paidDateStr <= monthEndStr
-      })
-      console.debug('[Dashboard Revenue Debug]', {
-        totalRentRecords: rentRecords.length,
-        paidRecords: rentRecords.filter(r => r.status === 'paid').length,
-        paidWithDate: rentRecords.filter(r => r.status === 'paid' && r.paid_date).length,
-        monthRange: { monthStartStr, monthEndStr },
-        matchingRecordsCount: matchingRecords.length,
-        sampleAmounts: matchingRecords.slice(0, 3).map(r => ({
-          amount: r.amount,
-          typeof: typeof r.amount,
-          number: Number(r.amount),
-          late_fee: r.late_fee,
-        })),
-      })
-    }
-
-    // Collected revenue uses paid_date (cash accounting), not due_date
-    const revenue = rentRecords
-      .filter(r => {
-        if (r.status !== 'paid') return false
-        if (!r.paid_date) return false
-        const paidDateStr = r.paid_date.split('T')[0] // Get YYYY-MM-DD part
-        return paidDateStr >= monthStartStr && paidDateStr <= monthEndStr
-      })
-      .reduce((sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0), 0)
-
-    if (import.meta.env.DEV) {
-      console.debug('[Dashboard Revenue Result]', { revenue })
-    }
-
-    return revenue
+    return calculateRentCollected(rentRecords, {
+      dateRange: currentMonthRange,
+    })
   }, [rentRecords, currentMonthRange])
 
   // Calculate monthly expenses (expenses with date in current month)
