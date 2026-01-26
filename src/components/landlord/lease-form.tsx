@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
-import { useLeases } from '@/hooks/use-leases'
+import { useUnits } from '@/hooks/use-units'
+import { supabase } from '@/lib/supabase/client'
 import type { Database } from '@/types/database'
 
 type Lease = Database['public']['Tables']['leases']['Row']
@@ -30,7 +31,9 @@ export function LeaseForm({
   const { properties } = useProperties()
   const { tenants } = useTenants()
   const [propertyId, setPropertyId] = useState(lease?.property_id || initialPropertyId || '')
+  const { units } = useUnits(propertyId || undefined)
   const [tenantId, setTenantId] = useState(lease?.tenant_id || initialTenantId || '')
+  const [unitId] = useState(lease?.unit_id || '')
   const [leaseStartDate, setLeaseStartDate] = useState(lease?.lease_start_date || '')
   const [leaseEndDate, setLeaseEndDate] = useState(lease?.lease_end_date || '')
   const [leaseType, setLeaseType] = useState<Lease['lease_type']>(lease?.lease_type || 'long-term')
@@ -84,8 +87,41 @@ export function LeaseForm({
       return
     }
 
+    // Find or create a unit for this property if unit_id is not set
+    let finalUnitId = unitId
+    if (!finalUnitId && propertyId) {
+      // Try to find an existing unit
+      const propertyUnits = units.filter(u => u.property_id === propertyId)
+      if (propertyUnits.length > 0) {
+        finalUnitId = propertyUnits[0].id
+      } else {
+        // Create a default unit
+        const { data: newUnit, error: unitError } = await supabase
+          .from('units')
+          .insert({
+            property_id: propertyId,
+            unit_name: 'Unit 1',
+            rent_amount: rentAmountNum,
+          })
+          .select('id')
+          .single()
+
+        if (unitError || !newUnit) {
+          setError(`Failed to create unit: ${unitError?.message || 'Unknown error'}`)
+          return
+        }
+        finalUnitId = newUnit.id
+      }
+    }
+
+    if (!finalUnitId) {
+      setError('Unit is required')
+      return
+    }
+
     const result = await onSubmit({
-      property_id: propertyId,
+      property_id: propertyId, // Still required until migration removes it
+      unit_id: finalUnitId,
       tenant_id: tenantId,
       lease_start_date: leaseStartDate,
       lease_end_date: leaseEndDate || null,

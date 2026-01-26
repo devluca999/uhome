@@ -16,8 +16,8 @@ interface TaskReminderToastProps {
 export function TaskReminderToast({ task, onDismiss, onView, onComplete }: TaskReminderToastProps) {
   const { settings } = useSettings()
   const spring = createSpring('soft')
-  const hasDeadline = task.deadline !== null
-  const deadlineDate = hasDeadline ? new Date(task.deadline) : null
+  const hasDeadline = task.deadline !== null && task.deadline !== undefined
+  const deadlineDate = hasDeadline && task.deadline ? new Date(task.deadline) : null
   const isOverdue =
     hasDeadline && deadlineDate && deadlineDate < new Date() && task.status === 'pending'
 

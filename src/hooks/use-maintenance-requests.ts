@@ -309,7 +309,7 @@ export function useMaintenanceRequests(
     },
     onDelete: payload => {
       if (payload.old) {
-        setRequests(prev => prev.filter(r => r.id !== payload.old.id))
+        setRequests(prev => prev.filter(r => r.id !== (payload.old?.id ?? '')))
       }
     },
   })

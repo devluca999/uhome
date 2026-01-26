@@ -604,7 +604,9 @@ export function RentSummaryModal({
                                       ? `(${item.isActive ? 'Active' : 'Inactive'} - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
                                       : metricType === 'occupancy' && 'occupancyPercentage' in item
                                         ? `(${item.occupancyPercentage}% - ${item.tenantCount} tenant${item.tenantCount !== 1 ? 's' : ''})`
-                                        : `(${item.count} ${item.count === 1 ? 'transaction' : 'transactions'})`}
+                                        : 'count' in item
+                                          ? `(${item.count} ${item.count === 1 ? 'transaction' : 'transactions'})`
+                                          : ''}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3">
@@ -618,12 +620,14 @@ export function RentSummaryModal({
                                   {metricType === 'activeProperties' || metricType === 'occupancy'
                                     ? metricType === 'occupancy' && 'occupancyPercentage' in item
                                       ? `${item.occupancyPercentage}%`
-                                      : item.amount > 0
+                                      : 'amount' in item && item.amount > 0
                                         ? 'Active'
                                         : 'Inactive'
                                     : `$${(metricType === 'projected' && 'net' in item
                                         ? item.net
-                                        : item.amount
+                                        : 'amount' in item
+                                          ? item.amount
+                                          : 0
                                       ).toLocaleString(undefined, {
                                         minimumFractionDigits: 0,
                                         maximumFractionDigits: 0,

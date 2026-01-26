@@ -21,7 +21,7 @@ export function LandlordContactCard({ lease }: LandlordContactCardProps) {
   // For now, we don't have landlord contact info directly accessible
   // This would need to be added to the property or user relationships
   const landlordContact = {
-    name: property?.owner_name || 'Property Owner',
+    name: 'Property Owner', // owner_name doesn't exist on property type
     email: 'Contact through messages', // Placeholder until we add landlord contact fields
   }
 

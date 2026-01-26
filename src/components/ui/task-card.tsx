@@ -25,8 +25,8 @@ export function TaskCard({
 }: TaskCardProps) {
   const cardSpring = createSpring('card')
   const isCompleted = task.status === 'completed'
-  const hasDeadline = task.deadline !== null
-  const deadlineDate = hasDeadline ? new Date(task.deadline) : null
+  const hasDeadline = task.deadline !== null && task.deadline !== undefined
+  const deadlineDate = hasDeadline && task.deadline ? new Date(task.deadline) : null
   const isOverdue = hasDeadline && deadlineDate && deadlineDate < new Date() && !isCompleted
   const hasImages = task.image_urls && task.image_urls.length > 0
 

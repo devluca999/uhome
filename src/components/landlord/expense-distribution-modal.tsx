@@ -79,7 +79,7 @@ export function ExpenseDistributionModal({ isOpen, onClose }: ExpenseDistributio
           property: property?.name || 'Unknown',
           amount: Number(e.amount),
           category: e.category || 'other',
-          description: e.description,
+          description: e.name, // Use name field as description
         }
       })
 

@@ -69,19 +69,10 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
   const workOrders = useMemo(() => {
     const open = allRequests.filter(r => r.status !== 'closed' && r.status !== 'resolved')
 
-    // Sort by priority (high > medium > low) then by date (newest first)
-    return open
-      .sort((a, b) => {
-        const priorityOrder = { high: 0, medium: 1, low: 2 }
-        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 2
-        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 2
-
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority
-        }
-
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      })
+    // Sort by date (newest first) - priority field doesn't exist in current schema
+    return open.sort((a, b) => {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
       .slice(0, 10) // Show top 10
   }, [allRequests])
 
@@ -166,10 +157,8 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
                 ) : (
                   <>
                     {workOrders.map((order, index) => {
-                      const priority = order.priority || 'medium'
-                      const status = order.status || 'pending'
-                      const PriorityIcon =
-                        priorityConfig[priority as keyof typeof priorityConfig]?.icon || Clock
+                      const status = order.status || 'submitted'
+                      const PriorityIcon = Clock // Priority field doesn't exist in current schema
 
                       return (
                         <motion.div
@@ -239,7 +228,7 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
                             </div>
 
                             <p className="text-sm text-foreground mb-2 line-clamp-2">
-                              {order.description || order.issue || 'No description provided'}
+                              {order.public_description || order.description || 'No description provided'}
                             </p>
 
                             <div className="flex items-center justify-between text-xs text-muted-foreground">

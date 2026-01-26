@@ -75,7 +75,7 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
     },
     onDelete: payload => {
       if (payload.old) {
-        setDocuments(prev => prev.filter(d => d.id !== payload.old.id))
+        setDocuments(prev => prev.filter(d => d.id !== (payload.old?.id ?? '')))
       }
     },
   })

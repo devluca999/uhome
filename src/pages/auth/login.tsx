@@ -108,7 +108,7 @@ export function LoginPage() {
 
     if (error) {
       // Handle rate limit errors specifically
-      if (error.status === 429 || error.message?.toLowerCase().includes('rate limit')) {
+      if ((error as { status?: number }).status === 429 || error.message?.toLowerCase().includes('rate limit')) {
         setError(
           'Too many requests. Please wait a few minutes before requesting another magic link, or use password authentication instead.'
         )

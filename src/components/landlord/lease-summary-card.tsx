@@ -26,11 +26,13 @@ interface LeaseSummaryCardProps {
 }
 
 export function LeaseSummaryCard({ lease, index = 0 }: LeaseSummaryCardProps) {
-  const startDate = new Date(lease.lease_start_date).toLocaleDateString()
+  const startDate = lease.lease_start_date
+    ? new Date(lease.lease_start_date).toLocaleDateString()
+    : 'Not set'
   const endDate = lease.lease_end_date
     ? new Date(lease.lease_end_date).toLocaleDateString()
     : 'Ongoing'
-  const isActive = !lease.lease_end_date || new Date(lease.lease_end_date) > new Date()
+  const isActive = !lease.lease_end_date || (lease.lease_end_date ? new Date(lease.lease_end_date) > new Date() : false)
 
   return (
     <motion.div

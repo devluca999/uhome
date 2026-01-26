@@ -12,8 +12,10 @@ import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
 import { cn } from '@/lib/utils'
-import type { GraphViewType, CurveType } from '@/components/landlord/financial-insights-module'
-import type { TimeRange } from '@/components/landlord/finances-filter-bar'
+import type { GraphViewType } from '@/components/landlord/financial-graph-enhanced'
+import type { CurveType } from '@/components/landlord/financial-insights-module'
+
+export type TimeRange = 'monthToDate' | 'yearToDate'
 
 interface FullscreenGraphModalProps {
   isOpen: boolean

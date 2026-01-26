@@ -9,7 +9,7 @@ import { FullscreenGraphModal } from '@/components/ui/fullscreen-graph-modal'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { LineChart as LineChartIcon, BarChart3, FileDown, Image } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { exportGraphToCSV, exportGraphToPNG, type GraphDataPoint } from '@/utils/export-graph'
+import { exportGraphToCSV, exportGraphToPNG } from '@/utils/export-graph'
 
 export type GraphViewType = 'line' | 'bar'
 export type TimeRangeType = 'monthToDate' | 'yearToDate'
@@ -53,7 +53,8 @@ export function FinancialGraphEnhanced({
   onPropertyChange,
   className,
 }: FinancialGraphEnhancedProps) {
-  const [viewType, setViewType] = useState<GraphViewType>('line')
+  const [viewType, setViewTypeState] = useState<GraphViewType>('line')
+  const setViewType = (type: GraphViewType) => setViewTypeState(type)
   const [timeRange, setTimeRange] = useState<TimeRangeType>('monthToDate')
   const [curveType, setCurveType] = useState<CurveType>('smooth')
   const [showFullscreen, setShowFullscreen] = useState(false)
@@ -65,18 +66,30 @@ export function FinancialGraphEnhanced({
   })
   const graphContainerRef = useRef<HTMLDivElement>(null)
 
+  type GraphDataPoint = {
+    month: string
+    rentCollected: number
+    outstandingRent: number
+    expenses: number
+    netCashFlow: number
+    // Legacy support
+    income: number
+    net: number
+  }
+
   // Prepare combined data for graph
-  const graphData = useMemo(() => {
+  const graphData = useMemo((): GraphDataPoint[] => {
     // MVP: Support both new format and legacy format
     if (lineData.length > 0) {
       // Legacy format - convert to new format
       return lineData.map(item => ({
         month: item.month,
-        income: item.income,
-        expenses: item.expenses,
-        net: item.net,
-        rentCollected: item.income,
-        netCashFlow: item.net,
+        income: item.income || 0,
+        expenses: item.expenses || 0,
+        net: item.net || 0,
+        rentCollected: item.income || 0,
+        outstandingRent: 0,
+        netCashFlow: item.net || 0,
       }))
     }
 
@@ -111,7 +124,15 @@ export function FinancialGraphEnhanced({
   // Filter data based on active datasets
   const filteredGraphData = useMemo(() => {
     return graphData.map(point => {
-      const filtered: { month: string; rentCollected?: number; expenses?: number } = {
+      const filtered: {
+        month: string
+        rentCollected?: number
+        outstandingRent?: number
+        expenses?: number
+        netCashFlow?: number
+        income?: number
+        net?: number
+      } = {
         month: point.month,
       }
       if (activeDatasets.rentCollected && point.rentCollected !== undefined) {
@@ -246,7 +267,7 @@ export function FinancialGraphEnhanced({
                 <Button
                   variant={viewType === 'line' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setViewType('line')}
+                  onClick={() => setViewTypeState('line')}
                   className="h-8 px-3"
                   aria-label="Line chart"
                 >
@@ -255,7 +276,7 @@ export function FinancialGraphEnhanced({
                 <Button
                   variant={viewType === 'bar' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setViewType('bar')}
+                  onClick={() => setViewTypeState('bar')}
                   className="h-8 px-3"
                   aria-label="Bar chart"
                 >
@@ -400,7 +421,7 @@ export function FinancialGraphEnhanced({
         timeRange={timeRange}
         curveType={curveType}
         activeDatasets={activeDatasets}
-        onViewTypeChange={setViewType}
+        onViewTypeChange={(type) => setViewType(type)}
         onTimeRangeChange={setTimeRange}
         onCurveTypeChange={setCurveType}
         onActiveDatasetsChange={setActiveDatasets}

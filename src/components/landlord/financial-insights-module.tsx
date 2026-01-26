@@ -11,10 +11,11 @@ import { FullscreenGraphModal } from '@/components/ui/fullscreen-graph-modal'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { LineChart as LineChartIcon, FileDown, Image, Calendar, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { exportGraphToCSV, exportGraphToPNG, type GraphDataPoint } from '@/utils/export-graph'
+import { exportGraphToCSV, exportGraphToPNG } from '@/utils/export-graph'
 import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
 import type { Database } from '@/types/database'
-import type { DateGranularity, TimeRange } from './finances-filter-bar'
+export type TimeRange = 'monthToDate' | 'yearToDate'
+export type DateGranularity = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
 type MaintenanceRequest = {
@@ -113,18 +114,30 @@ export function FinancialInsightsModule({
     setLocalTimeRange(null)
   }
 
+  type GraphDataPoint = {
+    month: string
+    rentCollected: number
+    outstandingRent: number
+    expenses: number
+    netCashFlow: number
+    // Legacy support
+    income: number
+    net: number
+  }
+
   // Prepare combined data for graph
-  const graphData = useMemo(() => {
+  const graphData = useMemo((): GraphDataPoint[] => {
     // MVP: Support both new format and legacy format
     if (lineData.length > 0) {
       // Legacy format - convert to new format
       return lineData.map(item => ({
         month: item.month,
-        income: item.income,
-        expenses: item.expenses,
-        net: item.net,
-        rentCollected: item.income,
-        netCashFlow: item.net,
+        income: item.income || 0,
+        expenses: item.expenses || 0,
+        net: item.net || 0,
+        rentCollected: item.income || 0,
+        outstandingRent: 0,
+        netCashFlow: item.net || 0,
       }))
     }
 
@@ -165,6 +178,8 @@ export function FinancialInsightsModule({
         outstandingRent?: number
         expenses?: number
         netCashFlow?: number
+        income?: number
+        net?: number
       } = { month: point.month }
       if (activeDatasets.rentCollected && point.rentCollected !== undefined) {
         filtered.rentCollected = point.rentCollected

@@ -60,7 +60,7 @@ export function ProfitBreakdownModal({ isOpen, onClose }: ProfitBreakdownModalPr
         breakdown: expenses
           .filter(e => e.is_recurring)
           .map(e => ({
-            label: e.description || e.category,
+            label: e.name || e.category || 'Uncategorized',
             value: Number(e.amount),
           })),
       },
@@ -71,7 +71,7 @@ export function ProfitBreakdownModal({ isOpen, onClose }: ProfitBreakdownModalPr
         breakdown: expenses
           .filter(e => !e.is_recurring)
           .map(e => ({
-            label: e.description || e.category,
+            label: e.name || e.category || 'Uncategorized',
             value: Number(e.amount),
           })),
       },
