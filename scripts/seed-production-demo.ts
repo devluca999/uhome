@@ -567,7 +567,7 @@ async function seedProductionDemoData() {
       for (const property of existingProps) {
         const { data: existingUnits } = await supabase
           .from('units')
-          .select('id, unit_name, rent_amount, rent_due_date')
+          .select('id, unit_name, rent_amount, rent_due_date, property_id')
           .eq('property_id', property.id)
 
         createdProperties.push({
@@ -605,7 +605,7 @@ async function seedProductionDemoData() {
         const { data: createdUnits, error: unitError } = await supabase
           .from('units')
           .insert(unitsToCreate)
-          .select('id, unit_name, rent_amount, rent_due_date')
+          .select('id, unit_name, rent_amount, rent_due_date, property_id')
 
         if (unitError) throw unitError
 
@@ -850,7 +850,13 @@ async function seedProductionDemoData() {
 
         console.log(`      ✅ Tenant created (ID: ${tenantId}, Lease ID: ${leaseId})`)
 
-        tenantLeases.push({ tenantId, leaseId, propertyId: selectedUnit.property_id })
+        // Get property_id from the property object (units don't have property_id in the select)
+        const propertyId = property?.id
+        if (!propertyId) {
+          throw new Error(`Property not found for unit ${selectedUnit.id}`)
+        }
+
+        tenantLeases.push({ tenantId, leaseId, propertyId })
 
         if ((i + 1) % 3 === 0 || i === tenantEmails.length - 1) {
           console.log(
@@ -1069,11 +1075,12 @@ async function seedProductionDemoData() {
       } else {
         console.log(`✅ Created ${insertedRentRecords?.length || rentRecords.length} rent records\n`)
 
-      // Log how many paid records with paid_date we created
-      const paidWithDateCount = insertedRentRecords.filter(
-        (r: { status: string; paid_date?: string | null }) => r.status === 'paid' && r.paid_date
-      ).length
-      console.log(`   📊 Of which ${paidWithDateCount} are paid with paid_date set`)
+        // Log how many paid records with paid_date we created
+        const paidWithDateCount = insertedRentRecords?.filter(
+          (r: { status: string; paid_date?: string | null }) => r.status === 'paid' && r.paid_date
+        ).length || 0
+        console.log(`   📊 Of which ${paidWithDateCount} are paid with paid_date set`)
+      }
     }
 
     // ========================================================================
