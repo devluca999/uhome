@@ -263,6 +263,187 @@ async function cleanupDemoData(landlordId: string) {
   console.log(`   Cleaned up ${propertyIds.length} properties and associated data\n`)
 }
 
+/**
+ * Create a tenant invite programmatically (for seed scripts)
+ * @param propertyId - Property ID to invite tenant to
+ * @param email - Tenant email address
+ * @param landlordId - Landlord user ID creating the invite
+ * @returns Invite ID
+ */
+async function createInviteProgrammatically(
+  propertyId: string,
+  email: string,
+  landlordId: string
+): Promise<{ inviteId: string }> {
+  // Get property to find/create a unit
+  const { data: property } = await supabase
+    .from('properties')
+    .select('id, rent_amount, rent_due_date')
+    .eq('id', propertyId)
+    .single()
+
+  if (!property) {
+    throw new Error(`Property ${propertyId} not found`)
+  }
+
+  // Find or create a unit for this property
+  let unitId: string
+  const { data: existingUnits } = await supabase
+    .from('units')
+    .select('id')
+    .eq('property_id', propertyId)
+    .limit(1)
+
+  if (existingUnits && existingUnits.length > 0) {
+    unitId = existingUnits[0].id
+  } else {
+    // Create a default unit
+    const { data: newUnit, error: unitError } = await supabase
+      .from('units')
+      .insert({
+        property_id: propertyId,
+        unit_name: 'Unit 1',
+        rent_amount: property.rent_amount,
+        rent_due_date: property.rent_due_date,
+      })
+      .select('id')
+      .single()
+
+    if (unitError || !newUnit) {
+      throw new Error(`Failed to create unit: ${unitError?.message}`)
+    }
+    unitId = newUnit.id
+  }
+
+  // Create draft lease
+  const { data: draftLease, error: leaseError } = await supabase
+    .from('leases')
+    .insert({
+      unit_id: unitId,
+      status: 'draft',
+      lease_start_date: new Date().toISOString().split('T')[0],
+      lease_end_date: null,
+      rent_amount: property.rent_amount || 0,
+      rent_frequency: 'monthly',
+      security_deposit: null,
+    })
+    .select('id')
+    .single()
+
+  if (leaseError || !draftLease) {
+    throw new Error(`Failed to create draft lease: ${leaseError?.message}`)
+  }
+
+  // Generate unique token
+  const token = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+
+  // Set expiration to 30 days from now
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  // Create invite
+  const { data: invite, error: inviteError } = await supabase
+    .from('tenant_invites')
+    .insert({
+      property_id: propertyId,
+      email,
+      token,
+      expires_at: expiresAt,
+      created_by: landlordId,
+      lease_id: draftLease.id,
+    })
+    .select('id')
+    .single()
+
+  if (inviteError || !invite) {
+    // Rollback: delete the draft lease if invite creation fails
+    await supabase.from('leases').delete().eq('id', draftLease.id)
+    throw new Error(`Failed to create invite: ${inviteError?.message}`)
+  }
+
+  return { inviteId: invite.id }
+}
+
+/**
+ * Accept a tenant invite programmatically (for seed scripts)
+ * @param inviteId - Invite ID to accept
+ * @param userId - User ID of the tenant accepting the invite
+ * @param email - Email address of the tenant
+ * @returns Tenant ID and Lease ID
+ */
+async function acceptInviteProgrammatically(
+  inviteId: string,
+  userId: string,
+  email: string
+): Promise<{ tenantId: string; leaseId: string }> {
+  // Get invite with lease details
+  const { data: invite, error: inviteError } = await supabase
+    .from('tenant_invites')
+    .select('*, lease_id, property_id')
+    .eq('id', inviteId)
+    .single()
+
+  if (inviteError || !invite) {
+    throw new Error(`Invite not found: ${inviteError?.message}`)
+  }
+
+  if (invite.accepted_at) {
+    throw new Error('Invite already accepted')
+  }
+
+  // Get lease
+  const { data: lease, error: leaseError } = await supabase
+    .from('leases')
+    .select('*')
+    .eq('id', invite.lease_id)
+    .single()
+
+  if (leaseError || !lease) {
+    throw new Error(`Lease not found: ${leaseError?.message}`)
+  }
+
+  // Create tenant record
+  const { data: tenant, error: tenantError } = await supabase
+    .from('tenants')
+    .insert({
+      user_id: userId,
+      property_id: invite.property_id,
+      lease_id: lease.id,
+      move_in_date: new Date().toISOString().split('T')[0],
+      lease_end_date: null,
+    })
+    .select('id')
+    .single()
+
+  if (tenantError || !tenant) {
+    throw new Error(`Failed to create tenant: ${tenantError?.message}`)
+  }
+
+  // Update lease to active and link to tenant
+  const { error: updateLeaseError } = await supabase
+    .from('leases')
+    .update({
+      status: 'active',
+      tenant_id: tenant.id,
+    })
+    .eq('id', lease.id)
+
+  if (updateLeaseError) {
+    throw new Error(`Failed to activate lease: ${updateLeaseError.message}`)
+  }
+
+  // Mark invite as accepted
+  const { error: acceptError } = await supabase
+    .from('tenant_invites')
+    .update({ accepted_at: new Date().toISOString() })
+    .eq('id', inviteId)
+
+  if (acceptError) {
+    throw new Error(`Failed to mark invite as accepted: ${acceptError.message}`)
+  }
+
+  return { tenantId: tenant.id, leaseId: lease.id }
+}
+
 async function seedProductionDemoData() {
   console.log('🌱 Starting production-realistic demo data seeding...\n')
   console.log('⚠️  This script creates comprehensive demo data for staging only.\n')
