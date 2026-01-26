@@ -31,8 +31,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.warn('[AuthContext] Session fetch timeout - setting loading to false')
+        setLoading(false)
+      }
+    }, 10000) // 10 second timeout
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return
+      
+      clearTimeout(timeoutId)
+      
+      if (error) {
+        console.error('[AuthContext] Error getting session:', error)
+        setLoading(false)
+        return
+      }
+      
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -40,6 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setLoading(false)
       }
+    }).catch((error) => {
+      if (!mounted) return
+      clearTimeout(timeoutId)
+      console.error('[AuthContext] Exception getting session:', error)
+      setLoading(false)
     })
 
     // Listen for auth changes
@@ -71,23 +96,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchUserRole(userId: string) {
     try {
-      const { data, error } = await supabase.from('users').select('role').eq('id', userId).single()
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Role fetch timeout')), 5000)
+      )
+      
+      const fetchPromise = supabase.from('users').select('role').eq('id', userId).single()
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any
 
       if (error) {
-        console.error('Error fetching user role:', error)
+        console.error('[AuthContext] Error fetching user role:', error)
         setRole(null)
+        setLoading(false)
       } else {
         setRole(data?.role as UserRole)
+        setLoading(false)
       }
     } catch (error) {
-      console.error('Error fetching user role:', error)
+      console.error('[AuthContext] Error fetching user role:', error)
       setRole(null)
-    } finally {
       setLoading(false)
     }
   }
