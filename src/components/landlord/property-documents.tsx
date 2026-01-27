@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, Image, FileCheck, Plus } from 'lucide-react'
 import { useDocuments } from '@/hooks/use-documents'
-import { useLeases } from '@/hooks/use-leases'
+// useLeases removed - not used
 
 interface PropertyDocumentsProps {
   propertyId: string
