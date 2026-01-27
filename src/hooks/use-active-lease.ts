@@ -62,7 +62,7 @@ export function useActiveLease() {
           setLease(null)
 
           // Dev-mode logging for lease resolution failure
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.DEV) {
             console.warn('[useActiveLease] Failed to resolve active lease for user:', user?.id)
           }
         } else {
@@ -70,7 +70,7 @@ export function useActiveLease() {
           setError(null)
 
           // Dev-mode logging for lease resolution
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.DEV) {
             console.log('[useActiveLease] Successfully resolved active lease:', {
               leaseId: leaseData.id,
               unitId: leaseData.unit_id,
