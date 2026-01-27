@@ -5,7 +5,7 @@ import {
   canTenantConfirmResolution,
   getValidNextStatuses as getValidNextStatusesFromLib,
   type WorkOrderStatus,
-  type CreatorRole,
+  // CreatorRole removed - not used
 } from '@/lib/work-order-status'
 import { useAuth } from '@/contexts/auth-context'
 import { useTenantDevMode } from '@/contexts/tenant-dev-mode-context'
