@@ -139,7 +139,7 @@ export function useFinancialMetrics(
     }> = []
 
     // Calculate number of periods to show based on time range
-    let periodsToShow = months
+    // periodsToShow removed - not used
     if (timeRange === 'quarter') {
       periodsToShow = Math.ceil(months / 3) // Number of quarters
     } else if (timeRange === 'year') {
