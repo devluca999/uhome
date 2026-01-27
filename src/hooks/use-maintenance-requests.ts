@@ -10,7 +10,7 @@ import {
 import { useAuth } from '@/contexts/auth-context'
 import { useTenantDevMode } from '@/contexts/tenant-dev-mode-context'
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
-import { isDevModeActive } from '@/lib/tenant-dev-mode'
+// isDevModeActive removed - not used
 
 type MaintenanceRequest = {
   id: string
