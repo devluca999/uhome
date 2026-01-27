@@ -123,20 +123,7 @@ export function FullscreenGraphModal({
     }))
   }, [isOpen, filteredGraphData])
 
-  // Prepare pie chart data (aggregate by category) - not used (pie view not supported)
-  const _pieChartData = useMemo(() => {
-    if (!isOpen) return []
-    const totals = {
-      rentCollected: filteredGraphData.reduce((sum, p: any) => sum + ((p.rentCollected || 0) as number), 0),
-      expenses: filteredGraphData.reduce((sum, p: any) => sum + ((p.expenses || 0) as number), 0),
-      netCashFlow: filteredGraphData.reduce((sum, p: any) => sum + ((p.netCashFlow || 0) as number), 0),
-    }
-    return [
-      { name: 'Rent Collected', value: totals.rentCollected, color: '#84A98C' },
-      { name: 'Expenses', value: totals.expenses, color: '#ef4444' },
-      { name: 'Net Cash Flow', value: totals.netCashFlow, color: '#6b7280' },
-    ].filter(item => item.value > 0) as Array<{ name: string; value: number; color: string }>
-  }, [isOpen, filteredGraphData])
+  // pieChartData removed - pie view not supported in GraphViewType
 
   const renderGraph = () => {
     switch (viewType) {
