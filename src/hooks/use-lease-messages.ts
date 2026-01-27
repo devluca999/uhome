@@ -6,7 +6,7 @@ import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 type Message = Database['public']['Tables']['messages']['Row']
 type MessageInsert = Database['public']['Tables']['messages']['Insert']
-type MessageUpdate = Database['public']['Tables']['messages']['Update']
+// MessageUpdate removed - not used
 
 export type MessageIntent = 'general' | 'maintenance' | 'billing' | 'notice'
 export type MessageStatus = 'open' | 'acknowledged' | 'resolved' | null
