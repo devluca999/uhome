@@ -10,7 +10,7 @@ interface PropertyDocumentsProps {
 }
 
 export function PropertyDocuments({ propertyId }: PropertyDocumentsProps) {
-  const { documents, loading } = useDocuments(undefined, propertyId)
+  const { documents } = useDocuments(undefined, propertyId)
   const { leases } = useLeases(propertyId)
 
   // Filter documents by type
