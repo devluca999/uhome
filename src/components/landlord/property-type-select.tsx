@@ -20,7 +20,7 @@ export function PropertyTypeSelect({
   disabled,
   className,
 }: PropertyTypeSelectProps) {
-  const { predefinedTypes, customTypes, allTypes, createCustomType } = usePropertyTypes()
+  const { predefinedTypes, customTypes, createCustomType } = usePropertyTypes()
   const [showOtherInput, setShowOtherInput] = useState(false)
   const [otherValue, setOtherValue] = useState('')
   const [saveAsNewType, setSaveAsNewType] = useState(false)
