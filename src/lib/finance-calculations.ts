@@ -216,7 +216,7 @@ export function calculateNetCashFlow(rentCollected: number, totalExpenses: numbe
  * @returns Count of active properties
  */
 export function calculateActiveProperties(
-  properties: Property[],
+  _properties: Property[], // Unused but kept for API compatibility
   tenants: Tenant[],
   filters?: FinanceFilters
 ): number {
