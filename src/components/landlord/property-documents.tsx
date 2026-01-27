@@ -1,4 +1,4 @@
-import { useState } from 'react'
+// useState removed - not used
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, Image, FileCheck, Plus } from 'lucide-react'
