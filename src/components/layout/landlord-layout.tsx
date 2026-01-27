@@ -78,7 +78,7 @@ export function LandlordLayout() {
     // Clear dev bypass if active
     sessionStorage.removeItem('dev_bypass')
     sessionStorage.removeItem('dev_role')
-    await signOut()
+    if (signOut) await signOut()
     navigate('/login')
   }
 

@@ -1,7 +1,7 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { motionTokens, createSpring, durationToSeconds } from '@/lib/motion'
+import { createSpring } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 

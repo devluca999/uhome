@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { motion } from 'framer-motion'
-import { motionTokens, createSpring, useReducedMotion } from '@/lib/motion'
+import { createSpring, useReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 interface SwitchProps {

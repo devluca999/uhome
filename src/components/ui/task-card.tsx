@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, Circle, Calendar, Image as ImageIcon } from 'lucide-react'
 import type { Task } from '@/hooks/use-tasks'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { motionTokens, createSpring } from '@/lib/motion'
 import { TaskChecklist } from './task-checklist'
 import { cn } from '@/lib/utils'
 

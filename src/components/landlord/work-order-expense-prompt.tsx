@@ -1,8 +1,8 @@
-import { useState } from 'react'
+// useState removed - not used
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { motionTokens, createSpring } from '@/lib/motion'
 import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
 import { X, DollarSign, Link as LinkIcon, SkipForward } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'

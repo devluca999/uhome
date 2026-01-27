@@ -5,10 +5,9 @@ import { useTenants } from '@/hooks/use-tenants'
 import { useProperties } from '@/hooks/use-properties'
 import { useUrlParams } from '@/lib/url-params'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Link } from 'react-router-dom'
-import { Calendar, Mail, MapPin } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Calendar, MapPin } from 'lucide-react'
+// Badge, Mail, cn removed - not used
 
 interface TenantListModalProps {
   isOpen: boolean

@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton-loader'
 import { supabase } from '@/lib/supabase/client'
-import { Users, User } from 'lucide-react'
+import { Users } from 'lucide-react'
 import type { Database } from '@/types/database'
 
 type Tenant = Database['public']['Tables']['tenants']['Row'] & {

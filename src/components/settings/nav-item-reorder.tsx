@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { GripVertical, Eye, EyeOff } from 'lucide-react'
-import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 
@@ -90,7 +90,7 @@ export function NavItemReorder({
             key={item.path}
             draggable={!isRequired}
             onDragStart={e => {
-              handleDragStart(index, e.currentTarget)
+              handleDragStart(index, e.currentTarget as HTMLElement)
             }}
             onDragOver={e => handleDragOver(e, index)}
             onDragLeave={handleDragLeave}

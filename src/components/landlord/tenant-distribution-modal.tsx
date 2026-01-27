@@ -41,11 +41,7 @@ export function TenantDistributionModal({ isOpen, onClose }: TenantDistributionM
     })
   }, [tenantDistribution])
 
-  // Filter tenants by selected property
-  const filteredTenants = useMemo(() => {
-    if (!selectedPropertyId) return []
-    return tenants.filter(t => t.property_id === selectedPropertyId)
-  }, [selectedPropertyId, tenants])
+  // filteredTenants removed - not used (using tenantDistribution directly)
 
   const breakdownComponent = (
     <div className="space-y-4">

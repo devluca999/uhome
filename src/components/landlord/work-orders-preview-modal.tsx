@@ -7,7 +7,7 @@ import { MatteLayer } from '@/components/ui/matte-layer'
 import { ReflectiveGradient } from '@/components/ui/reflective-gradient'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { X, AlertCircle, Clock, CheckCircle, ArrowRight } from 'lucide-react'
+import { X, Clock, CheckCircle, ArrowRight } from 'lucide-react'
 import { motionTokens, createSpring, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
@@ -42,11 +42,7 @@ interface WorkOrdersPreviewModalProps {
   onClose: () => void
 }
 
-const priorityConfig = {
-  high: { label: 'High', color: 'red', icon: AlertCircle },
-  medium: { label: 'Medium', color: 'yellow', icon: Clock },
-  low: { label: 'Low', color: 'blue', icon: Clock },
-}
+// priorityConfig removed - priority field doesn't exist in schema
 
 const statusConfig = {
   pending: { label: 'Pending', color: 'yellow' },
@@ -174,45 +170,19 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
                         >
                           <div
                             className={cn(
-                              'rounded-lg border-2 p-4 hover:border-primary/50 transition-colors cursor-pointer',
-                              priority === 'high'
-                                ? 'border-red-500/30 bg-red-500/5'
-                                : priority === 'medium'
-                                  ? 'border-yellow-500/30 bg-yellow-500/5'
-                                  : 'border-border'
+                              'rounded-lg border-2 p-4 hover:border-primary/50 transition-colors cursor-pointer border-border'
                             )}
                             onClick={handleViewAll}
                           >
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-2">
-                                <PriorityIcon
-                                  className={cn(
-                                    'h-4 w-4',
-                                    priority === 'high'
-                                      ? 'text-red-500'
-                                      : priority === 'medium'
-                                        ? 'text-yellow-500'
-                                        : 'text-blue-500'
-                                  )}
-                                />
+                                <PriorityIcon className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium text-foreground">
                                   {order.property?.name || 'Unknown Property'}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    priority === 'high'
-                                      ? 'border-red-500/50 text-red-600 dark:text-red-400'
-                                      : priority === 'medium'
-                                        ? 'border-yellow-500/50 text-yellow-600 dark:text-yellow-400'
-                                        : 'border-blue-500/50 text-blue-600 dark:text-blue-400'
-                                  )}
-                                >
-                                  {priorityConfig[priority as keyof typeof priorityConfig]?.label ||
-                                    'Medium'}
-                                </Badge>
+                                {/* Priority badge removed - priority field doesn't exist */}
                                 <Badge
                                   variant="outline"
                                   className={cn(

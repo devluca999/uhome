@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { motion } from 'framer-motion'
-import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { motionTokens } from '@/lib/motion'
 
 interface SettingsSectionProps {
   title: string

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+// useState removed - not used
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
@@ -16,7 +16,7 @@ interface LandlordContactCardProps {
 
 export function LandlordContactCard({ lease }: LandlordContactCardProps) {
   const navigate = useNavigate()
-  const property = lease.property
+  // property removed - not used
 
   // For now, we don't have landlord contact info directly accessible
   // This would need to be added to the property or user relationships

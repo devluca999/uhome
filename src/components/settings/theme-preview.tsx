@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 interface ThemePreviewProps {

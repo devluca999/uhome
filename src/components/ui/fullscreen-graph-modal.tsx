@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+// Card, CardContent, CardHeader removed - not used
 import { Button } from '@/components/ui/button'
+import { CardTitle } from '@/components/ui/card'
 import { LineChart, type LineChartData } from '@/components/ui/line-chart'
 import { BarChart } from '@/components/ui/bar-chart'
-import { AreaChart } from '@/components/ui/area-chart'
-import { PieChart } from '@/components/ui/pie-chart'
+// PieChart removed - not used (pie view type not supported)
 import { X, ChevronDown } from 'lucide-react'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
 import { cn } from '@/lib/utils'
@@ -20,8 +20,8 @@ export type TimeRange = 'monthToDate' | 'yearToDate'
 interface FullscreenGraphModalProps {
   isOpen: boolean
   onClose: () => void
-  graphData: any[]
-  filteredGraphData: any[]
+  graphData?: unknown[] // Not used but kept for API compatibility
+  filteredGraphData: unknown[]
   viewType: GraphViewType
   timeRange: TimeRange
   curveType: CurveType
@@ -34,7 +34,12 @@ interface FullscreenGraphModalProps {
   onViewTypeChange: (type: GraphViewType) => void
   onTimeRangeChange: (range: TimeRange) => void
   onCurveTypeChange: (type: CurveType) => void
-  onActiveDatasetsChange: (datasets: typeof activeDatasets) => void
+  onActiveDatasetsChange: (datasets: {
+    rentCollected: boolean
+    outstandingRent: boolean
+    expenses: boolean
+    netCashFlow: boolean
+  }) => void
   properties?: Array<{ id: string; name: string }>
   selectedPropertyId?: string
   onPropertyChange?: (propertyId: string | 'all') => void
@@ -50,7 +55,7 @@ interface FullscreenGraphModalProps {
 export function FullscreenGraphModal({
   isOpen,
   onClose,
-  graphData,
+  graphData: _graphData, // Unused but kept for API compatibility
   filteredGraphData,
   viewType,
   timeRange,
@@ -64,7 +69,7 @@ export function FullscreenGraphModal({
   selectedPropertyId = 'all',
   onPropertyChange,
 }: FullscreenGraphModalProps) {
-  const cardSpring = createSpring('card')
+  // cardSpring removed - not used
   const prefersReducedMotion = useReducedMotion()
   const [showGraphTypeDropdown, setShowGraphTypeDropdown] = useState(false)
 
@@ -122,15 +127,15 @@ export function FullscreenGraphModal({
   const pieChartData = useMemo(() => {
     if (!isOpen) return []
     const totals = {
-      rentCollected: filteredGraphData.reduce((sum, p) => sum + (p.rentCollected || 0), 0),
-      expenses: filteredGraphData.reduce((sum, p) => sum + (p.expenses || 0), 0),
-      netCashFlow: filteredGraphData.reduce((sum, p) => sum + (p.netCashFlow || 0), 0),
+      rentCollected: filteredGraphData.reduce((sum, p: any) => sum + ((p.rentCollected || 0) as number), 0),
+      expenses: filteredGraphData.reduce((sum, p: any) => sum + ((p.expenses || 0) as number), 0),
+      netCashFlow: filteredGraphData.reduce((sum, p: any) => sum + ((p.netCashFlow || 0) as number), 0),
     }
     return [
       { name: 'Rent Collected', value: totals.rentCollected, color: '#84A98C' },
       { name: 'Expenses', value: totals.expenses, color: '#ef4444' },
       { name: 'Net Cash Flow', value: totals.netCashFlow, color: '#6b7280' },
-    ].filter(item => item.value > 0)
+    ].filter(item => item.value > 0) as Array<{ name: string; value: number; color: string }>
   }, [isOpen, filteredGraphData])
 
   const renderGraph = () => {
@@ -162,6 +167,7 @@ export function FullscreenGraphModal({
         }
         return <BarChart data={barChartData} />
       case 'area':
+        // Area chart not supported in GraphViewType - fallback to line
         if (lineChartData.length === 0) {
           return (
             <div className="flex items-center justify-center h-[600px] text-muted-foreground">
@@ -169,24 +175,17 @@ export function FullscreenGraphModal({
             </div>
           )
         }
-        return (
-          <AreaChart
-            data={lineChartData}
-            showIncome={activeDatasets.rentCollected}
-            showExpenses={activeDatasets.expenses}
-            showNet={activeDatasets.netCashFlow}
-            curveType={curveType}
-          />
-        )
+        return <LineChart data={lineChartData} />
       case 'pie':
-        if (pieChartData.length === 0) {
+        // Pie chart not supported in GraphViewType - fallback to line
+        if (lineChartData.length === 0) {
           return (
             <div className="flex items-center justify-center h-[600px] text-muted-foreground">
               No data available
             </div>
           )
         }
-        return <PieChart data={pieChartData} />
+        return <LineChart data={lineChartData} />
       default:
         return null
     }
@@ -304,12 +303,12 @@ export function FullscreenGraphModal({
                     </Button>
                     {showGraphTypeDropdown && (
                       <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 min-w-[120px]">
-                        {(['line', 'bar', 'area', 'pie'] as const).map(type => (
+                        {(['line', 'bar'] as const).map(type => (
                           <button
                             key={type}
                             onClick={e => {
                               e.stopPropagation()
-                              onViewTypeChange(type)
+                              onViewTypeChange(type as GraphViewType)
                               setShowGraphTypeDropdown(false)
                             }}
                             className={cn(

@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenantInvites } from '@/hooks/use-tenant-invites'
 import { supabase } from '@/lib/supabase/client'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
-import { Copy, Check, X, Info } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { motionTokens } from '@/lib/motion'
+import { Copy, Check, Info } from 'lucide-react'
+// cn removed - not used
 
 interface TenantInviteFormProps {
   onCancel?: () => void
@@ -31,8 +31,8 @@ export function TenantInviteForm({
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [hasPreviousLease, setHasPreviousLease] = useState(false)
-  const [checkingPreviousLease, setCheckingPreviousLease] = useState(false)
-  const buttonSpring = createSpring('button')
+  const [, setCheckingPreviousLease] = useState(false)
+  // buttonSpring removed - not used
 
   // Check for previous leases when email and property are set
   useEffect(() => {

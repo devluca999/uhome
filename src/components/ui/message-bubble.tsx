@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
-import { MessageSquare, Bot } from 'lucide-react'
+import { Bot } from 'lucide-react'
 
 type Message = Database['public']['Tables']['messages']['Row']
 

@@ -23,7 +23,7 @@ export function FileUploader({
   maxSizeMB,
   onUpload,
   onError,
-  scopeType,
+  scopeType: _scopeType, // Unused but kept for API compatibility
   scopeId,
   multiple = false,
   className,

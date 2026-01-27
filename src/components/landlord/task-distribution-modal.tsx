@@ -5,10 +5,10 @@ import { useProperties } from '@/hooks/use-properties'
 import { useTasks } from '@/hooks/use-tasks'
 import { useTenants } from '@/hooks/use-tenants'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
-import { Button } from '@/components/ui/button'
+// Button removed - not used
 import { Link } from 'react-router-dom'
 import { Wrench, FileText, Calendar, Home } from 'lucide-react'
-import { cn } from '@/lib/utils'
+// cn removed - not used
 
 interface TaskDistributionModalProps {
   isOpen: boolean
@@ -152,7 +152,8 @@ export function TaskDistributionModal({ isOpen, onClose }: TaskDistributionModal
           <div className="space-y-2">
             {Object.entries(tasksByProperty).map(([propertyKey, taskList]) => {
               const property = properties.find(p => p.id === propertyKey)
-              const { overdue, upcoming } = categorizeTasks(taskList)
+              const { overdue: _overdue } = categorizeTasks(taskList)
+              // overdue, upcoming removed - not used
 
               return (
                 <div key={propertyKey} className="p-3 rounded-md border border-border bg-muted/50">

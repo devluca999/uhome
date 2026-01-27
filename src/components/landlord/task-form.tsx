@@ -3,9 +3,9 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTenants } from '@/hooks/use-tenants'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { motionTokens } from '@/lib/motion'
 import type { TaskInsert, TaskUpdate, TaskAssignedToType, TaskContextType, Task } from '@/hooks/use-tasks'
-import { Plus, X, Upload } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 interface TaskFormProps {
@@ -39,7 +39,7 @@ export function TaskForm({
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const buttonSpring = createSpring('button')
+  // buttonSpring removed - not used
 
   const handleAddChecklistItem = () => {
     if (!newChecklistItem.trim()) return
@@ -75,7 +75,8 @@ export function TaskForm({
         return data.publicUrl
       })
 
-      const urls = await Promise.all(uploadPromises)
+      await Promise.all(uploadPromises)
+      // urls removed - not used (imageFiles stored directly)
       setImageFiles([...imageFiles, ...Array.from(files)])
       // Note: Image URLs will be added to task on submit
     } catch (err) {
