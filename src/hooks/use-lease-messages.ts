@@ -107,7 +107,7 @@ export function useLeaseMessages(leaseId: string, messageType?: 'landlord_tenant
       const filteredMessages = data || []
 
       // Dev-mode validation: ensure messages match requested type
-      if (process.env.NODE_ENV === 'development' && messageType && filteredMessages.length > 0) {
+      if (import.meta.env.DEV && messageType && filteredMessages.length > 0) {
         const mismatchedMessages = filteredMessages.filter(msg => msg.message_type !== messageType)
         if (mismatchedMessages.length > 0) {
           console.warn('[useLeaseMessages] Message type mismatch detected:', {
@@ -236,7 +236,7 @@ export function useLeaseMessages(leaseId: string, messageType?: 'landlord_tenant
       const finalMessageType = messageType || 'landlord_tenant' // Default to landlord_tenant for backward compatibility
 
       // Dev-mode validation: ensure role and message type are compatible
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         if (role === 'tenant' && finalMessageType === 'landlord_tenant') {
           // Valid: tenant sending to landlord
         } else if (role === 'tenant' && finalMessageType === 'household') {
