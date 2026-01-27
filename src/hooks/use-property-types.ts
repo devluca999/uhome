@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/auth-context'
 import type { Database } from '@/types/database'
 
 type UserPropertyType = Database['public']['Tables']['user_property_types']['Row']
-type UserPropertyTypeInsert = Database['public']['Tables']['user_property_types']['Insert']
+// UserPropertyTypeInsert removed - not used
 
 const PREDEFINED_TYPES = ['studio', '1-bedroom', '2-bedroom', 'house', 'other'] as const
 
