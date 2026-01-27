@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ChevronUp, Download, FileText, FileDown, DollarSign } from 'lucide-react'
+import { ChevronDown, ChevronUp, Download, FileText, FileDown } from 'lucide-react'
 import {
   createSpring,
   motion as motionTokens,
