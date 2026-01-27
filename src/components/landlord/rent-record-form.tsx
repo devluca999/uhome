@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
-import { motion as motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
 import type { Database } from '@/types/database'
 
 type RentRecordInsert = Database['public']['Tables']['rent_records']['Insert']
