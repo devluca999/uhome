@@ -32,9 +32,7 @@ export function ProfitBreakdownModal({ isOpen, onClose }: ProfitBreakdownModalPr
       .reduce((sum, e) => sum + Number(e.amount), 0)
 
     const totalIncome = metrics.rentCollected
-    const totalExpenses = metrics.totalExpenses
-    const netProfit = metrics.netProfit
-    const marginPercentage = metrics.marginPercentage
+    // totalExpenses, netProfit, marginPercentage removed - using metrics directly
 
     return [
       {
