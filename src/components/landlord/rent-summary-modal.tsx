@@ -402,8 +402,8 @@ export function RentSummaryModal({
         }
       }
       case 'occupancy': {
-        const occupancyRate = calculateOccupancyRate(properties, tenants, filters)
-        const activeCount = calculateActiveProperties(properties, tenants, filters)
+        const occupancyRate = calculateOccupancyRate(properties as Property[], tenants, filters)
+        const activeCount = calculateActiveProperties(properties as Property[], tenants, filters)
         const totalProperties = properties.length
 
         const byProperty = properties.map(property => {
