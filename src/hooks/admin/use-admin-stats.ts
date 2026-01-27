@@ -177,7 +177,7 @@ export function useAdminStats() {
       const refunds = Math.floor(Math.random() * 3) // Mock: 0-2
 
       // Estimate active sessions (users who signed in within last hour)
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+      // oneHourAgo removed - not used
       // Note: We don't have last_sign_in_at in public.users, so we'll estimate based on recent activity
       // In production, this would come from session tracking
       const activeSessions = Math.floor((totalUsers || 0) * 0.1) // Mock: ~10% of users
