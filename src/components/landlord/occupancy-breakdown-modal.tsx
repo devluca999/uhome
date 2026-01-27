@@ -19,7 +19,7 @@ export function OccupancyBreakdownModal({ isOpen, onClose }: OccupancyBreakdownM
   const sections = useMemo((): BreakdownSection[] => {
     // Categorize properties
     const fullyOccupied: typeof properties = []
-    const partiallyOccupied: typeof properties = []
+    // partiallyOccupied removed - not used in MVP
     const vacant: typeof properties = []
 
     properties.forEach(property => {
