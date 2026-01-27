@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/auth-context'
 import type { Database } from '@/types/database'
 
 type Note = Database['public']['Tables']['notes']['Row']
-type NoteInsert = Database['public']['Tables']['notes']['Insert']
+// NoteInsert removed - not used
 type NoteUpdate = Database['public']['Tables']['notes']['Update']
 
 export type NoteEntityType =
