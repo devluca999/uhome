@@ -23,6 +23,7 @@ import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
 import type { Database } from '@/types/database'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
+type Property = Database['public']['Tables']['properties']['Row']
 
 interface RentSummaryModalProps {
   isOpen: boolean
@@ -403,7 +404,7 @@ export function RentSummaryModal({
       }
       case 'occupancy': {
         const occupancyRate = calculateOccupancyRate(properties as Property[], tenants, filters)
-        const activeCount = calculateActiveProperties(properties as Property[], tenants, filters)
+        const activeCount = calculateActiveProperties(properties as unknown as Property[], tenants, filters)
         const totalProperties = properties.length
 
         const byProperty = properties.map(property => {
