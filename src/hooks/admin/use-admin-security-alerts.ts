@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useAdminPerformance, type TimeRange } from '@/hooks/admin/use-admin-performance'
+import type { TimeRange } from '@/hooks/admin/use-admin-performance'
 
 export interface SecurityAlert {
   id: string
