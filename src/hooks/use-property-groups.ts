@@ -39,7 +39,7 @@ export function usePropertyGroups() {
     }
   }
 
-  async function createGroup(data: PropertyGroupInsert) {
+  async function createGroup(data: Omit<PropertyGroupInsert, 'user_id'>) {
     if (!user) return { data: null, error: new Error('Not authenticated') }
 
     try {
