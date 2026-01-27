@@ -23,7 +23,7 @@ export function TaskCard({
   onView,
   className,
 }: TaskCardProps) {
-  const cardSpring = createSpring('card')
+  // cardSpring removed - not used
   const isCompleted = task.status === 'completed'
   const hasDeadline = task.deadline !== null && task.deadline !== undefined
   const deadlineDate = hasDeadline && task.deadline ? new Date(task.deadline) : null
