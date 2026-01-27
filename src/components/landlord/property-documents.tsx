@@ -1,5 +1,5 @@
 // useState removed - not used
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, Image, FileCheck, Plus } from 'lucide-react'
 import { useDocuments } from '@/hooks/use-documents'
