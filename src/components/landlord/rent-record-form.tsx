@@ -43,7 +43,7 @@ export function RentRecordForm({
   const [customPaymentLabel, setCustomPaymentLabel] = useState('')
   const [notes, setNotes] = useState(initialData?.notes || '')
   const [error, setError] = useState<string | null>(null)
-  const buttonSpring = createSpring('button')
+  // buttonSpring removed - not used
 
   // Filter tenants by selected property
   const availableTenants = useMemo(() => {
