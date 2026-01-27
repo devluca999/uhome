@@ -4,7 +4,7 @@ import { BreakdownModal, type BreakdownSection } from '@/components/ui/breakdown
 import { useProperties } from '@/hooks/use-properties'
 import { useLandlordRentRecords } from '@/hooks/use-landlord-rent-records'
 import { useExpenses } from '@/hooks/use-expenses'
-import { Button } from '@/components/ui/button'
+// Button removed - not used
 
 interface PropertiesDistributionModalProps {
   isOpen: boolean
