@@ -109,7 +109,12 @@ export function useTasks(contextType?: TaskContextType, contextId?: string) {
     },
     onDelete: payload => {
       if (payload.old) {
-        setTasks(prev => prev.filter(t => t.id !== (payload.old?.id ?? '')))
+        if (payload.old) {
+          const oldId = (payload.old as { id?: string }).id
+          if (oldId) {
+            setTasks(prev => prev.filter(t => t.id !== oldId))
+          }
+        }
       }
     },
   })
