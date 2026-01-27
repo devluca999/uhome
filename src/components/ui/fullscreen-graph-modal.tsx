@@ -123,8 +123,8 @@ export function FullscreenGraphModal({
     }))
   }, [isOpen, filteredGraphData])
 
-  // Prepare pie chart data (aggregate by category)
-  const pieChartData = useMemo(() => {
+  // Prepare pie chart data (aggregate by category) - not used (pie view not supported)
+  const _pieChartData = useMemo(() => {
     if (!isOpen) return []
     const totals = {
       rentCollected: filteredGraphData.reduce((sum, p: any) => sum + ((p.rentCollected || 0) as number), 0),
