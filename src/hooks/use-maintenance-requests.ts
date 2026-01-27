@@ -309,7 +309,12 @@ export function useMaintenanceRequests(
     },
     onDelete: payload => {
       if (payload.old) {
-        setRequests(prev => prev.filter(r => r.id !== (payload.old?.id ?? '')))
+        if (payload.old) {
+          const oldId = (payload.old as { id?: string }).id
+          if (oldId) {
+            setRequests(prev => prev.filter(r => r.id !== oldId))
+          }
+        }
       }
     },
   })
