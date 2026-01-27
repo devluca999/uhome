@@ -33,7 +33,7 @@ export function useActiveLease() {
         const { data: tenant, error: tenantError } = await supabase
           .from('tenants')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', user?.id ?? '')
           .single()
 
         if (tenantError || !tenant) {
