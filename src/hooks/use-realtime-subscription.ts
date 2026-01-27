@@ -136,7 +136,7 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
 /**
  * Simplified hook for subscribing to a single table with simple callback
  */
-export function useSimpleRealtimeSubscription<T = any>(
+export function useSimpleRealtimeSubscription<T extends Record<string, any> = any>(
   table: string,
   filter: Record<string, any> | null,
   onChange: (payload: RealtimePostgresChangesPayload<T>) => void
