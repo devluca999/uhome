@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+// useNavigate removed - not used
 import { Drawer } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { ActivityFeedItem } from '@/components/ui/activity-feed-item'
