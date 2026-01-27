@@ -18,7 +18,7 @@ import {
   calculateOccupancyRate,
   type FinanceFilters,
 } from '@/lib/finance-calculations'
-import { cn } from '@/lib/utils'
+// cn removed - not used
 import type { RentRecordWithRelations } from '@/hooks/use-landlord-rent-records'
 import type { Database } from '@/types/database'
 
