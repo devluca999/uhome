@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    let timeoutId: NodeJS.Timeout | null = null
+      let timeoutId: ReturnType<typeof setTimeout> | null = null
     
     // Add timeout to prevent infinite loading
     timeoutId = setTimeout(() => {
