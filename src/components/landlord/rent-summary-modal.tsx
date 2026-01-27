@@ -379,7 +379,7 @@ export function RentSummaryModal({
         }
       }
       case 'activeProperties': {
-        const activeCount = calculateActiveProperties(properties, tenants, filters)
+        const activeCount = calculateActiveProperties(properties as unknown as Property[], tenants, filters)
         const byProperty = properties.map(property => {
           const hasTenants = tenants.some(t => t.property_id === property.id)
           const tenantCount = tenants.filter(t => t.property_id === property.id).length
