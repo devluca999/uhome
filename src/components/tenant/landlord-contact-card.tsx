@@ -14,9 +14,9 @@ interface LandlordContactCardProps {
   lease: Lease
 }
 
-export function LandlordContactCard({ lease }: LandlordContactCardProps) {
+export function LandlordContactCard({ lease: _lease }: LandlordContactCardProps) {
   const navigate = useNavigate()
-  // property removed - not used
+  // lease, property removed - not used
 
   // For now, we don't have landlord contact info directly accessible
   // This would need to be added to the property or user relationships
