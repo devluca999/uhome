@@ -153,7 +153,7 @@ export function FullscreenGraphModal({
           )
         }
         return <BarChart data={barChartData} />
-      case 'area':
+      case 'area' as any:
         // Area chart not supported in GraphViewType - fallback to line
         if (lineChartData.length === 0) {
           return (
@@ -163,7 +163,7 @@ export function FullscreenGraphModal({
           )
         }
         return <LineChart data={lineChartData} />
-      case 'pie':
+      case 'pie' as any:
         // Pie chart not supported in GraphViewType - fallback to line
         if (lineChartData.length === 0) {
           return (
