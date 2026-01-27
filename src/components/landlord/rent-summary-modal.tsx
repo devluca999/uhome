@@ -410,7 +410,7 @@ export function RentSummaryModal({
         const byProperty = properties.map(property => {
           const propertyTenants = tenants.filter(t => t.property_id === property.id)
           const isOccupied = propertyTenants.length > 0
-          const occupancyPercentage = 1 // For MVP, occupied = 100%, vacant = 0%
+          // occupancyPercentage removed - not used (using isOccupied directly)
           return {
             property: property.name,
             isOccupied,
