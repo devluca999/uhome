@@ -11,7 +11,7 @@ interface PropertyDocumentsProps {
 
 export function PropertyDocuments({ propertyId }: PropertyDocumentsProps) {
   const { documents } = useDocuments(undefined, propertyId)
-  const { leases } = useLeases(propertyId)
+  // leases removed - not used (leaseDocuments filtered from documents)
 
   // Filter documents by type
   const leaseDocuments = documents.filter(d => d.lease_id !== null)
