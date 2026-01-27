@@ -464,9 +464,7 @@ export function RentSummaryModal({
     occupancy: 'Percentage of your properties that are currently occupied by tenants.',
   }
 
-  const dateRangeText = dateRange
-    ? `${dateRange.start.toLocaleDateString()} - ${dateRange.end.toLocaleDateString()}`
-    : 'All time'
+  // dateRangeText removed - not used
 
   const propertyText = propertyId
     ? properties.find(p => p.id === propertyId)?.name || 'Selected property'
