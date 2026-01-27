@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 
 type Note = Database['public']['Tables']['notes']['Row']
 // NoteInsert removed - not used
-type NoteUpdate = Database['public']['Tables']['notes']['Update']
+// NoteUpdate removed - not used
 
 export type NoteEntityType =
   | 'property'
