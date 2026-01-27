@@ -73,7 +73,12 @@ export function useNotifications() {
     },
     onDelete: payload => {
       if (payload.old) {
-        setNotifications(prev => prev.filter(n => n.id !== (payload.old?.id ?? '')))
+        if (payload.old) {
+          const oldId = (payload.old as { id?: string }).id
+          if (oldId) {
+            setNotifications(prev => prev.filter(n => n.id !== oldId))
+          }
+        }
       }
     },
   })
