@@ -337,7 +337,7 @@ export function LandlordDashboard() {
   const dashboardActivities = useMemo(() => recentActivity.slice(0, 5), [recentActivity])
 
   // Recent expenses (last 5) - used in expense distribution modal
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Intentionally unused for future use
   const recentExpenses = expenses.slice(0, 5)
 
   // Donut chart data

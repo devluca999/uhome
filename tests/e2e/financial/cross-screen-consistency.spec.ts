@@ -296,6 +296,6 @@ test.describe('Cross-Screen Consistency Tests', () => {
 
     // Verify formatting is present (has $ or currency symbol)
     // This ensures we're extracting from formatted text, not raw numbers
-    expect(revenueText).toMatch(/[\$£€¥]|USD|dollars?/i)
+    expect(revenueText).toMatch(/[$£€¥]|USD|dollars?/i)
   })
 })

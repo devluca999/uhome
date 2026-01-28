@@ -124,7 +124,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
         console.error('[useLandlordRentRecords] Query error:', error)
         throw error
       }
-      
+
       if (import.meta.env.DEV) {
         console.debug('[useLandlordRentRecords] Fetched records:', {
           count: data?.length || 0,
@@ -139,7 +139,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
           })),
         })
       }
-      
+
       setRecords(data || [])
     } catch (err) {
       setError(err as Error)

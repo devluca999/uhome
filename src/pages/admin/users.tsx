@@ -15,18 +15,18 @@ import {
   Lock,
   Key,
   LogOut,
-  MoreVertical,
   Shield,
   ShieldOff,
   X,
   AlertTriangle,
   Trash2,
 } from 'lucide-react'
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
+import { useReducedMotion } from '@/lib/motion'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
-import { createSpring, durationToSeconds, motionTokens } from '@/lib/motion'
+import { createSpring, motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 // Date formatting helper
@@ -64,7 +64,8 @@ function AdminActionModal({ isOpen, onClose, user, action, onConfirm }: AdminAct
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<'warning' | 'confirm'>('warning')
   const cardSpring = createSpring('card')
-  const prefersReducedMotion = useModalScrollLock(isOpen)
+  useModalScrollLock(isOpen)
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (!isOpen) {
@@ -207,7 +208,7 @@ function AdminActionModal({ isOpen, onClose, user, action, onConfirm }: AdminAct
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{
-            duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.fast),
+            duration: prefersReducedMotion ? 0 : motionTokens.duration.fast,
             ease: motionTokens.easing.standard,
           }}
           className="absolute inset-0 bg-background/90 backdrop-blur-sm"
@@ -340,7 +341,7 @@ function AdminActionModal({ isOpen, onClose, user, action, onConfirm }: AdminAct
                   {actionInfo.destructive && (
                     <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                       <p className="text-sm text-destructive font-medium">
-                        ⚠️ This is a destructive action. Click "Confirm Action" to proceed.
+                        ⚠️ This is a destructive action. Click &quot;Confirm Action&quot; to proceed.
                       </p>
                     </div>
                   )}
@@ -417,12 +418,13 @@ export function AdminUsers() {
 
   // Memoize filters to prevent unnecessary refetches
   const filters = useMemo(() => {
-    const roleFilter =
+    const roleFilter: 'landlord' | 'tenant' | 'admin' | undefined =
       activeTab === 'landlords' ? 'landlord' : activeTab === 'tenants' ? 'tenant' : undefined
-    const statusFilter = activeTab === 'suspended' ? 'suspended_or_banned_or_locked' : undefined
+    const statusFilter: 'suspended_or_banned_or_locked' | undefined =
+      activeTab === 'suspended' ? 'suspended_or_banned_or_locked' : undefined
     return {
       role: roleFilter,
-      accountStatus: statusFilter as any,
+      accountStatus: statusFilter,
     }
   }, [activeTab])
 

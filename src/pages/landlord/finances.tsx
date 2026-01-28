@@ -1,8 +1,7 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { RentLedgerRow } from '@/components/landlord/rent-ledger-row'
 import { ExpenseForm } from '@/components/landlord/expense-form'
@@ -26,7 +25,7 @@ import { useFinancialMetrics } from '@/hooks/use-financial-metrics'
 import { calculateActiveProperties, calculateOccupancyRate } from '@/lib/finance-calculations'
 import { exportLedgerToCSV } from '@/utils/export-csv'
 import { FileText, Plus, Download, X, Edit } from 'lucide-react'
-import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
+import { motionTokens, durationToSeconds } from '@/lib/motion'
 import type { Database } from '@/types/database'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
@@ -108,7 +107,7 @@ function generateFallbackRentRecords(
         id: `fallback-${monthOffset}-${i}`,
         property_id: property.id, // Use actual property ID
         tenant_id: `fallback-tenant-${i}`,
-        amount: amount.toString(),
+        amount: amount, // Keep as number
         due_date: dueDate.toISOString().split('T')[0],
         status,
         paid_date: paidDate,
@@ -189,10 +188,9 @@ function generateFallbackExpenses(properties: Array<{ id: string; name: string }
       expenses.push({
         id: `fallback-expense-${monthOffset}-${e}`,
         property_id: property.id, // Use actual property ID
-        user_id: 'fallback-user',
-        category,
-        description,
-        amount: amount.toString(),
+        name: description, // Use description as name
+        category: category as 'maintenance' | 'utilities' | 'repairs' | null,
+        amount: amount, // Keep as number
         date: expenseDate.toISOString().split('T')[0],
         is_recurring: category === 'utilities' && Math.random() > 0.5,
         recurring_frequency: null,
@@ -213,8 +211,7 @@ export function LandlordFinances() {
 
   const { properties } = useProperties()
   const { tenants } = useTenants()
-  const { expenses, createExpense, updateExpense, deleteExpense, getProjectedExpenses } =
-    useExpenses()
+  const { expenses, createExpense, updateExpense } = useExpenses()
   const [searchParams, setSearchParams] = useSearchParams()
   // Page-level filter state
   // These two filters control ALL financial data on the page: KPIs, Ledger, Graph (default state)
@@ -224,7 +221,7 @@ export function LandlordFinances() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set())
+  // const [, setExpandedLedgerRows] = useState<Set<string>>(new Set()) // Unused
   const [kpiModalOpen, setKpiModalOpen] = useState(false)
   const [kpiModalType, setKpiModalType] = useState<
     | 'collected'
@@ -235,7 +232,7 @@ export function LandlordFinances() {
     | 'activeProperties'
     | 'occupancy'
   >('collected')
-  const cardSpring = createSpring('card')
+  // const cardSpring = createSpring('card') // Unused
 
   // Fetch work orders for timeline view
   const { requests: workOrders } = useMaintenanceRequests(
@@ -246,7 +243,7 @@ export function LandlordFinances() {
   // Check for expense creation from URL params (from work order prompt)
   useEffect(() => {
     const createExpense = searchParams.get('createExpense')
-    const workOrderId = searchParams.get('workOrderId')
+    // const workOrderId = searchParams.get('workOrderId') // Unused
     const propertyId = searchParams.get('propertyId')
 
     if (createExpense && propertyId) {
@@ -349,7 +346,7 @@ export function LandlordFinances() {
 
   // Fetch ALL records for charts (no dateRange filter)
   const { records: allRecords, loading, refetch } = useLandlordRentRecords(chartFilter)
-  
+
   // Fetch filtered records for KPI calculations
   const { records: filteredRecords } = useLandlordRentRecords(kpiFilter)
 
@@ -421,12 +418,15 @@ export function LandlordFinances() {
   )
 
   // Combine: use chartMetrics for charts, kpiMetrics for KPIs
-  const metrics = useMemo(() => ({
-    ...kpiMetrics, // KPIs use filtered data
-    monthlyRentCollected: chartMetrics.monthlyRentCollected, // Charts use all historical data
-    monthlyExpenses: chartMetrics.monthlyExpenses, // Charts use all historical data
-    monthlyNet: chartMetrics.monthlyNet, // Charts use all historical data
-  }), [kpiMetrics, chartMetrics])
+  const metrics = useMemo(
+    () => ({
+      ...kpiMetrics, // KPIs use filtered data
+      monthlyRentCollected: chartMetrics.monthlyRentCollected, // Charts use all historical data
+      monthlyExpenses: chartMetrics.monthlyExpenses, // Charts use all historical data
+      monthlyNet: chartMetrics.monthlyNet, // Charts use all historical data
+    }),
+    [kpiMetrics, chartMetrics]
+  )
 
   // Calculate v1 canon KPIs using centralized calculations
   const activeProperties = useMemo(() => {
@@ -495,76 +495,29 @@ export function LandlordFinances() {
     return metrics.monthlyRentCollected
   }, [metrics.monthlyRentCollected])
 
-  const donutChartData = useMemo(() => {
-    return [
-      {
-        name: 'Collected',
-        value: metrics.rentCollected,
-        color: '#84A98C',
-      },
-      {
-        name: 'Outstanding',
-        value: metrics.rentOutstanding,
-        color: '#ef4444',
-      },
-      {
-        name: 'Upcoming',
-        value: metrics.upcomingRent,
-        color: '#f59e0b',
-      },
-    ].filter(item => item.value > 0)
-  }, [metrics])
-
-  const pieChartData = useMemo(() => {
-    const categories = [
-      'maintenance',
-      'utilities',
-      'repairs',
-      'insurance',
-      'taxes',
-      'landscaping',
-      'cleaning',
-    ] as const
-    const categoryData = categories
-      .map(category => {
-        const categoryExpenses = filteredExpenses.filter(e => e.category === category)
-        const total = categoryExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
-        return {
-          name: category.charAt(0).toUpperCase() + category.slice(1),
-          value: total,
-          color:
-            category === 'maintenance'
-              ? '#84A98C'
-              : category === 'utilities'
-                ? '#3b82f6'
-                : category === 'repairs'
-                  ? '#ef4444'
-                  : category === 'insurance'
-                    ? '#8b5cf6'
-                    : category === 'taxes'
-                      ? '#f59e0b'
-                      : category === 'landscaping'
-                        ? '#10b981'
-                        : '#6b7280',
-        }
-      })
-      .filter(item => item.value > 0)
-
-    // If no data, return empty array (chart will show empty state)
-    return categoryData
-  }, [filteredExpenses])
+  // const donutChartData = useMemo(() => { ... }, [metrics]) // Unused
+  // const pieChartData = useMemo(() => { ... }, [filteredExpenses]) // Unused
 
   // Prepare work orders for timeline (map to expected format)
   const workOrdersForTimeline = useMemo(() => {
-    return workOrders.map(wo => ({
-      id: wo.id,
-      property_id: wo.property_id,
-      created_at: wo.created_at,
-      status: wo.status,
-      description: wo.description || wo.category || 'Work order',
-      property: wo.property,
-    }))
-  }, [workOrders])
+    return workOrders
+      .filter(wo => wo.property_id !== null) // Filter out null property_id
+      .map(wo => ({
+        id: wo.id,
+        property_id: wo.property_id as string, // Type assertion after filter
+        created_at: wo.created_at,
+        status: wo.status as 'pending' | 'in_progress' | 'completed', // Map to expected status type
+        description: wo.description || wo.public_description || 'Work order',
+        property: wo.property,
+      }))
+  }, [workOrders]) as Array<{
+    id: string
+    property_id: string
+    created_at: string
+    status: 'pending' | 'in_progress' | 'completed'
+    description: string
+    property?: { name: string }
+  }>
 
   // Generate smart insights
   const insights = useMemo(() => {
@@ -675,26 +628,10 @@ export function LandlordFinances() {
     )
   }
 
-  const handleCategoryClick = (category: string) => {
-    setSelectedCategory(category === selectedCategory ? '' : category)
-  }
-
-  const handleRentClick = () => {
-    // Filter to show only rent records
-    setSelectedCategory('')
-  }
-
-  const toggleLedgerRow = (id: string) => {
-    setExpandedLedgerRows(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
-  }
+  // Unused handlers removed
+  // const handleCategoryClick = (category: string) => { ... }
+  // const handleRentClick = () => { ... }
+  // const toggleLedgerRow = (id: string) => { ... }
 
   return (
     <div className="relative min-h-screen">
@@ -948,7 +885,7 @@ export function LandlordFinances() {
                   animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
                   exit={{ opacity: motionTokens.opacity.hidden, y: -8 }}
                   transition={{
-                    duration: motionTokens.duration.normal,
+                    duration: motionTokens.duration.slow,
                     ease: motionTokens.easing.standard,
                   }}
                 >
@@ -962,7 +899,14 @@ export function LandlordFinances() {
                         }
                         return { error: result.error }
                       } else {
-                        const result = await createExpense(data)
+                        const result = await createExpense(
+                          data as {
+                            property_id: string
+                            name: string
+                            amount: number
+                            date: string
+                          }
+                        )
                         if (!result.error) {
                           setShowExpenseForm(false)
                         }
@@ -975,9 +919,25 @@ export function LandlordFinances() {
                     }}
                     initialData={
                       editingExpense
-                        ? { ...editingExpense, id: editingExpense.id }
+                        ? {
+                            id: editingExpense.id,
+                            property_id: editingExpense.property_id,
+                            name: editingExpense.name,
+                            amount: editingExpense.amount,
+                            date: editingExpense.date,
+                            category: editingExpense.category,
+                            is_recurring: editingExpense.is_recurring,
+                            recurring_frequency: editingExpense.recurring_frequency,
+                            recurring_start_date: editingExpense.recurring_start_date,
+                            recurring_end_date: editingExpense.recurring_end_date,
+                          }
                         : selectedPropertyId
-                          ? { property_id: selectedPropertyId }
+                          ? {
+                              property_id: selectedPropertyId,
+                              name: '',
+                              amount: 0,
+                              date: new Date().toISOString().split('T')[0],
+                            }
                           : undefined
                     }
                   />

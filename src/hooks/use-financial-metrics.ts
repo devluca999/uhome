@@ -115,9 +115,8 @@ export function useFinancialMetrics(
 
       filteredRentRecords = filteredRentRecords.filter(r => {
         // For paid records, use paid_date; for others, use due_date
-        const dateStr = r.status === 'paid' && r.paid_date
-          ? r.paid_date.split('T')[0]
-          : r.due_date.split('T')[0]
+        const dateStr =
+          r.status === 'paid' && r.paid_date ? r.paid_date.split('T')[0] : r.due_date.split('T')[0]
         return dateStr >= startStr && dateStr <= endStr
       })
 

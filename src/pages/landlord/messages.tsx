@@ -7,7 +7,7 @@ import { LeaseThread } from '@/components/messages/lease-thread'
 import { useProperties } from '@/hooks/use-properties'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase/client'
-import { MessageSquare, ArrowLeft, Building, Home, Users, Search } from 'lucide-react'
+import { MessageSquare, ArrowLeft, Building, Home, Users, Search, Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
@@ -130,12 +130,14 @@ export function LandlordMessages() {
         .order('created_at', { ascending: false })
 
       // Group messages by lease and get the most recent
-      const messagesByLease = new Map<string, (typeof allMessages)[0]>()
-      allMessages?.forEach(msg => {
-        if (!messagesByLease.has(msg.lease_id)) {
-          messagesByLease.set(msg.lease_id, msg)
-        }
-      })
+      const messagesByLease = new Map<string, Message>()
+      if (allMessages) {
+        allMessages.forEach(msg => {
+          if (!messagesByLease.has(msg.lease_id)) {
+            messagesByLease.set(msg.lease_id, msg)
+          }
+        })
+      }
 
       // Batch fetch all message sender users
       const senderIds = [...new Set(allMessages?.map(m => m.sender_id).filter(Boolean) || [])]
@@ -211,7 +213,7 @@ export function LandlordMessages() {
         const property = properties.find(p => p.id === propertyId)
         if (!property) return acc
 
-        let propertyGroup = acc.find(g => g.property.id === propertyId)
+        let propertyGroup = acc.find((g: PropertyWithUnits) => g.property.id === propertyId)
         if (!propertyGroup) {
           propertyGroup = {
             property: {
@@ -224,7 +226,7 @@ export function LandlordMessages() {
           acc.push(propertyGroup)
         }
 
-        let unitGroup = propertyGroup.units.find(u => u.unit.id === unitId)
+        let unitGroup = propertyGroup.units.find((u: UnitWithLeases) => u.unit.id === unitId)
         if (!unitGroup) {
           unitGroup = {
             unit: {
@@ -244,7 +246,7 @@ export function LandlordMessages() {
       }, [] as PropertyWithUnits[])
 
       // Sort properties by most recent lease activity
-      grouped.sort((a, b) => {
+      grouped.sort((a: PropertyWithUnits, b: PropertyWithUnits) => {
         const aLatest =
           a.units[0]?.leases[0]?.lastMessage?.created_at || a.units[0]?.leases[0]?.created_at
         const bLatest =

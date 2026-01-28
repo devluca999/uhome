@@ -133,8 +133,13 @@ async function verifyDemoData() {
       if (dates.length > 0) {
         const oldest = dates[0]
         const newest = dates[dates.length - 1]
-        const monthsDiff = (newest.getFullYear() - oldest.getFullYear()) * 12 + (newest.getMonth() - oldest.getMonth()) + 1
-        console.log(`   Date range: ${oldest.toISOString().split('T')[0]} to ${newest.toISOString().split('T')[0]} (${monthsDiff} months)`)
+        const monthsDiff =
+          (newest.getFullYear() - oldest.getFullYear()) * 12 +
+          (newest.getMonth() - oldest.getMonth()) +
+          1
+        console.log(
+          `   Date range: ${oldest.toISOString().split('T')[0]} to ${newest.toISOString().split('T')[0]} (${monthsDiff} months)`
+        )
       }
 
       // Check for records without lease_id
@@ -168,8 +173,13 @@ async function verifyDemoData() {
       if (dates.length > 0) {
         const oldest = dates[0]
         const newest = dates[dates.length - 1]
-        const monthsDiff = (newest.getFullYear() - oldest.getFullYear()) * 12 + (newest.getMonth() - oldest.getMonth()) + 1
-        console.log(`   Date range: ${oldest.toISOString().split('T')[0]} to ${newest.toISOString().split('T')[0]} (${monthsDiff} months)`)
+        const monthsDiff =
+          (newest.getFullYear() - oldest.getFullYear()) * 12 +
+          (newest.getMonth() - oldest.getMonth()) +
+          1
+        console.log(
+          `   Date range: ${oldest.toISOString().split('T')[0]} to ${newest.toISOString().split('T')[0]} (${monthsDiff} months)`
+        )
       }
     }
   }

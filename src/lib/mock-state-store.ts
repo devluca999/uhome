@@ -460,7 +460,7 @@ export function markAllNotificationsRead(): TenantDevModeState {
  */
 export function generateNotificationForStatusChange(
   workOrder: MockMaintenanceRequest,
-  oldStatus: WorkOrderStatus,
+  _oldStatus: WorkOrderStatus,
   newStatus: WorkOrderStatus
 ): void {
   if (!currentState) {

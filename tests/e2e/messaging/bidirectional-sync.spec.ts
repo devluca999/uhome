@@ -10,7 +10,6 @@
 import { test, expect } from '@playwright/test'
 import { seedTestScenario } from '../../helpers/seed'
 import { loginAsLandlord, loginAsTenant } from '../../helpers/auth-helpers'
-import { getSupabaseAdminClient } from '../../helpers/supabase-admin'
 
 test.describe('Bidirectional Messaging', () => {
   const baseUrl = process.env.VISUAL_TEST_BASE_URL || 'http://localhost:1000'

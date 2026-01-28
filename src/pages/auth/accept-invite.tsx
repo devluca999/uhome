@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
-import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { motionTokens } from '@/lib/motion'
 
 export function AcceptInvite() {
   const { token } = useParams<{ token: string }>()

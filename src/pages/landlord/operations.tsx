@@ -15,13 +15,12 @@ import { TaskForm } from '@/components/landlord/task-form'
 import { NotesPanel } from '@/components/landlord/notes-panel'
 import { WorkOrderExpensePrompt } from '@/components/landlord/work-order-expense-prompt'
 import { WorkOrderForm } from '@/components/landlord/work-order-form'
-import { Wrench, Plus, X, Filter, AlertTriangle, ChevronDown } from 'lucide-react'
+import { Wrench, Plus, X, Filter, AlertTriangle } from 'lucide-react'
 import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import {
   getStatusDisplayName,
   getStatusBadgeVariant,
-  getValidNextStatuses,
   type WorkOrderStatus,
 } from '@/lib/work-order-status'
 import type { Database } from '@/types/database'
@@ -31,6 +30,7 @@ type MaintenanceRequestFromHook = {
   id: string
   property_id: string
   tenant_id: string | null
+  lease_id: string | null
   status: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
   category?: string
   description: string
@@ -105,9 +105,9 @@ export function LandlordOperations() {
     return Array.from(cats).sort()
   }, [requests])
 
-  // Calculate urgency based on age of pending requests
+  // Calculate urgency based on age of submitted requests
   const getUrgency = (request: MaintenanceRequestFromHook): 'urgent' | 'normal' => {
-    if (request.status !== 'pending') return 'normal'
+    if (request.status !== 'submitted') return 'normal'
     const daysSinceCreation = Math.floor(
       (Date.now() - new Date(request.created_at).getTime()) / (1000 * 60 * 60 * 24)
     )
@@ -116,7 +116,12 @@ export function LandlordOperations() {
 
   // Apply all filters
   const filteredRequests = useMemo(() => {
-    let filtered = [...requests]
+    // Filter out requests with null property_id and convert to MaintenanceRequestFromHook
+    let filtered = requests
+      .filter(
+        (r): r is MaintenanceRequestFromHook & { property_id: string } => r.property_id !== null
+      )
+      .map(r => r as MaintenanceRequestFromHook)
 
     // Status filter
     if (statusFilter !== 'all') {
@@ -175,15 +180,19 @@ export function LandlordOperations() {
       // Show expense prompt when work order is closed
       if (status === 'closed') {
         const workOrder = requests.find(r => r.id === id)
-        if (workOrder) {
-          // Convert hook type to prompt type
+        if (workOrder && workOrder.property_id) {
+          // Convert hook type to prompt type, ensuring all optional fields are null instead of undefined
           setExpensePromptWorkOrder({
             ...workOrder,
             category: workOrder.category ?? null,
+            created_by: workOrder.created_by ?? null,
+            scheduled_date: workOrder.scheduled_date ?? null,
+            internal_notes: workOrder.internal_notes ?? null,
+            public_description: workOrder.public_description ?? null,
             property: workOrder.property
               ? { id: workOrder.property_id, name: workOrder.property.name }
               : null,
-          })
+          } as MaintenanceRequestForPrompt)
         }
       }
     } catch (error) {

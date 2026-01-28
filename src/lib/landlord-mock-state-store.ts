@@ -417,7 +417,7 @@ export function markAllLandlordNotificationsRead(): LandlordDevModeState {
  */
 export function generateLandlordNotificationForStatusChange(
   workOrder: MockMaintenanceRequest,
-  oldStatus: WorkOrderStatus,
+  _oldStatus: WorkOrderStatus,
   newStatus: WorkOrderStatus
 ): void {
   if (!currentState) {

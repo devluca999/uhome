@@ -117,9 +117,9 @@ async function screenshotPage(
     viewport: { width: 1920, height: 1080 },
     deviceScaleFactor: 2, // High DPI for marketing materials
   })
-  
+
   const page = await context.newPage()
-  
+
   try {
     // Set theme first
     await setTheme(page, theme)
@@ -151,17 +151,17 @@ async function main() {
   console.log('📸 Starting marketing screenshot generation...\n')
   console.log(`Base URL: ${baseURL}`)
   console.log(`Output directory: ${outputDir}\n`)
-  
+
   // Create output directory
   if (!existsSync(outputDir)) {
     await mkdir(outputDir, { recursive: true })
     console.log(`📁 Created output directory: ${outputDir}\n`)
   }
-  
+
   const browser = await chromium.launch({
     headless: true,
   })
-  
+
   try {
     // Screenshot each page in both themes
     for (const pageConfig of pages) {

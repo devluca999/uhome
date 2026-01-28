@@ -30,8 +30,8 @@ import { ProvidersWrapper } from '@/components/providers-wrapper'
 import { AdminLayout } from '@/components/layout/admin-layout'
 import { AdminOverview } from '@/pages/admin/overview'
 import { AdminUsers } from '@/pages/admin/users'
-import { AdminConversations } from '@/pages/admin/conversations'
-import { AdminSupport } from '@/pages/admin/support'
+// import { AdminConversations } from '@/pages/admin/conversations' // Unused
+// import { AdminSupport } from '@/pages/admin/support' // Unused
 import { AdminMessagesSupport } from '@/pages/admin/messages-support'
 import { AdminSystem } from '@/pages/admin/system'
 import { AdminPerformance } from '@/pages/admin/performance'
@@ -229,7 +229,6 @@ export const router = createBrowserRouter(
   ],
   {
     future: {
-      v7_startTransition: true,
       v7_relativeSplatPath: true,
     },
   }

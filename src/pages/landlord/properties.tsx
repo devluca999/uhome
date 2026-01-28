@@ -74,8 +74,7 @@ export function LandlordProperties() {
       filtered = filtered.filter(p => {
         const name = p.name?.toLowerCase() || ''
         const address = p.address?.toLowerCase() || ''
-        const city = p.city?.toLowerCase() || ''
-        return name.includes(query) || address.includes(query) || city.includes(query)
+        return name.includes(query) || address.includes(query)
       })
     }
 

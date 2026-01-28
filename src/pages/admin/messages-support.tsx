@@ -11,7 +11,7 @@ import { MatteLayer } from '@/components/ui/matte-layer'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Search, MessageSquare, Ticket, Mail, CheckCircle, XCircle, Filter } from 'lucide-react'
+import { Search, MessageSquare, Ticket, Mail, CheckCircle, Filter } from 'lucide-react'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 // Date formatting helper

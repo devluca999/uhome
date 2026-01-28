@@ -61,7 +61,7 @@ export function useMaintenanceRequests(
       // Mock data is only for UI-only state, core data comes from DB
 
       // Production/dev mode flow: fetch from Supabase (staging DB in dev mode)
-      let query = supabase
+      const query = supabase
         .from('maintenance_requests')
         .select('*')
         .order('created_at', { ascending: false })

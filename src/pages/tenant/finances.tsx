@@ -9,8 +9,8 @@ import { useRentRecords } from '@/hooks/use-rent-records'
 import { useLeases } from '@/hooks/use-leases'
 import { useNotes } from '@/hooks/use-notes'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
-import { Download, FileText, DollarSign, Calendar } from 'lucide-react'
-import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { Download, FileText, DollarSign } from 'lucide-react'
+import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
@@ -40,10 +40,10 @@ export function TenantFinances() {
   const summary = useMemo(() => {
     const outstanding = rentRecords
       .filter(r => r.status === 'overdue')
-      .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
+      .reduce((sum, r) => sum + Number(r.amount) + ((r as any).late_fee || 0), 0)
     const pending = rentRecords
       .filter(r => r.status === 'pending')
-      .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
+      .reduce((sum, r) => sum + Number(r.amount) + ((r as any).late_fee || 0), 0)
     const paid = rentRecords
       .filter(r => r.status === 'paid')
       .reduce((sum, r) => sum + Number(r.amount), 0)

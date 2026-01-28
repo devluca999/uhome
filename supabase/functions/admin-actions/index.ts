@@ -181,21 +181,23 @@ serve(async req => {
         break
 
       case 'lock':
-        const lockDuration = duration || null // Duration in milliseconds or null for indefinite
-        const lockedUntil = lockDuration ? new Date(Date.now() + lockDuration).toISOString() : null
-        updateData = {
-          account_status: 'locked',
-          is_locked: true,
-          locked_until: lockedUntil,
-          updated_at: new Date().toISOString(),
+        {
+          const lockDuration = duration || null // Duration in milliseconds or null for indefinite
+          const lockedUntil = lockDuration ? new Date(Date.now() + lockDuration).toISOString() : null
+          updateData = {
+            account_status: 'locked',
+            is_locked: true,
+            locked_until: lockedUntil,
+            updated_at: new Date().toISOString(),
+          }
+          auditMetadata = {
+            ...auditMetadata,
+            previous_status: targetUser.account_status || 'active',
+            duration_ms: lockDuration,
+            locked_until: lockedUntil,
+          }
+          break
         }
-        auditMetadata = {
-          ...auditMetadata,
-          previous_status: targetUser.account_status || 'active',
-          duration_ms: lockDuration,
-          locked_until: lockedUntil,
-        }
-        break
 
       case 'unlock':
         updateData = {
@@ -233,62 +235,68 @@ serve(async req => {
         break
 
       case 'reset_password':
-        // Trigger password reset email via Supabase Auth
-        const { error: resetError } = await supabaseClient.auth.admin.generateLink({
-          type: 'recovery',
-          email: targetUser.email || '',
-        })
+        {
+          // Trigger password reset email via Supabase Auth
+          const { error: resetError } = await supabaseClient.auth.admin.generateLink({
+            type: 'recovery',
+            email: targetUser.email || '',
+          })
 
-        if (resetError) {
-          return new Response(
-            JSON.stringify({ error: 'Failed to reset password', details: resetError.message }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          )
+          if (resetError) {
+            return new Response(
+              JSON.stringify({ error: 'Failed to reset password', details: resetError.message }),
+              {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              }
+            )
+          }
+
+          // No user table update needed for password reset
+          updateData = { updated_at: new Date().toISOString() }
+          break
         }
-
-        // No user table update needed for password reset
-        updateData = { updated_at: new Date().toISOString() }
-        break
 
       case 'force_logout':
-        // Invalidate all user sessions via Supabase Auth Admin API
-        const { error: logoutError } = await supabaseClient.auth.admin.signOut(userId, 'global')
+        {
+          // Invalidate all user sessions via Supabase Auth Admin API
+          const { error: logoutError } = await supabaseClient.auth.admin.signOut(userId, 'global')
 
-        if (logoutError) {
-          console.error('Error forcing logout:', logoutError)
-          // Continue anyway - log the attempt
+          if (logoutError) {
+            console.error('Error forcing logout:', logoutError)
+            // Continue anyway - log the attempt
+          }
+
+          // No user table update needed for force logout
+          updateData = { updated_at: new Date().toISOString() }
+          break
         }
-
-        // No user table update needed for force logout
-        updateData = { updated_at: new Date().toISOString() }
-        break
 
       case 'delete':
         // Delete user from auth.users (cascades to public.users via foreign key)
         // First, soft-delete or mark for deletion in public.users
         // Then delete from auth.users
-        const { error: deleteAuthError } = await supabaseClient.auth.admin.deleteUser(userId)
+        {
+          const { error: deleteAuthError } = await supabaseClient.auth.admin.deleteUser(userId)
 
-        if (deleteAuthError) {
-          console.error('Error deleting user from auth:', deleteAuthError)
-          // Still log the attempt
-        } else {
-          // User deleted from auth.users will cascade to public.users
-          // But we'll also update public.users to mark as deleted
-          updateData = {
-            account_status: 'banned', // Mark as banned before deletion
-            updated_at: new Date().toISOString(),
+          if (deleteAuthError) {
+            console.error('Error deleting user from auth:', deleteAuthError)
+            // Still log the attempt
+          } else {
+            // User deleted from auth.users will cascade to public.users
+            // But we'll also update public.users to mark as deleted
+            updateData = {
+              account_status: 'banned', // Mark as banned before deletion
+              updated_at: new Date().toISOString(),
+            }
           }
+          auditMetadata = {
+            ...auditMetadata,
+            previous_status: targetUser.account_status || 'active',
+            deleted: true,
+          }
+          break
         }
-        auditMetadata = {
-          ...auditMetadata,
-          previous_status: targetUser.account_status || 'active',
-          deleted: true,
-        }
-        break
 
       default:
         return new Response(JSON.stringify({ error: `Invalid action: ${action}` }), {

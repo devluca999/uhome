@@ -9,7 +9,7 @@ import { LeaseMessagesTab } from '@/components/landlord/lease-messages-tab'
 import { ArrowLeft } from 'lucide-react'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
-import { cn } from '@/lib/utils'
+// import { cn } from '@/lib/utils' // Unused
 import type { Database } from '@/types/database'
 
 type Lease = Database['public']['Tables']['leases']['Row']

@@ -33,14 +33,12 @@ export async function seedAdminTestScenario() {
   const { userId: activeLandlordId } = await createAndConfirmUser(activeLandlordEmail, password, {
     role: 'landlord',
   })
-  await supabaseAdmin
-    .from('users')
-    .upsert({
-      id: activeLandlordId,
-      email: activeLandlordEmail,
-      role: 'landlord',
-      account_status: 'active',
-    })
+  await supabaseAdmin.from('users').upsert({
+    id: activeLandlordId,
+    email: activeLandlordEmail,
+    role: 'landlord',
+    account_status: 'active',
+  })
   users.push({
     email: activeLandlordEmail,
     userId: activeLandlordId,
@@ -55,15 +53,13 @@ export async function seedAdminTestScenario() {
     password,
     { role: 'landlord' }
   )
-  await supabaseAdmin
-    .from('users')
-    .upsert({
-      id: suspendedLandlordId,
-      email: suspendedLandlordEmail,
-      role: 'landlord',
-      account_status: 'suspended',
-      suspended_at: new Date().toISOString(),
-    })
+  await supabaseAdmin.from('users').upsert({
+    id: suspendedLandlordId,
+    email: suspendedLandlordEmail,
+    role: 'landlord',
+    account_status: 'suspended',
+    suspended_at: new Date().toISOString(),
+  })
   users.push({
     email: suspendedLandlordEmail,
     userId: suspendedLandlordId,
@@ -76,16 +72,14 @@ export async function seedAdminTestScenario() {
   const { userId: bannedTenantId } = await createAndConfirmUser(bannedTenantEmail, password, {
     role: 'tenant',
   })
-  await supabaseAdmin
-    .from('users')
-    .upsert({
-      id: bannedTenantId,
-      email: bannedTenantEmail,
-      role: 'tenant',
-      account_status: 'banned',
-      banned_at: new Date().toISOString(),
-      is_locked: true,
-    })
+  await supabaseAdmin.from('users').upsert({
+    id: bannedTenantId,
+    email: bannedTenantEmail,
+    role: 'tenant',
+    account_status: 'banned',
+    banned_at: new Date().toISOString(),
+    is_locked: true,
+  })
   users.push({ email: bannedTenantEmail, userId: bannedTenantId, role: 'tenant', status: 'banned' })
 
   // Locked tenant
@@ -93,16 +87,14 @@ export async function seedAdminTestScenario() {
   const { userId: lockedTenantId } = await createAndConfirmUser(lockedTenantEmail, password, {
     role: 'tenant',
   })
-  await supabaseAdmin
-    .from('users')
-    .upsert({
-      id: lockedTenantId,
-      email: lockedTenantEmail,
-      role: 'tenant',
-      account_status: 'locked',
-      is_locked: true,
-      locked_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    })
+  await supabaseAdmin.from('users').upsert({
+    id: lockedTenantId,
+    email: lockedTenantEmail,
+    role: 'tenant',
+    account_status: 'locked',
+    is_locked: true,
+    locked_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  })
   users.push({ email: lockedTenantEmail, userId: lockedTenantId, role: 'tenant', status: 'locked' })
 
   // Additional active tenants

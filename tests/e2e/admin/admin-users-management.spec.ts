@@ -148,14 +148,12 @@ test.describe('Admin Users Management', () => {
     const { userId: suspendedId } = await createAndConfirmUser(suspendedEmail, 'TestPassword123!', {
       role: 'tenant',
     })
-    await supabaseAdmin
-      .from('users')
-      .upsert({
-        id: suspendedId,
-        email: suspendedEmail,
-        role: 'tenant',
-        account_status: 'suspended',
-      })
+    await supabaseAdmin.from('users').upsert({
+      id: suspendedId,
+      email: suspendedEmail,
+      role: 'tenant',
+      account_status: 'suspended',
+    })
 
     const bannedEmail = generateTestEmail('banned')
     const { userId: bannedId } = await createAndConfirmUser(bannedEmail, 'TestPassword123!', {
@@ -276,14 +274,12 @@ test.describe('Admin Users Management', () => {
     const { userId: suspendedId } = await createAndConfirmUser(suspendedEmail, 'TestPassword123!', {
       role: 'tenant',
     })
-    await supabaseAdmin
-      .from('users')
-      .upsert({
-        id: suspendedId,
-        email: suspendedEmail,
-        role: 'tenant',
-        account_status: 'suspended',
-      })
+    await supabaseAdmin.from('users').upsert({
+      id: suspendedId,
+      email: suspendedEmail,
+      role: 'tenant',
+      account_status: 'suspended',
+    })
 
     const bannedEmail = generateTestEmail('bannedbadge')
     const { userId: bannedId } = await createAndConfirmUser(bannedEmail, 'TestPassword123!', {

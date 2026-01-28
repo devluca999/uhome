@@ -4,7 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTenants } from '@/hooks/use-tenants'
 import { motionTokens } from '@/lib/motion'
-import type { TaskInsert, TaskUpdate, TaskAssignedToType, TaskContextType, Task } from '@/hooks/use-tasks'
+import type {
+  TaskInsert,
+  TaskUpdate,
+  TaskAssignedToType,
+  TaskContextType,
+  Task,
+} from '@/hooks/use-tasks'
 import { Plus, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 

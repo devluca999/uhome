@@ -105,7 +105,8 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
       // Add image URLs if any
       if (imageUrls.length > 0) {
         // image_urls exists in database but may not be in TypeScript type yet
-        ;(workOrderData as MaintenanceRequestInsert & { image_urls?: string[] }).image_urls = imageUrls
+        ;(workOrderData as MaintenanceRequestInsert & { image_urls?: string[] }).image_urls =
+          imageUrls
       }
 
       const { error: insertError } = await supabase

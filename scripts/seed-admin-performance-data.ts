@@ -9,7 +9,8 @@ import { resolve } from 'path'
 dotenv.config({ path: resolve(process.cwd(), '.env.local') })
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase environment variables')
@@ -100,7 +101,12 @@ async function seedAdminPerformanceData() {
 
   // Generate security logs
   const securityLogs = []
-  const eventTypes = ['failed_login', 'invalid_api_call', 'rate_limit_exceeded', 'suspicious_activity']
+  const eventTypes = [
+    'failed_login',
+    'invalid_api_call',
+    'rate_limit_exceeded',
+    'suspicious_activity',
+  ]
   const severities = ['low', 'medium', 'high']
 
   for (let i = 0; i < 20; i++) {
@@ -110,13 +116,17 @@ async function seedAdminPerformanceData() {
 
     securityLogs.push({
       user_id: Math.random() > 0.5 ? `user_${Math.floor(Math.random() * 10) + 1}` : null,
-      user_role: Math.random() > 0.5 ? ['tenant', 'landlord', 'admin'][Math.floor(Math.random() * 3)] : null,
+      user_role:
+        Math.random() > 0.5 ? ['tenant', 'landlord', 'admin'][Math.floor(Math.random() * 3)] : null,
       event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
       severity,
       details: {
         ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
         userAgent: 'Test User Agent',
-        endpoint: Math.random() > 0.5 ? `/api/${apiEndpoints[Math.floor(Math.random() * apiEndpoints.length)]}` : null,
+        endpoint:
+          Math.random() > 0.5
+            ? `/api/${apiEndpoints[Math.floor(Math.random() * apiEndpoints.length)]}`
+            : null,
       },
       created_at: createdAt.toISOString(),
     })

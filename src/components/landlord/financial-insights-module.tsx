@@ -823,7 +823,11 @@ export function FinancialInsightsModule({
         onClose={() => setShowFullscreen(false)}
         graphData={graphData}
         filteredGraphData={filteredGraphData}
-        viewType={graphViewType === 'area' || graphViewType === 'pie' ? 'line' : (graphViewType as EnhancedGraphViewType)}
+        viewType={
+          graphViewType === 'area' || graphViewType === 'pie'
+            ? 'line'
+            : (graphViewType as EnhancedGraphViewType)
+        }
         timeRange={effectiveTimeRange} // Use effective time range (local override or page-wide)
         curveType={curveType}
         activeDatasets={activeDatasets}

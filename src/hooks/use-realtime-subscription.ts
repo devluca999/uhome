@@ -115,7 +115,11 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
       )
       .subscribe(status => {
         // Only log errors, and only in verbose debug mode
-        if (status === 'CHANNEL_ERROR' && import.meta.env.DEV && import.meta.env.VITE_DEBUG_REALTIME === 'true') {
+        if (
+          status === 'CHANNEL_ERROR' &&
+          import.meta.env.DEV &&
+          import.meta.env.VITE_DEBUG_REALTIME === 'true'
+        ) {
           console.debug(`[Realtime] Error subscribing to ${table} changes`)
         }
         // Silently handle successful subscriptions

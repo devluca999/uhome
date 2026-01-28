@@ -5,7 +5,7 @@
  * lease resolution, tabs, and empty states.
  */
 
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { resetAll } from '../../helpers/reset'
 import { createAndConfirmUser, generateTestEmail } from '../../helpers/auth-helpers'
 import { getSupabaseAdminClient } from '../../helpers/db-helpers'
@@ -17,7 +17,7 @@ test.describe('Tenant Messaging', () => {
     await resetAll(page)
   })
 
-  async function loginAsTenant(page: any, email?: string, password?: string) {
+  async function loginAsTenant(page: Page, email?: string, password?: string) {
     const tenantEmail = email || generateTestEmail('tenant')
     const tenantPassword = password || 'TestPassword123!'
 
@@ -43,7 +43,9 @@ test.describe('Tenant Messaging', () => {
     // Create landlord
     const landlordEmail = generateTestEmail('landlord')
     const landlordPassword = 'TestPassword123!'
-    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, landlordPassword, { role: 'landlord' })
+    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, landlordPassword, {
+      role: 'landlord',
+    })
 
     // Create property and unit
     const { data: property } = await supabaseAdmin
@@ -71,7 +73,9 @@ test.describe('Tenant Messaging', () => {
     // Create tenant and lease
     const tenantEmail = generateTestEmail('tenant')
     const tenantPassword = 'TestPassword123!'
-    const { userId: tenantId } = await createAndConfirmUser(tenantEmail, tenantPassword, { role: 'tenant' })
+    const { userId: tenantId } = await createAndConfirmUser(tenantEmail, tenantPassword, {
+      role: 'tenant',
+    })
 
     const { data: tenant } = await supabaseAdmin
       .from('tenants')
@@ -97,10 +101,7 @@ test.describe('Tenant Messaging', () => {
       .single()
 
     // Update tenant with lease_id
-    await supabaseAdmin
-      .from('tenants')
-      .update({ lease_id: lease.id })
-      .eq('id', tenant.id)
+    await supabaseAdmin.from('tenants').update({ lease_id: lease.id }).eq('id', tenant.id)
 
     return {
       landlordId,
@@ -128,7 +129,9 @@ test.describe('Tenant Messaging', () => {
 
     // Should see empty state
     await expect(page.locator('text=You are not currently part of a household')).toBeVisible()
-    await expect(page.locator('text=Messaging is only available once you\'ve been invited')).toBeVisible()
+    await expect(
+      page.locator("text=Messaging is only available once you've been invited")
+    ).toBeVisible()
   })
 
   test('tenant with lease sees landlord and household tabs', async ({ page }) => {
@@ -188,7 +191,9 @@ test.describe('Tenant Messaging', () => {
     // Create roommate
     const roommateEmail = generateTestEmail('roommate')
     const roommatePassword = 'TestPassword123!'
-    const { userId: roommateId } = await createAndConfirmUser(roommateEmail, roommatePassword, { role: 'tenant' })
+    const { userId: roommateId } = await createAndConfirmUser(roommateEmail, roommatePassword, {
+      role: 'tenant',
+    })
 
     const { data: roommateTenant } = await supabaseAdmin
       .from('tenants')

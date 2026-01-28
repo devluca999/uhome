@@ -44,11 +44,11 @@ export function LandlordLedger() {
           start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
           end: new Date(now.getFullYear(), now.getMonth(), 0),
         }
-      case 'yearly':
-        return {
-          start: new Date(now.getFullYear(), 0, 1),
-          end: new Date(now.getFullYear(), 11, 31),
-        }
+      // case 'yearly': // Not a valid DateRangePreset, removed
+      //   return {
+      //     start: new Date(now.getFullYear(), 0, 1),
+      //     end: new Date(now.getFullYear(), 11, 31),
+      //   }
       case 'custom':
         if (customStartDate && customEndDate) {
           return {
@@ -156,7 +156,20 @@ export function LandlordLedger() {
               <CardContent>
                 <RentRecordForm
                   onSubmit={async data => {
-                    const result = await createRentRecord(data)
+                    if (!data.property_id || !data.tenant_id) {
+                      return { error: new Error('Property ID and Tenant ID are required') }
+                    }
+                    const result = await createRentRecord({
+                      property_id: data.property_id,
+                      tenant_id: data.tenant_id,
+                      amount: data.amount,
+                      due_date: data.due_date,
+                      status: data.status,
+                      paid_date: data.paid_date,
+                      payment_method_type: data.payment_method_type,
+                      payment_method_label: data.payment_method_label,
+                      notes: data.notes,
+                    })
                     if (!result.error) {
                       setShowRentForm(false)
                       await refetch()
@@ -190,7 +203,9 @@ export function LandlordLedger() {
               <CardContent>
                 <ExpenseForm
                   onSubmit={async data => {
-                    const result = await createExpense(data)
+                    const result = await createExpense(
+                      data as { property_id: string; name: string; amount: number; date: string }
+                    )
                     if (!result.error) {
                       setShowExpenseForm(false)
                     }

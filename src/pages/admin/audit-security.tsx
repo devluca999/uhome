@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   FileText,
   Search,
-  Filter,
   Ban,
   Lock,
   Unlock,

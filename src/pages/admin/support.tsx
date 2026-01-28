@@ -5,7 +5,7 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, XCircle, Filter } from 'lucide-react'
+import { CheckCircle, Filter } from 'lucide-react'
 // Date formatting helper
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString)

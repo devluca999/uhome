@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-      let timeoutId: ReturnType<typeof setTimeout> | null = null
-    
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
     // Add timeout to prevent infinite loading
     timeoutId = setTimeout(() => {
       if (mounted) {
@@ -43,36 +43,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 10000) // 10 second timeout
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!mounted) return
-      
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-        timeoutId = null
-      }
-      
-      if (error) {
-        console.error('[AuthContext] Error getting session:', error)
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (!mounted) return
+
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
+        if (error) {
+          console.error('[AuthContext] Error getting session:', error)
+          setLoading(false)
+          return
+        }
+
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchUserRole(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch(error => {
+        if (!mounted) return
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        console.error('[AuthContext] Exception getting session:', error)
         setLoading(false)
-        return
-      }
-      
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchUserRole(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    }).catch((error) => {
-      if (!mounted) return
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-        timeoutId = null
-      }
-      console.error('[AuthContext] Exception getting session:', error)
-      setLoading(false)
-    })
+      })
 
     // Listen for auth changes
     const {
@@ -118,9 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Role fetch timeout')), 5000)
       )
-      
+
       const fetchPromise = supabase.from('users').select('role').eq('id', userId).single()
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any
+      const { data, error } = (await Promise.race([fetchPromise, timeoutPromise])) as any
 
       if (error) {
         console.error('[AuthContext] Error fetching user role:', error)

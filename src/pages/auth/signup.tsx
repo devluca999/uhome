@@ -298,7 +298,7 @@ export function SignupPage() {
               )}
               {magicLinkSent ? (
                 <div className="p-3 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-md border border-green-200 dark:border-green-800">
-                  Check your email! We've sent you a magic link to sign in.
+                  Check your email! We&apos;ve sent you a magic link to sign in.
                 </div>
               ) : (
                 <>

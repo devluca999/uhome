@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
-import { Upload, File, X, FileText, ChevronDown, ChevronUp } from 'lucide-react'
-import { motion as motionTokens, createSpring, durationToSeconds } from '@/lib/motion'
+import { Upload, File, X, FileText, ChevronUp } from 'lucide-react'
+import { motion as motionTokens, createSpring } from '@/lib/motion'
 
 export function LandlordDocuments() {
   const { properties } = useProperties()
@@ -207,8 +207,8 @@ export function LandlordDocuments() {
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{
-                                  duration: durationToSeconds(motionTokens.duration.normal),
-                                  ease: motionTokens.easing.standard,
+                                  duration: motionTokens.duration.slow,
+                                  ease: motionTokens.ease.standard,
                                 }}
                                 className="overflow-hidden mt-4 pt-4 border-t border-border"
                               >

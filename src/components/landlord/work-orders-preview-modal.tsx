@@ -66,9 +66,10 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
     const open = allRequests.filter(r => r.status !== 'closed' && r.status !== 'resolved')
 
     // Sort by date (newest first) - priority field doesn't exist in current schema
-    return open.sort((a, b) => {
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
+    return open
+      .sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
       .slice(0, 10) // Show top 10
   }, [allRequests])
 
@@ -198,7 +199,9 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
                             </div>
 
                             <p className="text-sm text-foreground mb-2 line-clamp-2">
-                              {order.public_description || order.description || 'No description provided'}
+                              {order.public_description ||
+                                order.description ||
+                                'No description provided'}
                             </p>
 
                             <div className="flex items-center justify-between text-xs text-muted-foreground">

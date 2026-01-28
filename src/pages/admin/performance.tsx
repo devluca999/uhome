@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 // Simple select component - using native select for now
 import {
@@ -14,9 +13,6 @@ import {
   ResponsiveContainer,
   Tooltip,
   CartesianGrid,
-  Legend,
-  LineChart as RechartsLineChart,
-  Line,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
@@ -24,20 +20,7 @@ import {
 import { useTheme } from '@/contexts/theme-context'
 import { useAdminPerformance, type TimeRange } from '@/hooks/admin/use-admin-performance'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
-import {
-  Clock,
-  Activity,
-  Upload,
-  Shield,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Gauge,
-  AlertTriangle,
-} from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
-
-const COLORS = ['#84A98C', '#ef4444', '#3b82f6', '#f59e0b']
+import { Clock, Activity, Upload, Shield, XCircle, Gauge, AlertTriangle } from 'lucide-react'
 
 export function AdminPerformance() {
   // Track performance metrics (meta tracking)
@@ -305,7 +288,9 @@ export function AdminPerformance() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }) =>
+                            `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
+                          }
                           outerRadius={100}
                           fill="#8884d8"
                           dataKey="value"

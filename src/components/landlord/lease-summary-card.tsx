@@ -32,7 +32,9 @@ export function LeaseSummaryCard({ lease, index = 0 }: LeaseSummaryCardProps) {
   const endDate = lease.lease_end_date
     ? new Date(lease.lease_end_date).toLocaleDateString()
     : 'Ongoing'
-  const isActive = !lease.lease_end_date || (lease.lease_end_date ? new Date(lease.lease_end_date) > new Date() : false)
+  const isActive =
+    !lease.lease_end_date ||
+    (lease.lease_end_date ? new Date(lease.lease_end_date) > new Date() : false)
 
   return (
     <motion.div

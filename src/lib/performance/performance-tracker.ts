@@ -206,9 +206,6 @@ class PerformanceTracker {
    */
   flushOnUnload() {
     if (this.metricQueue.length > 0) {
-      // Use sendBeacon for reliable delivery on page unload
-      const metrics = JSON.stringify(this.metricQueue)
-
       // Note: sendBeacon doesn't work with Edge Functions directly
       // Fallback to sync flush attempt
       this.flush().catch(() => {

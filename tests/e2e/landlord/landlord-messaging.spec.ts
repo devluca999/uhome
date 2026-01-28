@@ -43,7 +43,9 @@ test.describe('Landlord Messaging', () => {
     // Create landlord
     const landlordEmail = generateTestEmail('landlord')
     const landlordPassword = 'TestPassword123!'
-    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, landlordPassword, { role: 'landlord' })
+    const { userId: landlordId } = await createAndConfirmUser(landlordEmail, landlordPassword, {
+      role: 'landlord',
+    })
 
     // Create property and units
     const { data: property } = await supabaseAdmin
@@ -82,7 +84,9 @@ test.describe('Landlord Messaging', () => {
     // Create tenants and leases
     const tenant1Email = generateTestEmail('tenant1')
     const tenant1Password = 'TestPassword123!'
-    const { userId: tenant1Id } = await createAndConfirmUser(tenant1Email, tenant1Password, { role: 'tenant' })
+    const { userId: tenant1Id } = await createAndConfirmUser(tenant1Email, tenant1Password, {
+      role: 'tenant',
+    })
 
     const { data: tenant1 } = await supabaseAdmin
       .from('tenants')
@@ -108,10 +112,7 @@ test.describe('Landlord Messaging', () => {
       .single()
 
     // Update tenant with lease_id
-    await supabaseAdmin
-      .from('tenants')
-      .update({ lease_id: lease1.id })
-      .eq('id', tenant1.id)
+    await supabaseAdmin.from('tenants').update({ lease_id: lease1.id }).eq('id', tenant1.id)
 
     return {
       landlordId,
@@ -175,7 +176,9 @@ test.describe('Landlord Messaging', () => {
     await expect(page.locator('text=Welcome to your unit!')).toBeVisible()
 
     // Should NOT see household message
-    await expect(page.locator('text=This household message should not be visible to landlord')).not.toBeVisible()
+    await expect(
+      page.locator('text=This household message should not be visible to landlord')
+    ).not.toBeVisible()
   })
 
   test('landlord can send messages to tenants', async ({ page }) => {
@@ -202,7 +205,9 @@ test.describe('Landlord Messaging', () => {
     // Add tenant to second unit
     const tenant2Email = generateTestEmail('tenant2')
     const tenant2Password = 'TestPassword123!'
-    const { userId: tenant2Id } = await createAndConfirmUser(tenant2Email, tenant2Password, { role: 'tenant' })
+    const { userId: tenant2Id } = await createAndConfirmUser(tenant2Email, tenant2Password, {
+      role: 'tenant',
+    })
 
     const { data: tenant2 } = await supabaseAdmin
       .from('tenants')
@@ -228,10 +233,7 @@ test.describe('Landlord Messaging', () => {
       .single()
 
     // Update tenant with lease_id
-    await supabaseAdmin
-      .from('tenants')
-      .update({ lease_id: lease2.id })
-      .eq('id', tenant2.id)
+    await supabaseAdmin.from('tenants').update({ lease_id: lease2.id }).eq('id', tenant2.id)
 
     await loginAsLandlord(page, scenario.landlordEmail, scenario.landlordPassword)
     await page.goto(`${baseUrl}/landlord/messages`)

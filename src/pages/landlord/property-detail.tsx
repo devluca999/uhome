@@ -13,8 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useTenants } from '@/hooks/use-tenants'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useProperties } from '@/hooks/use-properties'
-import { useLeases } from '@/hooks/use-leases'
-import { ArrowLeft, Plus, Users, Wrench, FileText, Calendar, User, Trash2 } from 'lucide-react'
+// import { useLeases } from '@/hooks/use-leases' // Unused
+import { ArrowLeft, Plus, Users, Wrench, Calendar, User, Trash2 } from 'lucide-react'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { useNavigate } from 'react-router-dom'
@@ -36,7 +36,7 @@ export function PropertyDetail() {
   const { updateProperty } = useProperties()
   const { tenants, unlinkTenant: unlinkTenantFromHook } = useTenants()
   const { requests: workOrders, refetch: refetchWorkOrders } = useMaintenanceRequests(id, true) // true = isPropertyId
-  const { leases } = useLeases(id)
+  // const { leases } = useLeases(id) // Unused
   const [property, setProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -317,9 +317,9 @@ export function PropertyDetail() {
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-2xl font-semibold text-foreground">
-                        {workOrderCounts.pending}
+                        {workOrderCounts.submitted}
                       </div>
-                      <div className="text-xs text-muted-foreground">Pending</div>
+                      <div className="text-xs text-muted-foreground">Submitted</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-semibold text-foreground">
@@ -329,9 +329,9 @@ export function PropertyDetail() {
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-semibold text-foreground">
-                        {workOrderCounts.completed}
+                        {workOrderCounts.closed}
                       </div>
-                      <div className="text-xs text-muted-foreground">Completed</div>
+                      <div className="text-xs text-muted-foreground">Closed</div>
                     </div>
                   </div>
                   <Button

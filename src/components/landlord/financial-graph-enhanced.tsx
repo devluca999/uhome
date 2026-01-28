@@ -421,7 +421,7 @@ export function FinancialGraphEnhanced({
         timeRange={timeRange}
         curveType={curveType}
         activeDatasets={activeDatasets}
-        onViewTypeChange={(type) => setViewType(type)}
+        onViewTypeChange={type => setViewType(type)}
         onTimeRangeChange={setTimeRange}
         onCurveTypeChange={setCurveType}
         onActiveDatasetsChange={setActiveDatasets}

@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useDocuments } from '@/hooks/use-documents'
 import { useLeases } from '@/hooks/use-leases'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
@@ -42,7 +42,7 @@ export function TenantDocuments() {
         <Card className="relative z-10">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
-              You'll be able to access documents once your landlord adds you to a lease.
+              You&apos;ll be able to access documents once your landlord adds you to a lease.
             </p>
           </CardContent>
         </Card>

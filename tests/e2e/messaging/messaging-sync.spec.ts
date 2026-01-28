@@ -7,7 +7,6 @@
 import { test, expect } from '@playwright/test'
 import { resetAll } from '../../helpers/reset'
 import { seedTestScenario } from '../../helpers/seed'
-import { testMultiTabSync, waitForRealtimeUpdate } from '../../helpers/realtime'
 
 test.describe('Messaging Sync', () => {
   const baseUrl = process.env.VISUAL_TEST_BASE_URL || 'http://localhost:1000'

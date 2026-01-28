@@ -18,6 +18,7 @@ export function TenantMessages() {
   const { leaseId: urlLeaseId } = useParams<{ leaseId?: string }>()
   const [searchParams] = useSearchParams()
   const { role } = useAuth()
+  const [activeTab, setActiveTab] = useState('landlord')
 
   // Get the active lease for this tenant
   const { lease, loading, error } = useActiveLease()
@@ -123,7 +124,7 @@ export function TenantMessages() {
           </p>
         </div>
 
-        <Tabs defaultValue="landlord" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="landlord" className="flex items-center gap-2">
               <Building className="h-4 w-4" />

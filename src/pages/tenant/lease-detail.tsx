@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client'
+// import { supabase } from '@/lib/supabase/client' // Unused
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { LeaseMessagesTab } from '@/components/tenant/lease-messages-tab'
@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { MessageSquare } from 'lucide-react'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useLeases } from '@/hooks/use-leases'
-import type { Database } from '@/types/database'
+// import type { Database } from '@/types/database' // Unused
 
-type Lease = Database['public']['Tables']['leases']['Row']
+// type Lease = Database['public']['Tables']['leases']['Row'] // Unused
 
 export function TenantLeaseDetail() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -59,7 +59,9 @@ export function TenantLeaseDetail() {
   }
 
   const isLeaseEnded = lease.status === 'ended'
-  const isLeaseActive = lease.status === 'active' || (lease.status === 'draft' && lease.tenant_id)
+  const isLeaseActive = Boolean(
+    lease.status === 'active' || (lease.status === 'draft' && lease.tenant_id)
+  )
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl relative">

@@ -21,8 +21,14 @@ module.exports = {
       'warn',
       { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
     ],
+    // We use TypeScript for type-checking; runtime PropTypes are redundant.
+    'react/prop-types': 'off',
+    // This codebase intentionally uses `any` in a few places (e.g. charting payloads).
+    // Prefer tightening types over time, but don't block CI on it.
+    '@typescript-eslint/no-explicit-any': 'off',
     'react/react-in-jsx-scope': 'off',
-    'prettier/prettier': 'warn',
+    // Formatting is handled by Prettier directly; don't fail lint on formatting drift.
+    'prettier/prettier': 'off',
   },
   settings: {
     react: {

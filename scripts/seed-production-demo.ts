@@ -499,7 +499,7 @@ async function seedProductionDemoData() {
           { unit_name: '2A', rent_amount: 1450, rent_due_date: 1 },
           { unit_name: '2B', rent_amount: 1500, rent_due_date: 1 },
           { unit_name: '3A', rent_amount: 1550, rent_due_date: 1 },
-        ]
+        ],
       },
       {
         name: 'Pine Avenue Complex',
@@ -508,15 +508,13 @@ async function seedProductionDemoData() {
         units: [
           { unit_name: '5B', rent_amount: 2800, rent_due_date: 5 },
           { unit_name: '5C', rent_amount: 2750, rent_due_date: 5 },
-        ]
+        ],
       },
       {
         name: 'Elm Drive House',
         address: '789 Elm Drive, San Francisco, CA 94104',
         rules: 'Garden access. Bicycle storage available. Tenant responsible for utilities.',
-        units: [
-          { unit_name: 'Main', rent_amount: 1850, rent_due_date: 15 },
-        ]
+        units: [{ unit_name: 'Main', rent_amount: 1850, rent_due_date: 15 }],
       },
       {
         name: 'Maple Heights',
@@ -526,7 +524,7 @@ async function seedProductionDemoData() {
           { unit_name: '3C', rent_amount: 3200, rent_due_date: 1 },
           { unit_name: '3D', rent_amount: 3100, rent_due_date: 1 },
           { unit_name: '4A', rent_amount: 3300, rent_due_date: 1 },
-        ]
+        ],
       },
       {
         name: 'Cedar Lane Studios',
@@ -535,7 +533,7 @@ async function seedProductionDemoData() {
         units: [
           { unit_name: 'Studio 12', rent_amount: 2100, rent_due_date: 10 },
           { unit_name: 'Studio 15', rent_amount: 2050, rent_due_date: 10 },
-        ]
+        ],
       },
     ]
 
@@ -572,7 +570,7 @@ async function seedProductionDemoData() {
 
         createdProperties.push({
           ...property,
-          units: existingUnits || []
+          units: existingUnits || [],
         })
       }
     } else {
@@ -611,10 +609,12 @@ async function seedProductionDemoData() {
 
         createdProperties.push({
           ...property,
-          units: createdUnits || []
+          units: createdUnits || [],
         })
 
-        console.log(`✅ Created property "${property.name}" with ${createdUnits?.length || 0} units`)
+        console.log(
+          `✅ Created property "${property.name}" with ${createdUnits?.length || 0} units`
+        )
       }
     }
 
@@ -743,7 +743,9 @@ async function seedProductionDemoData() {
     const allUnits = createdProperties.flatMap(p => p.units)
 
     // Create roommates: some units will have multiple tenants
-    const unitsForRoommates = allUnits.filter(unit => unit.unit_name.includes('A') || unit.unit_name.includes('Main'))
+    const unitsForRoommates = allUnits.filter(
+      unit => unit.unit_name.includes('A') || unit.unit_name.includes('Main')
+    )
 
     for (let i = 0; i < tenantEmails.length; i++) {
       const email = tenantEmails[i]
@@ -843,10 +845,7 @@ async function seedProductionDemoData() {
         }
 
         // Update tenant with lease_id
-        await supabase
-          .from('tenants')
-          .update({ lease_id: leaseId })
-          .eq('id', tenantId)
+        await supabase.from('tenants').update({ lease_id: leaseId }).eq('id', tenantId)
 
         console.log(`      ✅ Tenant created (ID: ${tenantId}, Lease ID: ${leaseId})`)
 
@@ -915,10 +914,10 @@ async function seedProductionDemoData() {
     } else {
       console.log(`   Creating rent records for ${tenantLeases.length} tenant-lease pairs...`)
     }
-    
+
     for (let tenantLeaseIdx = 0; tenantLeaseIdx < tenantLeases.length; tenantLeaseIdx++) {
       const { tenantId, leaseId, propertyId } = tenantLeases[tenantLeaseIdx]
-      
+
       // Get lease to get rent amount (leases have rent_amount from their unit)
       const { data: lease, error: leaseError } = await supabase
         .from('leases')
@@ -927,12 +926,16 @@ async function seedProductionDemoData() {
         .single()
 
       if (leaseError || !lease) {
-        console.warn(`   ⚠️  Lease ${leaseId} not found: ${leaseError?.message || 'No lease data'}, skipping rent records`)
+        console.warn(
+          `   ⚠️  Lease ${leaseId} not found: ${leaseError?.message || 'No lease data'}, skipping rent records`
+        )
         continue
       }
 
       if (!lease.rent_amount || lease.rent_amount === 0) {
-        console.warn(`   ⚠️  Lease ${leaseId} has invalid rent_amount (${lease.rent_amount}), skipping rent records`)
+        console.warn(
+          `   ⚠️  Lease ${leaseId} has invalid rent_amount (${lease.rent_amount}), skipping rent records`
+        )
         continue
       }
 
@@ -944,7 +947,9 @@ async function seedProductionDemoData() {
         .single()
 
       if (unitError) {
-        console.warn(`   ⚠️  Unit ${lease.unit_id} not found: ${unitError.message}, using default due_date`)
+        console.warn(
+          `   ⚠️  Unit ${lease.unit_id} not found: ${unitError.message}, using default due_date`
+        )
       }
 
       const rentAmount = lease.rent_amount
@@ -1005,7 +1010,9 @@ async function seedProductionDemoData() {
 
         // Validate rent amount before creating record
         if (!rentAmount || rentAmount <= 0) {
-          console.warn(`   ⚠️  Skipping rent record: invalid rent amount (${rentAmount}) for lease ${leaseId}`)
+          console.warn(
+            `   ⚠️  Skipping rent record: invalid rent amount (${rentAmount}) for lease ${leaseId}`
+          )
           continue
         }
 
@@ -1024,7 +1031,9 @@ async function seedProductionDemoData() {
 
     if (rentRecords.length === 0) {
       console.error(`   ❌ No rent records to insert! tenantLeases.length: ${tenantLeases.length}`)
-      console.error(`   This usually means all leases were skipped due to invalid rent_amount or missing lease data.`)
+      console.error(
+        `   This usually means all leases were skipped due to invalid rent_amount or missing lease data.`
+      )
     } else {
       console.log(`   Attempting to insert ${rentRecords.length} rent records...`)
 
@@ -1070,15 +1079,20 @@ async function seedProductionDemoData() {
           console.error(`   ❌ Rent records creation completely failed: ${fallbackError.message}`)
           console.error(`   Fallback error details:`, fallbackError)
         } else {
-          console.log(`✅ Created ${fallbackData?.length || minimalRentRecords.length} rent records (minimal fields)\n`)
+          console.log(
+            `✅ Created ${fallbackData?.length || minimalRentRecords.length} rent records (minimal fields)\n`
+          )
         }
       } else {
-        console.log(`✅ Created ${insertedRentRecords?.length || rentRecords.length} rent records\n`)
+        console.log(
+          `✅ Created ${insertedRentRecords?.length || rentRecords.length} rent records\n`
+        )
 
         // Log how many paid records with paid_date we created
-        const paidWithDateCount = insertedRentRecords?.filter(
-          (r: { status: string; paid_date?: string | null }) => r.status === 'paid' && r.paid_date
-        ).length || 0
+        const paidWithDateCount =
+          insertedRentRecords?.filter(
+            (r: { status: string; paid_date?: string | null }) => r.status === 'paid' && r.paid_date
+          ).length || 0
         console.log(`   📊 Of which ${paidWithDateCount} are paid with paid_date set`)
       }
     }
@@ -1364,10 +1378,7 @@ async function seedProductionDemoData() {
       const { tenantId, leaseId } = leasesForMessages[leaseIdx]
 
       // Get all tenant user IDs for this lease (including roommates)
-      const leaseTenants = await supabase
-        .from('tenants')
-        .select('user_id')
-        .eq('lease_id', leaseId)
+      const leaseTenants = await supabase.from('tenants').select('user_id').eq('lease_id', leaseId)
 
       const leaseTenantUserIds = (leaseTenants.data || []).map(t => t.user_id).filter(Boolean)
 
@@ -1508,21 +1519,25 @@ async function seedProductionDemoData() {
         console.warn(`   ⚠️  Failed to query tenant count: ${tenantCountError.message}`)
         console.warn(`   Error details:`, tenantCountError)
       } else {
-        console.log(`   📊 Tenants in DB: ${actualTenantCount || 0} (expected: ${tenantLeases.length})`)
+        console.log(
+          `   📊 Tenants in DB: ${actualTenantCount || 0} (expected: ${tenantLeases.length})`
+        )
         if ((actualTenantCount || 0) < tenantLeases.length) {
           console.warn(`   ⚠️  WARNING: Fewer tenants in DB than expected!`)
-          
+
           // Debug: Try to get actual tenant records to see what's there
           const { data: actualTenants, error: debugError } = await supabase
             .from('tenants')
             .select('id, user_id, property_id, lease_id')
             .in('property_id', propertyIds)
             .limit(20)
-          
+
           if (!debugError && actualTenants) {
             console.log(`   🔍 Debug: Found ${actualTenants.length} tenant records:`)
             actualTenants.slice(0, 5).forEach((t, i) => {
-              console.log(`      ${i + 1}. Tenant ID: ${t.id}, Property: ${t.property_id}, Lease: ${t.lease_id || 'none'}`)
+              console.log(
+                `      ${i + 1}. Tenant ID: ${t.id}, Property: ${t.property_id}, Lease: ${t.lease_id || 'none'}`
+              )
             })
           }
         }

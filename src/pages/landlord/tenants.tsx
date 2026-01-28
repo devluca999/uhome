@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTenants } from '@/hooks/use-tenants'
 import { useProperties } from '@/hooks/use-properties'
@@ -8,12 +8,12 @@ import { TenantInviteForm } from '@/components/landlord/tenant-invite-form'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { useUrlParams } from '@/lib/url-params'
 import { Plus, Users, Mail, X, Search, Filter } from 'lucide-react'
-import { motionTokens, durationToSeconds } from '@/lib/motion'
+import { motionTokens } from '@/lib/motion'
 
 type StatusFilter = 'all' | 'active' | 'ended'
 type SortFilter = 'name_az' | 'name_za' | 'newest' | 'oldest' | 'rent_high' | 'rent_low'
@@ -49,7 +49,7 @@ export function LandlordTenants() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(t => {
-        const email = t.email?.toLowerCase() || ''
+        const email = t.user?.email?.toLowerCase() || ''
         const phone = t.phone?.toLowerCase() || ''
         const property = properties.find(p => p.id === t.property_id)
         const propertyName = property?.name?.toLowerCase() || ''
@@ -69,9 +69,9 @@ export function LandlordTenants() {
 
     // Apply sorting
     if (sortFilter === 'name_az') {
-      filtered.sort((a, b) => (a.email || '').localeCompare(b.email || ''))
+      filtered.sort((a, b) => (a.user?.email || '').localeCompare(b.user?.email || ''))
     } else if (sortFilter === 'name_za') {
-      filtered.sort((a, b) => (b.email || '').localeCompare(a.email || ''))
+      filtered.sort((a, b) => (b.user?.email || '').localeCompare(a.user?.email || ''))
     } else if (sortFilter === 'newest') {
       filtered.sort(
         (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()

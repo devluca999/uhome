@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card' // Unused
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton-loader'
 import { PropertyDetailsCard } from '@/components/tenant/property-details-card'
@@ -10,7 +10,7 @@ import { HousematesList } from '@/components/tenant/housemates-list'
 import { JoinHouseholdForm } from '@/components/tenant/join-household-form'
 import { useActiveLease } from '@/hooks/use-active-lease'
 import { useAuth } from '@/contexts/auth-context'
-import { Home, Users, Building, User } from 'lucide-react'
+import { Home, Users, Building } from 'lucide-react'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
@@ -22,6 +22,7 @@ export function TenantHousehold() {
   const { role } = useAuth()
   const navigate = useNavigate()
   const [showJoinForm, setShowJoinForm] = useState(false)
+  const [activeTab, setActiveTab] = useState('home')
 
   // Get the active lease for this tenant
   const { lease, loading, error } = useActiveLease()
@@ -123,7 +124,7 @@ export function TenantHousehold() {
           </p>
         </div>
 
-        <Tabs defaultValue="home" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="home" className="flex items-center gap-2">
               <Building className="h-4 w-4" />

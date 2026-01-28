@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate, useLocation, Navigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Eye, EyeOff, User, Building } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -108,7 +108,10 @@ export function LoginPage() {
 
     if (error) {
       // Handle rate limit errors specifically
-      if ((error as { status?: number }).status === 429 || error.message?.toLowerCase().includes('rate limit')) {
+      if (
+        (error as { status?: number }).status === 429 ||
+        error.message?.toLowerCase().includes('rate limit')
+      ) {
         setError(
           'Too many requests. Please wait a few minutes before requesting another magic link, or use password authentication instead.'
         )
@@ -242,7 +245,7 @@ export function LoginPage() {
               )}
               {magicLinkSent ? (
                 <div className="p-3 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-md border border-green-200 dark:border-green-800">
-                  Check your email! We've sent you a magic link to sign in.
+                  Check your email! We&apos;ve sent you a magic link to sign in.
                 </div>
               ) : (
                 <>

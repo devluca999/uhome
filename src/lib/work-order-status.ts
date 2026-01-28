@@ -26,11 +26,9 @@ const STATUS_TRANSITIONS: Record<WorkOrderStatus, WorkOrderStatus[]> = {
   closed: [], // Terminal state
 }
 
-/**
- * Tenant-created work order flow (typical)
- * submitted → seen → scheduled → in_progress → resolved → closed
- */
-const TENANT_CREATED_FLOW: WorkOrderStatus[] = [
+// Note: These flows are defined for future reference but not currently used
+// @ts-expect-error - Intentionally unused for future reference
+const _TENANT_CREATED_FLOW: WorkOrderStatus[] = [
   'submitted',
   'seen',
   'scheduled',
@@ -39,18 +37,15 @@ const TENANT_CREATED_FLOW: WorkOrderStatus[] = [
   'closed',
 ]
 
-/**
- * Landlord-created work order flow (typical)
- * scheduled → in_progress → resolved → closed
- */
-const LANDLORD_CREATED_FLOW: WorkOrderStatus[] = ['scheduled', 'in_progress', 'resolved', 'closed']
+// @ts-expect-error - Intentionally unused for future reference
+const _LANDLORD_CREATED_FLOW: WorkOrderStatus[] = ['scheduled', 'in_progress', 'resolved', 'closed']
 
 /**
  * Get valid next statuses for a work order
  */
 export function getValidNextStatuses(
   currentStatus: WorkOrderStatus,
-  createdByRole: CreatorRole
+  _createdByRole: CreatorRole
 ): WorkOrderStatus[] {
   // If closed, no transitions allowed
   if (currentStatus === 'closed') {

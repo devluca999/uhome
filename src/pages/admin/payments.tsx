@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, AlertCircle, Users } from 'lucide-react'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 import {
-  BarChart as RechartsBarChart,
-  Bar,
   XAxis,
   YAxis,
   ResponsiveContainer,
@@ -25,7 +23,7 @@ export function AdminPayments() {
   usePerformanceTracker({ componentName: 'AdminPayments' })
 
   const [activeTab, setActiveTab] = useState<string>('revenue')
-  const { metrics, subscriptions, loading, error } = useAdminPayments()
+  const { metrics, loading, error } = useAdminPayments()
   const { theme } = useTheme()
 
   const textColor = theme === 'dark' ? '#F5F6F8' : '#111318'

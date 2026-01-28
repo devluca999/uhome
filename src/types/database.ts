@@ -343,7 +343,6 @@ export type Database = {
           security_deposit: number | null
           created_at: string
           updated_at: string
-          updated_at: string
         }
         Insert: {
           id?: string

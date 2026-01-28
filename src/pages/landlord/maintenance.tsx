@@ -3,20 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Button } from '@/components/ui/button'
+// import { Button } from '@/components/ui/button' // Unused
 import { Badge } from '@/components/ui/badge'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Wrench } from 'lucide-react'
+import { getStatusBadgeVariant } from '@/lib/work-order-status'
 import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
 
+// Define type matching what useMaintenanceRequests returns
 type MaintenanceRequest = {
   id: string
-  property_id: string
-  tenant_id: string
-  status: 'pending' | 'in_progress' | 'completed'
+  property_id: string | null
+  tenant_id: string | null
+  lease_id: string | null
+  status: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
   category?: string
   description: string
+  public_description?: string | null
   created_at: string
   updated_at: string
   property?: {
@@ -55,7 +59,6 @@ export function LandlordMaintenance() {
   }
 
   function getStatusBadge(status: string) {
-    const { getStatusBadgeVariant } = require('@/lib/work-order-status')
     return getStatusBadgeVariant(status as any)
   }
 
