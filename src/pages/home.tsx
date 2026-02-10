@@ -237,6 +237,18 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="relative py-8 px-4 border-t border-border">
+        <div className="container mx-auto max-w-6xl flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+          <Link to="/privacy" className="hover:text-foreground underline-offset-4 hover:underline">
+            Privacy Policy
+          </Link>
+          <Link to="/terms" className="hover:text-foreground underline-offset-4 hover:underline">
+            Terms of Service
+          </Link>
+        </div>
+      </footer>
     </div>
   )
 }

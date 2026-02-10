@@ -20,9 +20,9 @@ function log(message: string, color: keyof typeof colors = 'reset') {
 }
 
 async function _executeQuery(
-  _url: string,
-  _serviceKey: string,
-  _query: string
+  url: string,
+  serviceKey: string,
+  query: string
 ): Promise<unknown[]> {
   try {
     const response = await fetch(`${url}/rest/v1/rpc/exec_sql`, {
@@ -64,6 +64,7 @@ async function getSchemaInfo(url: string, serviceKey: string) {
   })
 
   const knownTables = [
+    // Core tables
     'users',
     'properties',
     'tenants',
@@ -80,6 +81,34 @@ async function getSchemaInfo(url: string, serviceKey: string) {
     'organizations',
     'memberships',
     'subscriptions',
+    // Phase 4: Stripe Connect
+    'stripe_connect_accounts',
+    'payments',
+    'payment_settings',
+    // Phase 5: Admin Console
+    'waitlist',
+    'promo_codes',
+    'newsletter_campaigns',
+    'leads',
+    // Phase 3: Email Notifications
+    'email_deliveries',
+    'email_preferences',
+    // Phase 3: Push Notifications
+    'push_subscriptions',
+    // Phase 6: Lead Scraper
+    'scraper_runs',
+    'scraper_kill_switch',
+    // Phase 7: Compliance
+    'data_deletion_requests',
+    'data_export_requests',
+    'compliance_audit_log',
+    // Phase 8: Release Tracking
+    'app_releases',
+    'feature_flags',
+    'release_events',
+    // Phase 10: Lead Ingestion
+    'lead_import_events',
+    'lead_field_mappings',
   ]
 
   const tableInfo: Record<string, { exists: boolean; columns?: string[]; rowCount?: number }> = {}

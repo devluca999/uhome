@@ -81,7 +81,7 @@ This document audits the application's adherence to the CIA (Confidentiality, In
 
 ### 🔴 Data Consistency Issues
 
-1. **Revenue Calculation Time Range Mismatch** (See Critical Issue above)
+1. **Revenue Calculation Time Range Mismatch** — RESOLVED (AUDIT_FIXES_SUMMARY.md: dashboard now uses currentMonthMetrics for KPIs)
 
 2. **Potential Data Persistence Issues**
    - Need to verify: Are all mutations persisted correctly?

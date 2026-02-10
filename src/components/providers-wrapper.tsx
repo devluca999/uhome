@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { TenantDevModeProvider } from '@/contexts/tenant-dev-mode-context'
 import { LandlordDevModeProvider } from '@/contexts/landlord-dev-mode-context'
 import { DevModeIndicator } from '@/components/dev-mode-indicator'
+import { CookieConsent } from '@/components/cookie-consent'
 
 /**
  * Wrapper component for providers that need router context (useLocation, etc.)
@@ -13,6 +14,7 @@ export function ProvidersWrapper({ children }: { children: ReactNode }) {
       <LandlordDevModeProvider>
         <DevModeIndicator />
         {children}
+        <CookieConsent />
       </LandlordDevModeProvider>
     </TenantDevModeProvider>
   )

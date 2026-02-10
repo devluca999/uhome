@@ -26,7 +26,7 @@ export function TenantDocuments() {
 
   if (tenantLoading || documentsLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="text-center py-12 relative z-10">
           <p className="text-muted-foreground">Loading...</p>
@@ -37,7 +37,7 @@ export function TenantDocuments() {
 
   if (!tenantData) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <Card className="relative z-10">
           <CardContent className="py-12 text-center">
@@ -51,7 +51,7 @@ export function TenantDocuments() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

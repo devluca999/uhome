@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Example Target",
+    "url": "https://example.com/contact",
+    "email_selector": "a[href^='mailto:']",
+    "description": "Example ICP target for lead scraping"
+  }
+]

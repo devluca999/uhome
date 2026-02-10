@@ -16,12 +16,14 @@ import {
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
+import { DataHealthCard } from '@/components/data-health/data-health-card'
 
 export function AdminOverview() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'AdminOverview' })
   const { stats, loading, error } = useAdminStats()
   const [activeTab, setActiveTab] = useState<string>('metrics')
+
 
   if (loading) {
     return (
@@ -59,6 +61,7 @@ export function AdminOverview() {
       <MatteLayer />
       <div className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
+          <DataHealthCard className="mb-4" />
           <div>
             <h1 className="text-3xl font-bold text-foreground">System Overview</h1>
             <p className="text-muted-foreground mt-2">High-level system metrics and statistics</p>

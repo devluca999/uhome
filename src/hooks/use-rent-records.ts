@@ -10,6 +10,7 @@ type RentRecord = {
   due_date: string
   status: 'pending' | 'paid' | 'overdue'
   paid_date?: string
+  late_fee?: number
   created_at: string
   updated_at: string
 }

@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTenants } from '@/hooks/use-tenants'
 import { useProperties } from '@/hooks/use-properties'
 import { TenantCard } from '@/components/landlord/tenant-card'
+import { TenantListItem } from '@/components/landlord/tenant-list-item'
+import { TenantDetailModal } from '@/components/landlord/tenant-detail-modal'
 import { TenantForm } from '@/components/landlord/tenant-form'
 import { TenantInviteForm } from '@/components/landlord/tenant-invite-form'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -12,11 +14,18 @@ import { Card, CardContent } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { useUrlParams } from '@/lib/url-params'
-import { Plus, Users, Mail, X, Search, Filter } from 'lucide-react'
+import { isFeatureEnabled } from '@/lib/feature-flags'
+import { Plus, Users, Mail, X, Search, Filter, LayoutGrid, List, Group } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { motionTokens } from '@/lib/motion'
+import type { Tenant } from '@/hooks/use-tenants'
 
 type StatusFilter = 'all' | 'active' | 'ended'
 type SortFilter = 'name_az' | 'name_za' | 'newest' | 'oldest' | 'rent_high' | 'rent_low'
+type ViewMode = 'list' | 'card'
+
+const VIEW_MODE_STORAGE_KEY = 'tenant-view-mode'
+const GROUP_BY_PROPERTY_STORAGE_KEY = 'tenant-group-by-property'
 
 export function LandlordTenants() {
   const { tenants, loading, createTenant, deleteTenant } = useTenants()
@@ -25,11 +34,71 @@ export function LandlordTenants() {
   const [showForm, setShowForm] = useState(false)
   const [showInviteForm, setShowInviteForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+
+  // View mode and grouping (with localStorage persistence)
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY) as ViewMode
+      return saved === 'list' || saved === 'card' ? saved : 'card'
+    }
+    return 'card'
+  })
+  const [groupByProperty, setGroupByProperty] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(GROUP_BY_PROPERTY_STORAGE_KEY) === 'true'
+    }
+    return false
+  })
 
   // Filter and sort states
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sortFilter, setSortFilter] = useState<SortFilter>('newest')
+
+  // Check feature flag
+  const viewModesEnabled = isFeatureEnabled('ENABLE_TENANT_VIEW_MODES')
+
+  // Update localStorage when view mode changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode)
+    }
+  }, [viewMode])
+
+  // Update localStorage when group by property changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(GROUP_BY_PROPERTY_STORAGE_KEY, String(groupByProperty))
+    }
+  }, [groupByProperty])
+
+  // Check URL params for tenantId (for modal opening)
+  useEffect(() => {
+    const tenantId = getFilterParam('tenantId')
+    if (tenantId && tenants.length > 0) {
+      const tenant = tenants.find(t => t.id === tenantId)
+      if (tenant) {
+        setSelectedTenant(tenant)
+        setShowDetailModal(true)
+        // Clear the URL param after opening
+        clearFilterParam('tenantId')
+      }
+    }
+  }, [getFilterParam, tenants, clearFilterParam])
+
+  // Check URL params for view mode
+  useEffect(() => {
+    const urlView = getFilterParam('view') as ViewMode
+    if (urlView === 'list' || urlView === 'card') {
+      setViewMode(urlView)
+    }
+    const urlGroupBy = getFilterParam('groupBy')
+    if (urlGroupBy === 'property') {
+      setGroupByProperty(true)
+    }
+  }, [getFilterParam])
 
   const propertyIdFilter = getFilterParam('propertyId')
   const filteredProperty = useMemo(() => {
@@ -117,9 +186,36 @@ export function LandlordTenants() {
     }
   }
 
+  function handleViewTenant(tenant: Tenant) {
+    setSelectedTenant(tenant)
+    setShowDetailModal(true)
+  }
+
+  function handleCloseDetailModal() {
+    setShowDetailModal(false)
+    setSelectedTenant(null)
+  }
+
+  // Group tenants by property if enabled
+  const groupedTenants = useMemo(() => {
+    if (!groupByProperty || !viewModesEnabled) {
+      return { ungrouped: filteredAndSortedTenants }
+    }
+
+    const grouped: Record<string, Tenant[]> = {}
+    filteredAndSortedTenants.forEach(tenant => {
+      const key = tenant.property_id || 'no-property'
+      if (!grouped[key]) {
+        grouped[key] = []
+      }
+      grouped[key].push(tenant)
+    })
+    return grouped
+  }, [filteredAndSortedTenants, groupByProperty, viewModesEnabled])
+
   if (showForm || showInviteForm) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative">
         <GrainOverlay />
         <div className="relative z-10">
           {showInviteForm ? (
@@ -150,7 +246,7 @@ export function LandlordTenants() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">
@@ -212,6 +308,42 @@ export function LandlordTenants() {
                     className="flex-1 h-9 bg-background/50"
                   />
                 </div>
+
+                {/* View Mode Toggle (if feature enabled) */}
+                {viewModesEnabled && (
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <span className="text-xs text-muted-foreground">View:</span>
+                    <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
+                      <Button
+                        variant={viewMode === 'card' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('card')}
+                        className="h-7 px-2"
+                      >
+                        <LayoutGrid className="w-3 h-3 mr-1" />
+                        Card
+                      </Button>
+                      <Button
+                        variant={viewMode === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className="h-7 px-2"
+                      >
+                        <List className="w-3 h-3 mr-1" />
+                        List
+                      </Button>
+                    </div>
+                    <Button
+                      variant={groupByProperty ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setGroupByProperty(!groupByProperty)}
+                      className="h-7 px-2 ml-auto"
+                    >
+                      <Group className="w-3 h-3 mr-1" />
+                      Group by Property
+                    </Button>
+                  </div>
+                )}
 
                 {/* Filters Row */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -305,14 +437,89 @@ export function LandlordTenants() {
               },
             }}
           />
+        ) : viewModesEnabled && groupByProperty ? (
+          // Grouped view
+          <div className="space-y-6">
+            {Object.entries(groupedTenants).map(([propertyId, propertyTenants]) => {
+              const property = properties.find(p => p.id === propertyId)
+              return (
+                <div key={propertyId} className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <h3 className="font-semibold text-foreground">
+                      {property ? property.name : 'No Property'}
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {propertyTenants.length} {propertyTenants.length === 1 ? 'tenant' : 'tenants'}
+                    </Badge>
+                  </div>
+                  {viewMode === 'card' ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      <AnimatePresence initial={false}>
+                        {propertyTenants.map(tenant => (
+                          <TenantCard
+                            key={tenant.id}
+                            tenant={tenant}
+                            onDelete={handleDelete}
+                            onView={handleViewTenant}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {propertyTenants.map(tenant => (
+                        <TenantListItem
+                          key={tenant.id}
+                          tenant={tenant}
+                          onDelete={handleDelete}
+                          onView={handleViewTenant}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : viewModesEnabled && viewMode === 'list' ? (
+          // List view
+          <div className="space-y-2">
+            {filteredAndSortedTenants.map(tenant => (
+              <TenantListItem
+                key={tenant.id}
+                tenant={tenant}
+                onDelete={handleDelete}
+                onView={handleViewTenant}
+              />
+            ))}
+          </div>
         ) : (
+          // Card view (default)
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence initial={false}>
               {filteredAndSortedTenants.map(tenant => (
-                <TenantCard key={tenant.id} tenant={tenant} onDelete={handleDelete} />
+                <TenantCard
+                  key={tenant.id}
+                  tenant={tenant}
+                  onDelete={handleDelete}
+                  onView={viewModesEnabled ? handleViewTenant : undefined}
+                />
               ))}
             </AnimatePresence>
           </div>
+        )}
+
+        {/* Tenant Detail Modal */}
+        {viewModesEnabled && (
+          <TenantDetailModal
+            isOpen={showDetailModal}
+            onClose={handleCloseDetailModal}
+            tenant={selectedTenant}
+            onMessage={() => {
+              handleCloseDetailModal()
+              // TODO: Navigate to messages (Phase 2)
+            }}
+          />
         )}
       </div>
     </div>

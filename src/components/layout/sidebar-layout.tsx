@@ -82,14 +82,14 @@ export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) 
                   variant={location.pathname === item.path ? 'default' : 'ghost'}
                   asChild
                   className={cn(
-                    'w-full justify-start px-4 py-2 rounded-md transition-all duration-200',
+                    'w-full justify-start px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap',
                     location.pathname === item.path
                       ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
                       : 'bg-transparent hover:bg-muted'
                   )}
                   aria-current={location.pathname === item.path ? 'page' : undefined}
                 >
-                  <Link to={item.path}>{item.label}</Link>
+                  <Link to={item.path} className="block truncate">{item.label}</Link>
                 </Button>
               </motion.div>
             ))}

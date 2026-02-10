@@ -1,6 +1,7 @@
 import { Page, expect } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseClient as getDbSupabaseClient, getSupabaseAdminClient } from './db-helpers'
+import { isProduction } from './env-guard'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
@@ -46,6 +47,12 @@ export async function createAndConfirmUser(
   password: string,
   metadata?: Record<string, any>
 ): Promise<{ userId: string; email: string; password: string }> {
+  if (isProduction()) {
+    throw new Error(
+      '❌ createAndConfirmUser cannot run against production. ' +
+        'SUPABASE_ENV=production or VITE_SUPABASE_URL points to production.'
+    )
+  }
   const supabase = getDbSupabaseClient()
   const supabaseAdmin = getSupabaseAdminClient()
 

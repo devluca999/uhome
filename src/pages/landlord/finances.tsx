@@ -395,6 +395,11 @@ export function LandlordFinances() {
   const propertyFilter =
     selectedPropertyId && selectedPropertyId !== 'all' ? selectedPropertyId : undefined
 
+  // Get active property IDs for filtering calculations
+  const activePropertyIds = useMemo(() => {
+    return new Set(properties.filter(p => p.is_active !== false).map(p => p.id))
+  }, [properties])
+
   // Use 12 months for better data visualization
   // CRITICAL: Use recordsForCharts (all historical data) for chart metrics
   // This ensures charts show at least 6-12 months regardless of timePeriod selection
@@ -404,7 +409,8 @@ export function LandlordFinances() {
     12,
     propertyFilter,
     graphTimeRange,
-    undefined // No dateRange filter - charts need all historical data
+    undefined, // No dateRange filter - charts need all historical data
+    activePropertyIds
   )
 
   // Use filtered records for KPI calculations (respects dateRange filter)
@@ -414,7 +420,8 @@ export function LandlordFinances() {
     12,
     propertyFilter,
     graphTimeRange,
-    dateRange // Apply dateRange filter for KPI calculations
+    dateRange, // Apply dateRange filter for KPI calculations
+    activePropertyIds
   )
 
   // Combine: use chartMetrics for charts, kpiMetrics for KPIs
@@ -697,7 +704,25 @@ export function LandlordFinances() {
         tenants={tenants}
       />
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative z-10">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
+          animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+          transition={{
+            duration: motionTokens.duration.normal,
+            ease: motionTokens.easing.standard,
+          }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-semibold text-foreground mb-2">Finances</h1>
+              <p className="text-muted-foreground">All your metrics at a glance</p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Onboarding Tooltips */}
         <FinancesOnboarding />
 

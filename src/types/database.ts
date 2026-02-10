@@ -38,6 +38,7 @@ export type Database = {
           rules: string | null
           property_type: string | null
           rules_visible_to_tenants: boolean
+          is_active: boolean
           late_fee_rules: {
             amount?: number
             grace_period_days?: number
@@ -56,6 +57,7 @@ export type Database = {
           rules?: string | null
           property_type?: string | null
           rules_visible_to_tenants?: boolean
+          is_active?: boolean
           late_fee_rules?: {
             amount?: number
             grace_period_days?: number
@@ -244,6 +246,9 @@ export type Database = {
           notes: string | null
           receipt_url: string | null
           late_fee: number
+          stripe_payment_intent_id: string | null
+          payment_status: 'pending' | 'paid' | 'overdue' | 'failed' | null
+          paid_at: string | null
           created_at: string
           updated_at: string
         }
@@ -262,6 +267,9 @@ export type Database = {
           notes?: string | null
           receipt_url?: string | null
           late_fee?: number
+          stripe_payment_intent_id?: string | null
+          payment_status?: 'pending' | 'paid' | 'overdue' | 'failed' | null
+          paid_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -280,6 +288,9 @@ export type Database = {
           notes?: string | null
           receipt_url?: string | null
           late_fee?: number
+          stripe_payment_intent_id?: string | null
+          payment_status?: 'pending' | 'paid' | 'overdue' | 'failed' | null
+          paid_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -470,6 +481,108 @@ export type Database = {
           footer_note?: string | null
           currency?: string
           date_format?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      payment_settings: {
+        Row: {
+          id: string
+          property_id: string
+          refunds_enabled: boolean
+          grace_period_days: number
+          auto_withdraw_enabled: boolean
+          withdraw_schedule: 'daily' | 'weekly' | 'monthly' | 'manual'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          refunds_enabled?: boolean
+          grace_period_days?: number
+          auto_withdraw_enabled?: boolean
+          withdraw_schedule?: 'daily' | 'weekly' | 'monthly' | 'manual'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          refunds_enabled?: boolean
+          grace_period_days?: number
+          auto_withdraw_enabled?: boolean
+          withdraw_schedule?: 'daily' | 'weekly' | 'monthly' | 'manual'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      stripe_connect_accounts: {
+        Row: {
+          id: string
+          account_id: string
+          onboarding_status: 'pending' | 'in_progress' | 'complete' | 'failed'
+          property_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          onboarding_status?: 'pending' | 'in_progress' | 'complete' | 'failed'
+          property_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          onboarding_status?: 'pending' | 'in_progress' | 'complete' | 'failed'
+          property_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      payments: {
+        Row: {
+          id: string
+          payment_intent_id: string
+          status: 'pending' | 'succeeded' | 'failed' | 'canceled' | 'refunded'
+          amount: number
+          fees: number
+          net_amount: number
+          currency: string
+          lease_id: string | null
+          tenant_id: string | null
+          property_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          payment_intent_id: string
+          status?: 'pending' | 'succeeded' | 'failed' | 'canceled' | 'refunded'
+          amount: number
+          fees?: number
+          net_amount: number
+          currency?: string
+          lease_id?: string | null
+          tenant_id?: string | null
+          property_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          payment_intent_id?: string
+          status?: 'pending' | 'succeeded' | 'failed' | 'canceled' | 'refunded'
+          amount?: number
+          fees?: number
+          net_amount?: number
+          currency?: string
+          lease_id?: string | null
+          tenant_id?: string | null
+          property_id?: string | null
           created_at?: string
           updated_at?: string
         }

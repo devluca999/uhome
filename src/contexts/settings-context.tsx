@@ -3,15 +3,23 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 export type ThemePreference = 'light' | 'dark' | 'system'
 export type NavLayout = 'header' | 'sidebar'
 
+export type NotificationFrequency = 'immediate' | 'digest' | 'disabled'
+
 export interface Settings {
   theme: ThemePreference
   useSystemTheme: boolean
   navLayout: NavLayout
   reduceMotion: boolean
+  compactMode: boolean
+  denseTables: boolean
+  showTooltips: boolean
   hiddenNavItems: string[]
   navItemOrder: string[]
   inAppNotifications: boolean
   toastReminders: boolean
+  notificationSound: boolean
+  notificationFrequency: NotificationFrequency
+  currency: string
   userName?: string
   organizationName?: string
 }
@@ -21,10 +29,16 @@ const DEFAULT_SETTINGS: Settings = {
   useSystemTheme: false,
   navLayout: 'header',
   reduceMotion: false,
+  compactMode: false,
+  denseTables: false,
+  showTooltips: true,
   hiddenNavItems: [],
   navItemOrder: [],
   inAppNotifications: true,
   toastReminders: true,
+  notificationSound: false,
+  notificationFrequency: 'immediate',
+  currency: 'USD',
 }
 
 const SETTINGS_STORAGE_KEY = 'uhome-settings'

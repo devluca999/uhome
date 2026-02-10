@@ -65,7 +65,8 @@ export function useFinancialMetrics(
   months: number = 6,
   propertyId?: string,
   timeRange: TimeRange = 'month',
-  dateRangeFilter?: { start: Date; end: Date }
+  dateRangeFilter?: { start: Date; end: Date },
+  activePropertyIds?: Set<string>
 ): FinancialMetrics {
   return useMemo(() => {
     const now = new Date()
@@ -76,14 +77,28 @@ export function useFinancialMetrics(
       dateRange: dateRangeFilter,
     }
 
-    // Use centralized calculation functions
-    const rentCollected = calculateRentCollected(rentRecords, filters)
-    const rentOutstanding = calculateUnpaidRent(rentRecords, filters)
-    const upcomingRent = calculateUpcomingRent(rentRecords, filters)
-    const totalExpenses = calculateTotalExpenses(expenses, filters)
+    // Debug logging
+    if (import.meta.env.DEV) {
+      console.debug('[useFinancialMetrics] Input:', JSON.stringify({
+        rentRecordsCount: rentRecords.length,
+        expensesCount: expenses.length,
+        months,
+        propertyId,
+        timeRange,
+        dateRangeFilter,
+        activePropertyIdsCount: activePropertyIds?.size,
+        activePropertyIds: activePropertyIds ? Array.from(activePropertyIds) : undefined,
+      }, null, 2))
+    }
+
+    // Use centralized calculation functions (exclude inactive properties)
+    const rentCollected = calculateRentCollected(rentRecords, filters, activePropertyIds)
+    const rentOutstanding = calculateUnpaidRent(rentRecords, filters, activePropertyIds)
+    const upcomingRent = calculateUpcomingRent(rentRecords, filters, activePropertyIds)
+    const totalExpenses = calculateTotalExpenses(expenses, filters, activePropertyIds)
 
     // Calculate projected expenses from recurring expenses (next 30 days)
-    const projectedExpenses = calculateProjectedExpenses(expenses, 30, filters)
+    const projectedExpenses = calculateProjectedExpenses(expenses, 30, filters, activePropertyIds)
 
     // Calculate projected income (next 30 days - pending rent)
     const projectedIncome = upcomingRent
@@ -99,13 +114,34 @@ export function useFinancialMetrics(
       rentCollected > 0 ? ((rentCollected - totalExpenses) / rentCollected) * 100 : 0
 
     // For monthly calculations, filter by property and dateRange for chart data
+    // Also filter out inactive properties if activePropertyIds is provided
     let filteredRentRecords = propertyId
       ? rentRecords.filter(r => r.property_id === propertyId)
-      : rentRecords
+      : activePropertyIds
+        ? rentRecords.filter(r => r.property_id && activePropertyIds.has(r.property_id))
+        : rentRecords
 
     let filteredExpenses = propertyId
       ? expenses.filter(e => e.property_id === propertyId)
-      : expenses
+      : activePropertyIds
+        ? expenses.filter(e => e.property_id && activePropertyIds.has(e.property_id))
+        : expenses
+
+    // Debug logging for filtering
+    if (import.meta.env.DEV) {
+      console.debug('[useFinancialMetrics] Filtering:', JSON.stringify({
+        beforeFilter: {
+          rentRecords: rentRecords.length,
+          expenses: expenses.length,
+        },
+        afterFilter: {
+          rentRecords: filteredRentRecords.length,
+          expenses: filteredExpenses.length,
+        },
+        propertyId,
+        activePropertyIdsCount: activePropertyIds?.size,
+      }, null, 2))
+    }
 
     // Apply dateRange filter if provided
     if (dateRangeFilter) {
@@ -156,7 +192,7 @@ export function useFinancialMetrics(
         })
         .reduce((sum, r) => sum + Number(r.amount) + (r.late_fee || 0), 0)
 
-      const monthExpenses = filteredExpenses
+      const monthExpenseTotal = filteredExpenses
         .filter(e => {
           const expenseDate = new Date(e.date)
           return expenseDate >= monthStart && expenseDate <= monthEnd
@@ -164,12 +200,12 @@ export function useFinancialMetrics(
         .reduce((sum, e) => sum + Number(e.amount), 0)
 
       monthlyRentCollected.push({ month: monthKey, amount: monthRent, date })
-      monthlyExpenses.push({ month: monthKey, amount: monthExpenses, date })
+      monthlyExpenses.push({ month: monthKey, amount: monthExpenseTotal, date })
       monthlyNet.push({
         month: monthKey,
         income: monthRent,
-        expenses: monthExpenses,
-        net: monthRent - monthExpenses,
+        expenses: monthExpenseTotal,
+        net: monthRent - monthExpenseTotal,
         date,
       })
     }
@@ -262,7 +298,7 @@ export function useFinancialMetrics(
     // Calculate expense averages by category with trends
     const expenseAveragesByCategory = calculateExpenseAveragesByCategory(filteredExpenses, months)
 
-    return {
+    const result = {
       rentCollected,
       rentOutstanding,
       upcomingRent,
@@ -275,7 +311,34 @@ export function useFinancialMetrics(
       monthlyNet: aggregatedNet,
       expenseAveragesByCategory,
     }
-  }, [rentRecords, expenses, months, propertyId, timeRange, dateRangeFilter])
+
+    // Debug logging for output
+    if (import.meta.env.DEV) {
+      console.debug('[useFinancialMetrics] Output:', JSON.stringify({
+        rentCollected,
+        rentOutstanding,
+        upcomingRent,
+        totalExpenses,
+        netProfit,
+        projectedNet,
+        marginPercentage,
+        monthlyRentCollected: {
+          length: aggregatedRentCollected.length,
+          data: aggregatedRentCollected,
+        },
+        monthlyExpenses: {
+          length: aggregatedExpenses.length,
+          data: aggregatedExpenses,
+        },
+        monthlyNet: {
+          length: aggregatedNet.length,
+          data: aggregatedNet,
+        },
+      }, null, 2))
+    }
+
+    return result
+  }, [rentRecords, expenses, months, propertyId, timeRange, dateRangeFilter, activePropertyIds])
 }
 
 /**

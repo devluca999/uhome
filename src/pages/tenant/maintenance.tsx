@@ -93,7 +93,7 @@ export function TenantMaintenance() {
 
   if (tenantLoading || requestsLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="text-center py-12 relative z-10">
           <p className="text-muted-foreground">Loading...</p>
@@ -104,7 +104,7 @@ export function TenantMaintenance() {
 
   if (!tenantData) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <Card className="relative z-10">
           <CardContent className="py-12 text-center">
@@ -119,7 +119,7 @@ export function TenantMaintenance() {
 
   if (showForm) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative">
         <GrainOverlay />
         <div className="relative z-10">
           <MaintenanceRequestForm
@@ -135,7 +135,7 @@ export function TenantMaintenance() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

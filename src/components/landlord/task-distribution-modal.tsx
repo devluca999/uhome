@@ -98,22 +98,14 @@ export function TaskDistributionModal({ isOpen, onClose }: TaskDistributionModal
         value: overdue.length,
         percentage: total > 0 ? (overdue.length / total) * 100 : 0,
         color: 'red',
-        isCurrency: false, // This is a count, not currency
-        breakdown: overdue.slice(0, 5).map(task => ({
-          label: task.title,
-          value: 1,
-        })),
+        isCurrency: false,
       },
       {
         label: 'Upcoming Tasks',
         value: upcoming.length,
         percentage: total > 0 ? (upcoming.length / total) * 100 : 0,
         color: 'blue',
-        isCurrency: false, // This is a count, not currency
-        breakdown: upcoming.slice(0, 5).map(task => ({
-          label: task.title,
-          value: 1,
-        })),
+        isCurrency: false,
       },
     ]
   }, [pendingTasks])

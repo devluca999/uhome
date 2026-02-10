@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { GripVertical, Eye, EyeOff } from 'lucide-react'
+import { GripVertical } from 'lucide-react'
 import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-import { Switch } from '@/components/ui/switch'
+
+const SCROLL_ZONE = 80
+const SCROLL_SPEED = 12
 
 interface NavItem {
   path: string
@@ -13,21 +15,38 @@ interface NavItem {
 
 interface NavItemReorderProps {
   items: NavItem[]
-  hiddenItems: string[]
   itemOrder: string[]
-  onToggleVisibility: (path: string, hidden: boolean) => void
   onReorder: (newOrder: string[]) => void
 }
 
 export function NavItemReorder({
   items,
-  hiddenItems,
   itemOrder,
-  onToggleVisibility,
   onReorder,
 }: NavItemReorderProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const handleContainerDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (draggedIndex === null) return
+      e.preventDefault()
+      const container = scrollRef.current
+      if (!container) return
+      const rect = container.getBoundingClientRect()
+      const y = e.clientY - rect.top
+      if (y < SCROLL_ZONE && container.scrollTop > 0) {
+        container.scrollTop = Math.max(0, container.scrollTop - SCROLL_SPEED)
+      } else if (y > rect.height - SCROLL_ZONE && container.scrollTop < container.scrollHeight - container.clientHeight) {
+        container.scrollTop = Math.min(
+          container.scrollHeight - container.clientHeight,
+          container.scrollTop + SCROLL_SPEED
+        )
+      }
+    },
+    [draggedIndex]
+  )
 
   // Use custom order if available, otherwise use original order
   const orderedItems =
@@ -79,10 +98,25 @@ export function NavItemReorder({
     setDragOverIndex(null)
   }
 
+  // Show entire list without scroll for easy reordering (landlord: 6–8 items, tenant: 3–4)
+  const hasScrollableContent = orderedItems.length > 10
+
   return (
-    <div className="max-h-[400px] overflow-y-auto space-y-2 scroll-m-2">
-      {orderedItems.map((item, index) => {
-        const isHidden = hiddenItems.includes(item.path)
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        onDragOver={handleContainerDragOver}
+        className={cn(
+          'rounded-lg border border-border space-y-2 pr-1',
+          hasScrollableContent ? 'max-h-[min(560px,75vh)] overflow-y-scroll' : 'overflow-visible'
+        )}
+        style={
+          hasScrollableContent
+            ? { scrollbarGutter: 'stable' }
+            : undefined
+        }
+      >
+        {orderedItems.map((item, index) => {
         const isRequired = item.required || item.path.includes('dashboard')
 
         return (
@@ -103,8 +137,7 @@ export function NavItemReorder({
             className={cn(
               'flex items-center gap-3 p-3 rounded-md border border-border bg-card scroll-m-2',
               draggedIndex === index && 'cursor-grabbing z-10',
-              dragOverIndex === index && draggedIndex !== index && 'border-primary bg-primary/5',
-              isHidden && 'opacity-60'
+              dragOverIndex === index && draggedIndex !== index && 'border-primary bg-primary/5'
             )}
           >
             {!isRequired && (
@@ -122,22 +155,10 @@ export function NavItemReorder({
               </div>
               <span className="text-xs text-muted-foreground">{item.path}</span>
             </div>
-            <div className="flex items-center gap-2">
-              {isHidden ? (
-                <EyeOff className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <Eye className="w-4 h-4 text-muted-foreground" />
-              )}
-              <Switch
-                checked={!isHidden}
-                onCheckedChange={checked => onToggleVisibility(item.path, !checked)}
-                disabled={isRequired}
-                aria-label={`${isHidden ? 'Show' : 'Hide'} ${item.label}`}
-              />
-            </div>
           </motion.div>
         )
       })}
+      </div>
     </div>
   )
 }

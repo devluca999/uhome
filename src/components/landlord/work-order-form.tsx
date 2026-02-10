@@ -225,6 +225,7 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
               placeholder="Description visible to tenants. Describe the maintenance issue or work needed..."
               required
               rows={4}
+              className="min-h-[100px] resize-y"
             />
             <p className="text-xs text-muted-foreground">
               This description will be visible to tenants
@@ -239,6 +240,7 @@ export function WorkOrderForm({ onSubmit, onCancel, propertyId }: WorkOrderFormP
               onChange={e => setInternalNotes(e.target.value)}
               placeholder="Landlord-only notes. Not visible to tenants."
               rows={3}
+              className="min-h-[75px] resize-y"
             />
             <p className="text-xs text-muted-foreground">
               These notes are only visible to landlords

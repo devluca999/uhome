@@ -20,6 +20,7 @@ import { ModalIndicator } from '@/components/ui/modal-indicator'
 import { motionTokens, createSpring } from '@/lib/motion'
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import type { TimePeriod } from './finances-filter-bar'
 
 interface KPICardData {
@@ -76,6 +77,7 @@ export function KPIStrip({
   onCardClick,
 }: KPIStripProps) {
   const cardSpring = createSpring('card')
+  const { format: formatCurrency } = useCurrencyFormatter()
   const [expandedCard, setExpandedCard] = useState<
     | 'collected'
     | 'outstanding'
@@ -155,9 +157,7 @@ export function KPIStrip({
       : []),
   ]
 
-  const formatCurrency = (value: number) => {
-    return `$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-  }
+  // Currency formatting now handled by useCurrencyFormatter hook
 
   const formatNumber = (value: number) => {
     return Math.abs(value).toLocaleString(undefined, {

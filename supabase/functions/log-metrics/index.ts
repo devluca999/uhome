@@ -7,12 +7,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
 
 serve(async req => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { 
+      status: 200,
+      headers: corsHeaders 
+    })
   }
 
   try {
@@ -28,7 +33,8 @@ serve(async req => {
     })
 
     // Get authenticated user from request
-    const authHeader = req.headers.get('authorization')
+    // Supabase client automatically includes authorization header when invoking functions
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -37,7 +43,7 @@ serve(async req => {
     }
 
     // Verify user is authenticated
-    const token = authHeader.replace('Bearer ', '')
+    const token = authHeader.replace('Bearer ', '').replace('bearer ', '')
     const {
       data: { user },
       error: authError,

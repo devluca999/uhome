@@ -1,5 +1,6 @@
 {
-    "recommendations": [
-        "haroldmartin.securedesign"
-    ]
+  "recommendations": [
+    "haroldmartin.securedesign",
+    "denoland.vscode-deno"
+  ]
 }

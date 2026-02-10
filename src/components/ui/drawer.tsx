@@ -36,8 +36,8 @@ export function Drawer({
   if (!isOpen) return null
 
   const sideClasses = {
-    left: 'left-0 top-0 bottom-0 h-full',
-    right: 'right-0 top-0 bottom-0 h-full',
+    left: 'left-0',
+    right: 'right-0',
     top: 'top-0 left-0 right-0 w-full',
     bottom: 'bottom-0 left-0 right-0 w-full',
   }
@@ -58,7 +58,7 @@ export function Drawer({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-[100]">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -87,8 +87,10 @@ export function Drawer({
           }
           className={cn(
             'absolute z-10 w-full max-w-md',
-            side === 'left' || side === 'right' ? 'h-full' : 'max-h-[90vh]',
-            sideClasses[side],
+            side === 'left' || side === 'right' 
+              ? 'h-[90vh] max-h-[90vh] top-1/2 -translate-y-1/2' 
+              : 'max-h-[90vh]',
+            side === 'left' ? 'left-0' : side === 'right' ? 'right-0' : sideClasses[side],
             className
           )}
         >

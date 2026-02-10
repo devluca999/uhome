@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
-type Tenant = {
+export type Tenant = {
   id: string
   user_id: string
   property_id: string

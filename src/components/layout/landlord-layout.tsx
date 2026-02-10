@@ -111,7 +111,7 @@ export function LandlordLayout() {
                 />
                 <span className="text-xl font-semibold text-foreground">uhome</span>
               </Link>
-              <nav className="flex gap-1 ml-8" aria-label="Main navigation">
+              <nav className="flex gap-1 ml-8 flex-shrink-0" aria-label="Main navigation">
                 {visibleNavItems.map(item => {
                   const isActive = location.pathname === item.path
                   return (
@@ -124,7 +124,7 @@ export function LandlordLayout() {
                         isActive
                           ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
                           : 'bg-transparent hover:bg-muted',
-                        'px-4 py-2 rounded-md transition-all duration-200'
+                        'px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap'
                       )}
                     >
                       <Link to={item.path}>{item.label}</Link>

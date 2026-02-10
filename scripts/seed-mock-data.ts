@@ -1,17 +1,17 @@
 // Mock Data Seeding Script for uhome
 // Run with: npm run seed:mock
 
+import './load-dotenv'
 import { createClient } from '@supabase/supabase-js'
-import { config } from 'dotenv'
-import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { enforceNonProduction } from '../tests/helpers/env-guard'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Load environment variables from .env.local
-config({ path: resolve(process.cwd(), '.env.local') })
+// CRITICAL: Hard fail if production detected
+enforceNonProduction()
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey =
@@ -200,6 +200,25 @@ async function createAndConfirmDemoUser(
 
 async function seedMockData() {
   console.log('🌱 Starting mock data seeding...\n')
+
+  // Environment validation
+  console.log('🔍 Validating environment...')
+  console.log(`   Supabase URL: ${supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : '[NOT SET]'}`)
+  console.log(`   Using Service Role: ${isUsingServiceRole ? 'Yes' : 'No'}`)
+  
+  if (!supabaseUrl) {
+    console.error('❌ VITE_SUPABASE_URL is not set')
+    console.error('   Please set VITE_SUPABASE_URL in your .env.local file')
+    process.exit(1)
+  }
+
+  if (!supabaseServiceKey) {
+    console.error('❌ Supabase service key is not set')
+    console.error('   Please set SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY in your .env.local file')
+    process.exit(1)
+  }
+
+  console.log('✅ Environment validation passed\n')
 
   try {
     let landlordId: string
@@ -796,6 +815,22 @@ async function seedMockData() {
         }
       }
     }
+
+    // Post-seed verification
+    console.log('\n🔍 Verifying seeded data...')
+    const { data: verifyProperties } = await supabase
+      .from('properties')
+      .select('id')
+      .eq('owner_id', landlordId)
+    
+    const { data: verifyRentRecords } = await supabase
+      .from('rent_records')
+      .select('id')
+      .limit(1)
+    
+    console.log(`   Properties: ${verifyProperties?.length || 0}`)
+    console.log(`   Rent Records: ${verifyRentRecords ? 'Found' : 'None'}`)
+    console.log('✅ Verification complete\n')
 
     console.log('\n🎉 Mock data seeding complete!')
     if (isUsingServiceRole) {

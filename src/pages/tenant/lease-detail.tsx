@@ -34,7 +34,7 @@ export function TenantLeaseDetail() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="relative z-10 text-center py-12">
           <p className="text-muted-foreground">Loading lease...</p>
@@ -45,7 +45,7 @@ export function TenantLeaseDetail() {
 
   if (!tenantData || !lease) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="relative z-10 text-center py-12">
           <EmptyState
@@ -64,7 +64,7 @@ export function TenantLeaseDetail() {
   )
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl relative">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-4xl relative">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

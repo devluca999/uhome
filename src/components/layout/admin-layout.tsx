@@ -7,6 +7,7 @@ import { AuthContext } from '@/contexts/auth-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
+import { isFeatureEnabled } from '@/lib/feature-flags'
 import { cn } from '@/lib/utils'
 
 const ADMIN_NAV_ITEMS = [
@@ -14,8 +15,13 @@ const ADMIN_NAV_ITEMS = [
   { path: '/admin/users', label: 'Users' },
   { path: '/admin/messages-support', label: 'Messages & Support' },
   { path: '/admin/payments', label: 'Payments' },
+  { path: '/admin/waitlist', label: 'Waitlist', featureFlag: 'ENABLE_ADMIN_WAITLIST' },
+  { path: '/admin/promotions', label: 'Promotions', featureFlag: 'ENABLE_ADMIN_PROMOTIONS' },
+  { path: '/admin/newsletter', label: 'Newsletter', featureFlag: 'ENABLE_ADMIN_NEWSLETTER' },
+  { path: '/admin/leads', label: 'Leads', featureFlag: 'ENABLE_ADMIN_LEADS' },
   { path: '/admin/performance', label: 'Performance' },
   { path: '/admin/audit-security', label: 'Audit & Security' },
+  { path: '/admin/releases', label: 'Releases', featureFlag: 'ENABLE_RELEASE_TRACKING' },
   { path: '/admin/system', label: 'System' },
 ]
 
@@ -77,7 +83,12 @@ export function AdminLayout() {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation">
-            {ADMIN_NAV_ITEMS.map((item, index) => (
+            {ADMIN_NAV_ITEMS.filter(item => {
+              if (item.featureFlag) {
+                return isFeatureEnabled(item.featureFlag)
+              }
+              return true
+            }).map((item, index) => (
               <motion.div
                 key={item.path}
                 initial={{ opacity: motionTokens.opacity.hidden, x: -8 }}
@@ -99,7 +110,7 @@ export function AdminLayout() {
                   }
                   asChild
                   className={cn(
-                    'w-full justify-start px-4 py-2 rounded-md transition-all duration-200',
+                    'w-full justify-start px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap',
                     location.pathname === item.path ||
                       (item.path === '/admin/messages-support' &&
                         (location.pathname === '/admin/conversations' ||
@@ -116,7 +127,7 @@ export function AdminLayout() {
                       : undefined
                   }
                 >
-                  <Link to={item.path}>{item.label}</Link>
+                  <Link to={item.path} className="block truncate">{item.label}</Link>
                 </Button>
               </motion.div>
             ))}

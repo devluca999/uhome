@@ -41,7 +41,7 @@ interface RentSummaryModalProps {
     end: Date
   }
   propertyId?: string
-  properties?: Array<{ id: string; name: string }>
+  properties?: Array<{ id: string; name: string; is_active?: boolean }>
   rentRecords?: RentRecordWithRelations[]
   expenses?: Expense[]
   tenants?: Array<{ id: string; property_id: string; user?: { email?: string } | null }>
@@ -80,13 +80,18 @@ export function RentSummaryModal({
     [propertyId, dateRange]
   )
 
+  // Get active property IDs for filtering
+  const activePropertyIds = useMemo(() => {
+    return new Set(properties.filter(p => p.is_active !== false).map(p => p.id))
+  }, [properties])
+
   const filteredRentRecords = useMemo(() => {
-    return filterRentRecords(rentRecords, filters)
-  }, [rentRecords, filters])
+    return filterRentRecords(rentRecords, filters, activePropertyIds)
+  }, [rentRecords, filters, activePropertyIds])
 
   const filteredExpenses = useMemo(() => {
-    return filterExpenses(expenses, filters)
-  }, [expenses, filters])
+    return filterExpenses(expenses, filters, activePropertyIds)
+  }, [expenses, filters, activePropertyIds])
 
   // Calculate breakdown data based on metric type
   const breakdownData = useMemo(() => {
@@ -480,7 +485,7 @@ export function RentSummaryModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}

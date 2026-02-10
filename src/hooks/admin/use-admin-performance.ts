@@ -74,6 +74,13 @@ export function useAdminPerformance(timeRange: TimeRange = '24h') {
 
       const timeRangeISO = getTimeRangeISO(timeRange)
 
+      if (import.meta.env.DEV) {
+        console.debug('[Admin Performance] Fetching metrics:', {
+          timeRange,
+          timeRangeISO,
+        })
+      }
+
       // Fetch aggregated metrics
       const [pageLoads, apiCalls, uploads, security] = await Promise.all([
         fetchPageLoadTimes(timeRangeISO),
@@ -81,6 +88,27 @@ export function useAdminPerformance(timeRange: TimeRange = '24h') {
         fetchUploadLogs(timeRangeISO),
         fetchSecurityLogs(timeRangeISO),
       ])
+
+      if (import.meta.env.DEV) {
+        console.debug('[Admin Performance] Raw data fetched:', {
+          pageLoads: {
+            count: pageLoads.length,
+            sample: pageLoads.slice(0, 3),
+          },
+          apiCalls: {
+            count: apiCalls.length,
+            sample: apiCalls.slice(0, 3),
+          },
+          uploads: {
+            count: uploads.length,
+            sample: uploads.slice(0, 3),
+          },
+          security: {
+            count: security.length,
+            sample: security.slice(0, 3),
+          },
+        })
+      }
 
       // Calculate aggregated metrics
       const avgPageLoadTime =
@@ -109,8 +137,24 @@ export function useAdminPerformance(timeRange: TimeRange = '24h') {
       setApiMetrics(apiCalls)
       setUploadLogs(uploads)
       setSecurityLogs(security)
+
+      if (import.meta.env.DEV) {
+        console.debug('[Admin Performance] Final metrics:', {
+          avgPageLoadTime: Math.round(avgPageLoadTime),
+          totalAPICalls,
+          uploadSuccessRate: Math.round(uploadSuccessRate * 100) / 100,
+          securityIncidents,
+        })
+      }
     } catch (err) {
-      console.error('Error fetching admin performance metrics:', err)
+      console.error('[Admin Performance] Error fetching metrics:', err)
+      if (import.meta.env.DEV) {
+        console.error('[Admin Performance] Error details:', {
+          error: err,
+          timeRange,
+          timeRangeISO: getTimeRangeISO(timeRange),
+        })
+      }
       setError(err as Error)
     } finally {
       setLoading(false)
@@ -125,7 +169,20 @@ export function useAdminPerformance(timeRange: TimeRange = '24h') {
       .gte('created_at', timeRangeISO)
       .order('created_at', { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('[Admin Performance] Error fetching page loads:', error)
+      }
+      throw error
+    }
+
+    if (import.meta.env.DEV) {
+      console.debug('[Admin Performance] Page loads query:', {
+        timeRangeISO,
+        rawCount: data?.length || 0,
+        sample: data?.slice(0, 3),
+      })
+    }
 
     // Aggregate by page path
     const aggregated = new Map<string, { total: number; count: number }>()
@@ -153,7 +210,20 @@ export function useAdminPerformance(timeRange: TimeRange = '24h') {
       .gte('created_at', timeRangeISO)
       .order('created_at', { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('[Admin Performance] Error fetching API metrics:', error)
+      }
+      throw error
+    }
+
+    if (import.meta.env.DEV) {
+      console.debug('[Admin Performance] API metrics query:', {
+        timeRangeISO,
+        rawCount: data?.length || 0,
+        sample: data?.slice(0, 3),
+      })
+    }
 
     // Aggregate by metric name
     const aggregated = new Map<string, { total: number; count: number }>()
@@ -190,7 +260,22 @@ export function useAdminPerformance(timeRange: TimeRange = '24h') {
 
     const { data, error } = await query
 
-    if (error) throw error
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('[Admin Performance] Error fetching upload logs:', error)
+      }
+      throw error
+    }
+
+    if (import.meta.env.DEV) {
+      console.debug('[Admin Performance] Upload logs query:', {
+        timeRangeISO,
+        status,
+        rawCount: data?.length || 0,
+        sample: data?.slice(0, 3),
+      })
+    }
+
     return data || []
   }
 
@@ -211,7 +296,22 @@ export function useAdminPerformance(timeRange: TimeRange = '24h') {
 
     const { data, error } = await query
 
-    if (error) throw error
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('[Admin Performance] Error fetching security logs:', error)
+      }
+      throw error
+    }
+
+    if (import.meta.env.DEV) {
+      console.debug('[Admin Performance] Security logs query:', {
+        timeRangeISO,
+        severity,
+        rawCount: data?.length || 0,
+        sample: data?.slice(0, 3),
+      })
+    }
+
     return data || []
   }
 

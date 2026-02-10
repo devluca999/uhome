@@ -427,7 +427,7 @@ export function LandlordOperations() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

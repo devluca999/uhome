@@ -21,7 +21,7 @@ export function SettingsSection({ title, description, children, className }: Set
       }}
       className={className}
     >
-      <Card className="glass-card">
+      <Card className="glass-card !max-h-none overflow-visible">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}

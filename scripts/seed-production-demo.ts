@@ -4,21 +4,19 @@
 // This script creates comprehensive, production-realistic demo data for staging only.
 // Hard-fails if run against production.
 
+import './load-dotenv'
 import { createClient } from '@supabase/supabase-js'
-import { config } from 'dotenv'
-import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { enforceNonProduction } from '../tests/helpers/env-guard'
+import { assertEnvironmentCapabilities } from '../src/lib/env-safety'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Load environment variables from .env.local
-config({ path: resolve(process.cwd(), '.env.local') })
-
 // CRITICAL: Hard fail if production detected
-import { enforceStagingOnly } from '../tests/helpers/env-guard'
-enforceStagingOnly()
+enforceNonProduction()
+assertEnvironmentCapabilities({ canSeed: true })
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey =
@@ -316,6 +314,7 @@ async function createInviteProgrammatically(
   }
 
   // Create draft lease (include property_id as it's still required)
+  const fallbackRentAmount = property.rent_amount && property.rent_amount > 0 ? null : 1000
   const { data: draftLease, error: leaseError } = await supabase
     .from('leases')
     .insert({
@@ -324,7 +323,7 @@ async function createInviteProgrammatically(
       status: 'draft',
       lease_start_date: new Date().toISOString().split('T')[0],
       lease_end_date: null,
-      rent_amount: property.rent_amount || 0,
+      rent_amount: property.rent_amount || fallbackRentAmount,
       rent_frequency: 'monthly',
       security_deposit: null,
     })

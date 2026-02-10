@@ -67,9 +67,15 @@ export interface FinanceFilters {
  */
 export function filterRentRecords(
   records: RentRecordWithRelations[],
-  filters?: FinanceFilters
+  filters?: FinanceFilters,
+  activePropertyIds?: Set<string>
 ): RentRecordWithRelations[] {
   let filtered = [...records]
+
+  // Filter out records from inactive properties if activePropertyIds is provided
+  if (activePropertyIds) {
+    filtered = filtered.filter(r => r.property_id && activePropertyIds.has(r.property_id))
+  }
 
   if (filters?.propertyId) {
     filtered = filtered.filter(r => r.property_id === filters.propertyId)
@@ -101,8 +107,17 @@ export function filterRentRecords(
 /**
  * Filter expenses by property and date range
  */
-export function filterExpenses(expenses: Expense[], filters?: FinanceFilters): Expense[] {
+export function filterExpenses(
+  expenses: Expense[],
+  filters?: FinanceFilters,
+  activePropertyIds?: Set<string>
+): Expense[] {
   let filtered = [...expenses]
+
+  // Filter out expenses from inactive properties if activePropertyIds is provided
+  if (activePropertyIds) {
+    filtered = filtered.filter(e => e.property_id && activePropertyIds.has(e.property_id))
+  }
 
   if (filters?.propertyId) {
     filtered = filtered.filter(e => e.property_id === filters.propertyId)
@@ -135,9 +150,10 @@ export function filterExpenses(expenses: Expense[], filters?: FinanceFilters): E
  */
 export function calculateRentCollected(
   rentRecords: RentRecordWithRelations[],
-  filters?: FinanceFilters
+  filters?: FinanceFilters,
+  activePropertyIds?: Set<string>
 ): number {
-  const filtered = filterRentRecords(rentRecords, filters)
+  const filtered = filterRentRecords(rentRecords, filters, activePropertyIds)
 
   // Collected revenue uses paid_date (cash accounting)
   // Only include records where status='paid' AND paid_date is not null
@@ -160,9 +176,10 @@ export function calculateRentCollected(
  */
 export function calculateUnpaidRent(
   rentRecords: RentRecordWithRelations[],
-  filters?: FinanceFilters
+  filters?: FinanceFilters,
+  activePropertyIds?: Set<string>
 ): number {
-  const filtered = filterRentRecords(rentRecords, filters)
+  const filtered = filterRentRecords(rentRecords, filters, activePropertyIds)
 
   return filtered
     .filter(r => r.status === 'overdue')
@@ -178,8 +195,12 @@ export function calculateUnpaidRent(
  * @param filters - Optional filters (property, date range)
  * @returns Total expenses amount
  */
-export function calculateTotalExpenses(expenses: Expense[], filters?: FinanceFilters): number {
-  const filtered = filterExpenses(expenses, filters)
+export function calculateTotalExpenses(
+  expenses: Expense[],
+  filters?: FinanceFilters,
+  activePropertyIds?: Set<string>
+): number {
+  const filtered = filterExpenses(expenses, filters, activePropertyIds)
 
   return filtered.reduce((sum, e) => sum + Number(e.amount), 0)
 }
@@ -216,18 +237,26 @@ export function calculateNetCashFlow(rentCollected: number, totalExpenses: numbe
  * @returns Count of active properties
  */
 export function calculateActiveProperties(
-  _properties: Property[], // Unused but kept for API compatibility
+  properties: Property[],
   tenants: Tenant[],
   filters?: FinanceFilters
 ): number {
-  // If filtering by specific property, check if it has tenants
+  // Filter out inactive properties
+  const activeProperties = properties.filter(p => p.is_active !== false)
+
+  // If filtering by specific property, check if it's active and has tenants
   if (filters?.propertyId) {
+    const property = activeProperties.find(p => p.id === filters.propertyId)
+    if (!property) return 0
     const hasTenants = tenants.some(t => t.property_id === filters.propertyId)
     return hasTenants ? 1 : 0
   }
 
-  // Count distinct properties that have tenants
-  const propertiesWithTenants = new Set(tenants.map(t => t.property_id))
+  // Count distinct active properties that have tenants
+  const activePropertyIds = new Set(activeProperties.map(p => p.id))
+  const propertiesWithTenants = new Set(
+    tenants.filter(t => t.property_id && activePropertyIds.has(t.property_id)).map(t => t.property_id!)
+  )
 
   return propertiesWithTenants.size
 }
@@ -250,16 +279,20 @@ export function calculateOccupancyRate(
   tenants: Tenant[],
   filters?: FinanceFilters
 ): number {
-  if (properties.length === 0) return 0
+  // Filter out inactive properties
+  const activeProperties = properties.filter(p => p.is_active !== false)
+  if (activeProperties.length === 0) return 0
 
-  // If filtering by specific property, return 100% if has tenants, 0% otherwise
+  // If filtering by specific property, check if it's active first
   if (filters?.propertyId) {
+    const property = activeProperties.find(p => p.id === filters.propertyId)
+    if (!property) return 0
     const hasTenants = tenants.some(t => t.property_id === filters.propertyId)
     return hasTenants ? 100 : 0
   }
 
-  const activeProperties = calculateActiveProperties(properties, tenants, filters)
-  return Math.round((activeProperties / properties.length) * 100)
+  const activePropertiesWithTenants = calculateActiveProperties(properties, tenants, filters)
+  return Math.round((activePropertiesWithTenants / activeProperties.length) * 100)
 }
 
 /**
@@ -274,9 +307,10 @@ export function calculateOccupancyRate(
  */
 export function calculateUpcomingRent(
   rentRecords: RentRecordWithRelations[],
-  filters?: FinanceFilters
+  filters?: FinanceFilters,
+  activePropertyIds?: Set<string>
 ): number {
-  const filtered = filterRentRecords(rentRecords, filters)
+  const filtered = filterRentRecords(rentRecords, filters, activePropertyIds)
 
   return filtered.filter(r => r.status === 'pending').reduce((sum, r) => sum + Number(r.amount), 0)
 }
@@ -323,9 +357,10 @@ export function calculateDateRange(
 export function calculateProjectedExpenses(
   expenses: Expense[],
   days: number,
-  filters?: FinanceFilters
+  filters?: FinanceFilters,
+  activePropertyIds?: Set<string>
 ): number {
-  const filtered = filterExpenses(expenses, filters)
+  const filtered = filterExpenses(expenses, filters, activePropertyIds)
   const now = new Date()
   const endDate = new Date(now)
   endDate.setDate(endDate.getDate() + days)

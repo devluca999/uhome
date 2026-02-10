@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
@@ -9,7 +10,9 @@ import { useRentRecords } from '@/hooks/use-rent-records'
 import { useLeases } from '@/hooks/use-leases'
 import { useNotes } from '@/hooks/use-notes'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
-import { Download, FileText, DollarSign } from 'lucide-react'
+import { Download, FileText, DollarSign, CreditCard } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { isFeatureEnabled } from '@/lib/feature-flags'
 import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
@@ -53,7 +56,7 @@ export function TenantFinances() {
 
   if (tenantLoading || rentLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
         <GrainOverlay />
         <div className="text-center py-12 relative z-10">
           <p className="text-muted-foreground">Loading...</p>
@@ -64,7 +67,7 @@ export function TenantFinances() {
 
   if (!tenantData) {
     return (
-      <div className="container mx-auto px-4 py-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
         <GrainOverlay />
         <EmptyState
           icon={<DollarSign className="h-8 w-8" />}
@@ -174,11 +177,13 @@ export function TenantFinances() {
 }
 
 function TenantRentRecordRow({ record }: { record: any }) {
+  const navigate = useNavigate()
   const { notes } = useNotes('rent_record', record.id)
   const note = notes[0]
 
   const totalDue = Number(record.amount) + (record.late_fee || 0)
   const hasLateFee = (record.late_fee || 0) > 0
+  const canPayOnline = isFeatureEnabled('ENABLE_STRIPE_CONNECT') && (record.status === 'pending' || record.status === 'overdue')
 
   const getStatusBadge = () => {
     switch (record.status) {
@@ -246,6 +251,20 @@ function TenantRentRecordRow({ record }: { record: any }) {
           <span className="text-sm text-foreground">
             {record.payment_method_label || record.payment_method_type}
           </span>
+        </div>
+      )}
+
+      {/* Pay Rent Button */}
+      {canPayOnline && (
+        <div>
+          <Button
+            onClick={() => navigate(`/tenant/pay-rent/${record.id}`)}
+            className="w-full"
+            size="sm"
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            Pay ${totalDue.toLocaleString()}
+          </Button>
         </div>
       )}
 

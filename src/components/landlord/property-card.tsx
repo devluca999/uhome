@@ -74,13 +74,25 @@ export function PropertyCard({ property }: PropertyCardProps) {
         }}
       >
         <Card
-          className="glass-card cursor-pointer hover:shadow-lg transition-shadow"
+          className={cn(
+            'glass-card cursor-pointer hover:shadow-lg transition-shadow',
+            property.is_active === false && 'opacity-50'
+          )}
           onClick={handleCardClick}
         >
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <CardTitle className="text-xl">{property.name}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">{property.name}</CardTitle>
+                  <div
+                    className={cn(
+                      'w-2 h-2 rounded-full flex-shrink-0',
+                      property.is_active !== false ? 'bg-green-500' : 'bg-red-500'
+                    )}
+                    title={property.is_active !== false ? 'Active' : 'Inactive'}
+                  />
+                </div>
                 {property.address && (
                   <CardDescription className="mt-1">{property.address}</CardDescription>
                 )}

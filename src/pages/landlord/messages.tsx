@@ -361,7 +361,7 @@ export function LandlordMessages() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -378,7 +378,7 @@ export function LandlordMessages() {
   // If no leases, show empty state
   if (!propertiesWithUnits || propertiesWithUnits.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -395,7 +395,7 @@ export function LandlordMessages() {
   // If lease selected, show thread view
   if (selectedLeaseId && selectedLease) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl relative">
+      <div className="container mx-auto px-4 pt-2 pb-8 max-w-4xl relative">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -437,7 +437,7 @@ export function LandlordMessages() {
 
   // Show properties with units and leases
   return (
-    <div className="container mx-auto px-4 py-8 relative">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

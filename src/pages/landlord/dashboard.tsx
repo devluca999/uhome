@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
@@ -45,8 +45,10 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { calculateOccupancyRate, calculateRentCollected } from '@/lib/finance-calculations'
+import { calculateOccupancyRate } from '@/lib/finance-calculations'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
+import { DataHealthCard } from '@/components/data-health/data-health-card'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 
 export function LandlordDashboard() {
   // Track performance metrics
@@ -55,10 +57,11 @@ export function LandlordDashboard() {
   const { properties, loading: propertiesLoading, error: propertiesError } = useProperties()
   const { tenants, loading: tenantsLoading, error: tenantsError } = useTenants()
   const { requests, loading: requestsLoading, error: requestsError } = useMaintenanceRequests()
-  const { records: rentRecords } = useLandlordRentRecords()
-  const { expenses } = useExpenses()
+  const { records: rentRecords, loading: rentRecordsLoading } = useLandlordRentRecords()
+  const { expenses, loading: expensesLoading } = useExpenses()
   const { tasks } = useTasks()
   const { documents } = useDocuments() // Get all documents for activity feed
+  const { format: formatCurrency } = useCurrencyFormatter()
 
   // Calculate current calendar month range (full month, not month-to-date)
   // Dashboard always shows current calendar month only - no filters, no month-to-date
@@ -70,17 +73,111 @@ export function LandlordDashboard() {
     }
   }, [])
 
+  // Get active property IDs for filtering calculations
+  const activePropertyIds = useMemo(() => {
+    const ids = new Set(properties.filter(p => p.is_active !== false).map(p => p.id))
+    if (import.meta.env.DEV) {
+      console.debug('[Dashboard Debug] Active Properties:', JSON.stringify({
+        totalProperties: properties.length,
+        activeCount: ids.size,
+        activeIds: Array.from(ids),
+        properties: properties.map(p => ({ id: p.id, name: p.name, is_active: p.is_active })),
+      }, null, 2))
+    }
+    return ids
+  }, [properties])
+
+  // Wait for critical data to load before calculating metrics
+  const isDataReady = !propertiesLoading && !rentRecordsLoading && !expensesLoading
+
   // Use financial metrics for dashboard
   // For chart data (monthlyRentCollected), we need all historical data (no dateRange filter)
   // For KPI cards (revenue, expenses, net income), we use currentMonthRange calculations directly
-  const metrics = useFinancialMetrics(
-    rentRecords,
-    expenses,
+  // We call useFinancialMetrics twice: once for historical charts, once for current month KPIs
+  // Only calculate if data is ready to avoid showing 0s while loading
+  const historicalMetrics = useFinancialMetrics(
+    isDataReady ? rentRecords : [],
+    isDataReady ? expenses : [],
     6,
     undefined, // propertyId - all properties
     'month', // timeRange
-    undefined // dateRange - no filter for chart data (charts need all historical data)
+    undefined, // dateRange - no filter for chart data (charts need all historical data)
+    activePropertyIds
   )
+  
+  // Get current month metrics for KPI cards to match finances page
+  const currentMonthMetrics = useFinancialMetrics(
+    isDataReady ? rentRecords : [],
+    isDataReady ? expenses : [],
+    1, // Only need current month
+    undefined, // propertyId - all properties
+    'month', // timeRange
+    currentMonthRange, // dateRange - filter to current month for KPI consistency
+    activePropertyIds
+  )
+  
+  // Use historical metrics for charts, current month metrics for KPIs
+  const metrics = {
+    ...historicalMetrics,
+    // Override KPI values with current month filtered values
+    rentCollected: currentMonthMetrics.rentCollected,
+    totalExpenses: currentMonthMetrics.totalExpenses,
+    netProfit: currentMonthMetrics.netProfit,
+    marginPercentage: currentMonthMetrics.marginPercentage,
+  }
+  
+
+  // Debug logging for data flow
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.debug('[Dashboard Debug] Data Summary:', JSON.stringify({
+        rentRecords: {
+          total: rentRecords.length,
+          byStatus: {
+            paid: rentRecords.filter(r => r.status === 'paid').length,
+            pending: rentRecords.filter(r => r.status === 'pending').length,
+            overdue: rentRecords.filter(r => r.status === 'overdue').length,
+          },
+          withPaidDate: rentRecords.filter(r => r.status === 'paid' && r.paid_date).length,
+          sample: rentRecords.slice(0, 3).map(r => ({
+            id: r.id,
+            property_id: r.property_id,
+            status: r.status,
+            amount: r.amount,
+            paid_date: r.paid_date,
+            due_date: r.due_date,
+          })),
+        },
+        expenses: {
+          total: expenses.length,
+          sample: expenses.slice(0, 3).map(e => ({
+            id: e.id,
+            property_id: e.property_id,
+            amount: e.amount,
+            date: e.date,
+          })),
+        },
+        activePropertyIds: {
+          count: activePropertyIds.size,
+          ids: Array.from(activePropertyIds),
+        },
+        metrics: {
+          rentCollected: metrics.rentCollected,
+          rentOutstanding: metrics.rentOutstanding,
+          upcomingRent: metrics.upcomingRent,
+          totalExpenses: metrics.totalExpenses,
+          monthlyRentCollected: {
+            length: metrics.monthlyRentCollected.length,
+            data: metrics.monthlyRentCollected,
+          },
+          monthlyExpenses: {
+            length: metrics.monthlyExpenses.length,
+            data: metrics.monthlyExpenses,
+          },
+        },
+      }, null, 2))
+    }
+  }, [rentRecords, expenses, activePropertyIds, metrics])
   // const cardSpring = createSpring('card') // Reserved for future use
   const [revenueModalOpen, setRevenueModalOpen] = useState(false)
   const [activityModalOpen, setActivityModalOpen] = useState(false)
@@ -117,16 +214,15 @@ export function LandlordDashboard() {
   }, [tenants])
 
   // Calculate monthly revenue (collected rent in current month)
-  // Use centralized calculation function for consistency with finances page
+  // Use currentMonthMetrics.rentCollected to ensure consistency with metrics.rentCollected
   const monthlyRevenue = useMemo(() => {
-    return calculateRentCollected(rentRecords, {
-      dateRange: currentMonthRange,
-    })
-  }, [rentRecords, currentMonthRange])
+    return currentMonthMetrics.rentCollected
+  }, [currentMonthMetrics.rentCollected])
 
   // Calculate monthly expenses (expenses with date in current month)
   // This matches test helper calculateMonthlyExpenses logic exactly
   // Use date string comparison (YYYY-MM-DD) to match test helper formatDate logic
+  // Filter to only active properties
   const monthlyExpenses = useMemo(() => {
     const monthStart = currentMonthRange.start
     const monthEnd = currentMonthRange.end
@@ -137,14 +233,17 @@ export function LandlordDashboard() {
     const monthEndStr = formatDateString(monthEnd)
 
     // Calculate expenses in the month (using date field)
+    // Filter to only active properties
     // This matches the test helper calculateMonthlyExpenses logic exactly
     return expenses
       .filter(e => {
+        // Filter by active properties
+        if (!e.property_id || !activePropertyIds.has(e.property_id)) return false
         const expenseDateStr = e.date.split('T')[0] // Get YYYY-MM-DD part
         return expenseDateStr >= monthStartStr && expenseDateStr <= monthEndStr
       })
       .reduce((sum, e) => sum + Number(e.amount || 0), 0)
-  }, [expenses, currentMonthRange])
+  }, [expenses, currentMonthRange, activePropertyIds])
 
   // Calculate net income (collected revenue - expenses)
   // This matches test helper calculateMonthlyNetIncome logic exactly:
@@ -340,9 +439,9 @@ export function LandlordDashboard() {
   // @ts-expect-error - Intentionally unused for future use
   const recentExpenses = expenses.slice(0, 5)
 
-  // Donut chart data
+  // Donut chart data - always show at least one entry to ensure chart renders
   const donutChartData = useMemo(() => {
-    return [
+    const data = [
       {
         name: 'Collected',
         value: metrics.rentCollected,
@@ -359,6 +458,8 @@ export function LandlordDashboard() {
         color: '#f59e0b',
       },
     ].filter(item => item.value > 0)
+    // If no data, show a placeholder to ensure chart renders
+    return data.length > 0 ? data : [{ name: 'No Data', value: 1, color: '#94a3b8' }]
   }, [metrics])
 
   // Calculate profit per property
@@ -433,11 +534,12 @@ export function LandlordDashboard() {
   }, [rentRecords, expenses, properties, profitByProperty])
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 
       <div className="relative z-10">
+        <DataHealthCard className="mb-6" />
         <motion.div
           initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
           animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
@@ -457,6 +559,12 @@ export function LandlordDashboard() {
             {propertiesError && <ErrorAlert error={propertiesError} />}
             {tenantsError && <ErrorAlert error={tenantsError} />}
             {requestsError && <ErrorAlert error={requestsError} />}
+          </div>
+        )}
+
+        {(propertiesLoading || rentRecordsLoading || expensesLoading) && (
+          <div className="mb-6 text-center py-8">
+            <p className="text-muted-foreground">Loading dashboard data...</p>
           </div>
         )}
 
@@ -503,7 +611,7 @@ export function LandlordDashboard() {
                 title="Monthly Revenue"
                 value={monthlyRevenue}
                 description="Paid rent due this month"
-                format={v => `$${Math.round(v).toLocaleString()}`}
+                format={v => formatCurrency(v)}
                 index={3}
                 data-testid="dashboard-revenue"
               />
@@ -582,9 +690,7 @@ export function LandlordDashboard() {
                 {metrics.monthlyRentCollected.length > 0 ? (
                   <BarChart data={metrics.monthlyRentCollected} />
                 ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No monthly data available
-                  </div>
+                  <BarChart data={[{ month: 'No Data', amount: 0 }]} />
                 )}
               </CardContent>
             </Card>
@@ -613,7 +719,7 @@ export function LandlordDashboard() {
               <ModalIndicator onClick={() => setProfitModalOpen(true)} />
               <MetricCard
                 title="Net Income"
-                value={`$${Math.round(netIncome).toLocaleString()}`}
+                value={formatCurrency(netIncome)}
                 description={`${metrics.marginPercentage.toFixed(1)}% margin`}
                 onClick={() => setProfitModalOpen(true)}
                 variant={netIncome >= 0 ? 'success' : 'danger'}
@@ -624,7 +730,7 @@ export function LandlordDashboard() {
               <ModalIndicator onClick={() => setExpenseModalOpen(true)} />
               <MetricCard
                 title="Total Expenses"
-                value={`$${Math.round(monthlyExpenses).toLocaleString()}`}
+                value={formatCurrency(monthlyExpenses)}
                 description="This month"
                 icon={<Receipt className="w-4 h-4" />}
                 onClick={() => setExpenseModalOpen(true)}
@@ -633,7 +739,7 @@ export function LandlordDashboard() {
             </div>
             <MetricCard
               title="Projected Net"
-              value={`$${Math.round(metrics.projectedNet).toLocaleString()}`}
+              value={formatCurrency(metrics.projectedNet)}
               description="Next 30 days"
             />
           </div>
@@ -717,7 +823,7 @@ export function LandlordDashboard() {
                 delay: 0.36,
                 ease: motionTokens.ease.standard,
               }}
-              layout={false}
+              layout={true}
             >
               <Card
                 className="glass-card relative overflow-hidden cursor-pointer"
@@ -777,51 +883,56 @@ export function LandlordDashboard() {
             </motion.div>
           </CollapsibleSection>
 
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: durationToSeconds(motionTokens.duration.base),
-              delay: 0.42, // Reduced from 0.75
-              ease: motionTokens.ease.standard,
-            }}
-            layout={false}
+          <CollapsibleSection
+            id="dashboard-quick-actions"
+            title="Quick Actions"
+            defaultExpanded={true}
           >
-            <Card className="glass-card relative overflow-hidden">
-              <GrainOverlay />
-              <MatteLayer intensity="subtle" />
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Common tasks</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button asChild className="w-full">
-                  <Link to="/landlord/properties">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Property
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild className="w-full">
-                  <Link to="/landlord/ledger">
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    View Ledger
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild className="w-full">
-                  <Link to="/landlord/operations">
-                    <Wrench className="mr-2 h-4 w-4" />
-                    View Operations
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild className="w-full">
-                  <Link to="/landlord/tenants">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Invite Tenant
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+              animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+              transition={{
+                duration: durationToSeconds(motionTokens.duration.base),
+                delay: 0.42,
+                ease: motionTokens.ease.standard,
+              }}
+              layout={true}
+            >
+              <Card className="glass-card relative overflow-hidden">
+                <GrainOverlay />
+                <MatteLayer intensity="subtle" />
+                <CardHeader>
+                  <CardDescription>Common tasks</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button asChild className="w-full">
+                    <Link to="/landlord/properties">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Property
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link to="/landlord/ledger">
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      View Ledger
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link to="/landlord/operations">
+                      <Wrench className="mr-2 h-4 w-4" />
+                      View Operations
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link to="/landlord/tenants">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Invite Tenant
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </CollapsibleSection>
         </div>
       </div>
 

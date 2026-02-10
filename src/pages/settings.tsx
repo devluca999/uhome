@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { SettingsSection } from '@/components/settings/settings-section'
+import { Drawer } from '@/components/ui/drawer'
+import { cn } from '@/lib/utils'
 import { ThemePreview } from '@/components/settings/theme-preview'
 import { NavItemReorder } from '@/components/settings/nav-item-reorder'
 import { useAuth } from '@/contexts/auth-context'
@@ -45,8 +47,12 @@ export function SettingsPage() {
   const [userName, setUserName] = useState(settings.userName || '')
   const [organizationName, setOrganizationName] = useState(settings.organizationName || '')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  // const [, setShowDeleteConfirm] = useState(false) // Unused
   const [deleting, setDeleting] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [changePasswordError, setChangePasswordError] = useState<string | null>(null)
 
   const navItems = role === 'landlord' ? LANDLORD_NAV_ITEMS : TENANT_NAV_ITEMS
 
@@ -68,16 +74,6 @@ export function SettingsPage() {
     updateSettings({ navLayout: layout })
   }
 
-  const handleToggleVisibility = (path: string, hidden: boolean) => {
-    const item = navItems.find(item => item.path === path)
-    if (item?.required) return // Cannot hide required items
-
-    const newHiddenItems = hidden
-      ? [...settings.hiddenNavItems, path]
-      : settings.hiddenNavItems.filter(p => p !== path)
-    updateSettings({ hiddenNavItems: newHiddenItems })
-  }
-
   const handleReorder = (newOrder: string[]) => {
     updateSettings({ navItemOrder: newOrder })
   }
@@ -88,8 +84,37 @@ export function SettingsPage() {
   }
 
   const handleChangePassword = () => {
-    // Redirect to password reset flow
-    window.location.href = '/reset-password'
+    setChangePasswordOpen(true)
+    setNewPassword('')
+    setConfirmPassword('')
+    setChangePasswordError(null)
+  }
+
+  const handleSubmitChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setChangePasswordError(null)
+
+    if (newPassword.length < 8) {
+      setChangePasswordError('Password must be at least 8 characters')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError('Passwords do not match')
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      setChangePasswordOpen(false)
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (error) {
+      setChangePasswordError((error as Error).message)
+    } finally {
+      setChangingPassword(false)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -103,22 +128,38 @@ export function SettingsPage() {
 
     setDeleting(true)
     try {
-      // Delete user account (this will cascade delete related data via RLS)
-      const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
-      if (error) throw error
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Not authenticated')
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/delete-own-account`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({}),
+      })
+
+      const result = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(result.error || 'Failed to delete account')
 
       await signOut()
       navigate('/login')
     } catch (error) {
       console.error('Error deleting account:', error)
-      alert('Failed to delete account. Please contact support.')
+      alert(
+        (error as Error).message?.includes('Not authenticated')
+          ? 'Session expired. Please sign in again.'
+          : 'Failed to delete account. Please contact support.'
+      )
     } finally {
       setDeleting(false)
     }
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 
@@ -287,8 +328,8 @@ export function SettingsPage() {
             </div>
 
             {themePreference === 'system' && (
-              <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                <div className="space-y-0.5">
+              <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <Label htmlFor="use-system-theme" className="text-sm">
                     Use system preference
                   </Label>
@@ -298,6 +339,7 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   id="use-system-theme"
+                  className="flex-shrink-0"
                   checked={settings.useSystemTheme}
                   onCheckedChange={checked => {
                     updateSettings({ useSystemTheme: checked })
@@ -367,13 +409,11 @@ export function SettingsPage() {
             <div className="space-y-3">
               <Label>Navigation Items</Label>
               <p className="text-xs text-muted-foreground">
-                Drag to reorder, toggle to show/hide. Required pages cannot be hidden.
+                Drag to reorder. Required pages cannot be reordered.
               </p>
               <NavItemReorder
                 items={navItems}
-                hiddenItems={settings.hiddenNavItems}
                 itemOrder={settings.navItemOrder}
-                onToggleVisibility={handleToggleVisibility}
                 onReorder={handleReorder}
               />
             </div>
@@ -383,8 +423,8 @@ export function SettingsPage() {
         {/* Section D: Interface Preferences */}
         <SettingsSection title="Interface Preferences" description="Adjust interface behavior">
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-              <div className="space-y-0.5">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+              <div className="min-w-0 flex-1 space-y-0.5">
                 <Label htmlFor="reduce-motion" className="text-sm">
                   Reduce Motion
                 </Label>
@@ -394,10 +434,94 @@ export function SettingsPage() {
               </div>
               <Switch
                 id="reduce-motion"
+                className="flex-shrink-0"
                 checked={settings.reduceMotion}
                 onCheckedChange={checked => updateSettings({ reduceMotion: checked })}
                 aria-label="Reduce motion"
               />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <Label htmlFor="compact-mode" className="text-sm">
+                  Compact Mode
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Reduce spacing and padding throughout the interface
+                </p>
+              </div>
+              <Switch
+                id="compact-mode"
+                className="flex-shrink-0"
+                checked={settings.compactMode}
+                onCheckedChange={checked => updateSettings({ compactMode: checked })}
+                aria-label="Compact mode"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <Label htmlFor="dense-tables" className="text-sm">
+                  Dense Tables
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Show more rows per page in tables
+                </p>
+              </div>
+              <Switch
+                id="dense-tables"
+                className="flex-shrink-0"
+                checked={settings.denseTables}
+                onCheckedChange={checked => updateSettings({ denseTables: checked })}
+                aria-label="Dense tables"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <Label htmlFor="show-tooltips" className="text-sm">
+                  Show Tooltips
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Display helpful tooltips on hover
+                </p>
+              </div>
+              <Switch
+                id="show-tooltips"
+                className="flex-shrink-0"
+                checked={settings.showTooltips}
+                onCheckedChange={checked => updateSettings({ showTooltips: checked })}
+                aria-label="Show tooltips"
+              />
+            </div>
+
+            <div className="space-y-2 p-3 rounded-md bg-muted/50">
+              <Label htmlFor="currency" className="text-sm">
+                Currency
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Select your preferred currency for displaying monetary values
+              </p>
+              <select
+                id="currency"
+                value={settings.currency}
+                onChange={e => updateSettings({ currency: e.target.value })}
+                className={cn(
+                  'flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                )}
+              >
+                <option value="USD">USD - US Dollar ($)</option>
+                <option value="EUR">EUR - Euro (€)</option>
+                <option value="GBP">GBP - British Pound (£)</option>
+                <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                <option value="AUD">AUD - Australian Dollar (A$)</option>
+                <option value="JPY">JPY - Japanese Yen (¥)</option>
+                <option value="CNY">CNY - Chinese Yuan (¥)</option>
+                <option value="INR">INR - Indian Rupee (₹)</option>
+                <option value="MXN">MXN - Mexican Peso (Mex$)</option>
+                <option value="BRL">BRL - Brazilian Real (R$)</option>
+              </select>
             </div>
           </div>
         </SettingsSection>
@@ -405,8 +529,8 @@ export function SettingsPage() {
         {/* Section E: Notifications */}
         <SettingsSection title="Notifications" description="Control notification preferences">
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-              <div className="space-y-0.5">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+              <div className="min-w-0 flex-1 space-y-0.5">
                 <Label htmlFor="in-app-notifications" className="text-sm">
                   In-app Notifications
                 </Label>
@@ -414,14 +538,15 @@ export function SettingsPage() {
               </div>
               <Switch
                 id="in-app-notifications"
+                className="flex-shrink-0"
                 checked={settings.inAppNotifications}
                 onCheckedChange={checked => updateSettings({ inAppNotifications: checked })}
                 aria-label="In-app notifications"
               />
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-              <div className="space-y-0.5">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+              <div className="min-w-0 flex-1 space-y-0.5">
                 <Label htmlFor="toast-reminders" className="text-sm">
                   Toast Reminders
                 </Label>
@@ -431,10 +556,51 @@ export function SettingsPage() {
               </div>
               <Switch
                 id="toast-reminders"
+                className="flex-shrink-0"
                 checked={settings.toastReminders}
                 onCheckedChange={checked => updateSettings({ toastReminders: checked })}
                 aria-label="Toast reminders"
               />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <Label htmlFor="notification-sound" className="text-sm">
+                  Notification Sound
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Play sound when notifications arrive
+                </p>
+              </div>
+              <Switch
+                id="notification-sound"
+                className="flex-shrink-0"
+                checked={settings.notificationSound}
+                onCheckedChange={checked => updateSettings({ notificationSound: checked })}
+                aria-label="Notification sound"
+              />
+            </div>
+
+            <div className="space-y-2 p-3 rounded-md bg-muted/50">
+              <Label htmlFor="notification-frequency" className="text-sm">
+                Notification Frequency
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                How often you receive notifications
+              </p>
+              <select
+                id="notification-frequency"
+                value={settings.notificationFrequency}
+                onChange={e => updateSettings({ notificationFrequency: e.target.value as any })}
+                className={cn(
+                  'flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                )}
+              >
+                <option value="immediate">Immediate - Receive notifications as they happen</option>
+                <option value="digest">Digest - Receive notifications in batches</option>
+                <option value="disabled">Disabled - No notifications</option>
+              </select>
             </div>
           </div>
         </SettingsSection>
@@ -475,6 +641,64 @@ export function SettingsPage() {
                     </Button>
                   </div>
                 </div>
+
+                <Drawer
+                  isOpen={changePasswordOpen}
+                  onClose={() => {
+                    setChangePasswordOpen(false)
+                    setChangePasswordError(null)
+                    setNewPassword('')
+                    setConfirmPassword('')
+                  }}
+                  title="Change Password"
+                  description="Enter a new password. Must be at least 8 characters."
+                  side="bottom"
+                >
+                  <form onSubmit={handleSubmitChangePassword} className="space-y-4">
+                    {changePasswordError && (
+                      <p className="text-sm text-destructive">{changePasswordError}</p>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        minLength={8}
+                        required
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        minLength={8}
+                        required
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setChangePasswordOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" className="flex-1" disabled={changingPassword}>
+                        {changingPassword ? 'Updating...' : 'Update Password'}
+                      </Button>
+                    </div>
+                  </form>
+                </Drawer>
 
                 <div className="pt-3 border-t border-destructive/20">
                   <div className="flex items-center justify-between">

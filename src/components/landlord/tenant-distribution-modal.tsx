@@ -29,17 +29,33 @@ export function TenantDistributionModal({ isOpen, onClose }: TenantDistributionM
     })
   }, [properties, tenants])
 
+  // Summary sections: occupied vs vacant properties (not per-property to avoid
+  // duplicating the interactive breakdown component below)
   const sections = useMemo((): BreakdownSection[] => {
-    return tenantDistribution.map(({ property, tenantCount }) => {
-      return {
-        label: property.name,
-        value: tenantCount,
-        color: tenantCount > 0 ? 'green' : 'yellow',
-        breakdown: [{ label: 'Tenant count', value: tenantCount }],
-        isCurrency: false, // This is a count, not currency
-      }
-    })
-  }, [tenantDistribution])
+    const occupied = tenantDistribution.filter(d => d.tenantCount > 0)
+    const vacant = tenantDistribution.filter(d => d.tenantCount === 0)
+
+    return [
+      {
+        label: 'Occupied Properties',
+        value: occupied.length,
+        percentage: properties.length > 0 ? (occupied.length / properties.length) * 100 : 0,
+        color: 'green',
+        isCurrency: false,
+      },
+      ...(vacant.length > 0
+        ? [
+            {
+              label: 'Vacant Properties',
+              value: vacant.length,
+              percentage: properties.length > 0 ? (vacant.length / properties.length) * 100 : 0,
+              color: 'yellow' as const,
+              isCurrency: false,
+            },
+          ]
+        : []),
+    ]
+  }, [tenantDistribution, properties.length])
 
   // filteredTenants removed - not used (using tenantDistribution directly)
 

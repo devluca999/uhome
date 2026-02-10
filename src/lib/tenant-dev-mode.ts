@@ -33,45 +33,16 @@ export const DEMO_LANDLORD_CREDENTIALS = {
   password: 'DemoLandlord2024!',
 } as const
 
+import { isNonProductionEnv } from './env-safety'
+
 /**
- * Check if current environment is staging (runtime check for app)
+ * Check if current environment allows dev mode (local, staging, test - NOT production)
+ * Uses shared env-safety logic; no import.meta.env.DEV fallback - requires explicit env or URL heuristics
  */
 function isStagingEnvironment(): boolean {
-  // Check explicit environment variable
-  const env = import.meta.env.VITE_SUPABASE_ENV
-  if (env === 'staging') {
-    return true
-  }
-
-  // Check Supabase URL for staging indicators
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-
-  // If URL contains 'prod' or 'production', it's NOT staging
-  if (
-    supabaseUrl.toLowerCase().includes('prod') ||
-    supabaseUrl.toLowerCase().includes('production')
-  ) {
-    return false
-  }
-
-  // Allow if URL contains staging/test indicators or is localhost
-  if (
-    supabaseUrl.toLowerCase().includes('staging') ||
-    supabaseUrl.toLowerCase().includes('test') ||
-    supabaseUrl.includes('localhost') ||
-    supabaseUrl.includes('127.0.0.1')
-  ) {
-    return true
-  }
-
-  // In development mode (Vite), assume staging if not production
-  // This allows dev mode to work when VITE_SUPABASE_ENV is not explicitly set
-  if (import.meta.env.DEV) {
-    return true
-  }
-
-  // If we can't determine, fail safe (assume production)
-  return false
+  const env = String(import.meta.env.VITE_SUPABASE_ENV || '')
+  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '')
+  return isNonProductionEnv(env, supabaseUrl)
 }
 
 /**

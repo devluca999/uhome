@@ -43,7 +43,7 @@ export function TenantMessages() {
   // Role guard: Only tenants can access this page
   if (role === 'landlord') {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -59,7 +59,7 @@ export function TenantMessages() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -79,7 +79,7 @@ export function TenantMessages() {
   if (error) {
     console.error('[TenantMessages] Error loading lease:', error)
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -96,7 +96,7 @@ export function TenantMessages() {
   // No active lease - tenant hasn't been invited or joined a household yet
   if (!lease) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -112,7 +112,7 @@ export function TenantMessages() {
 
   // Main messaging interface with Landlord/Household tabs
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl relative">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-4xl relative">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

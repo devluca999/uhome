@@ -4,6 +4,8 @@ import { LoginPage } from '@/pages/auth/login'
 import { SignupPage } from '@/pages/auth/signup'
 import { AuthCallback } from '@/pages/auth/callback'
 import { AcceptInvite } from '@/pages/auth/accept-invite'
+import { PrivacyPolicy } from '@/pages/legal/privacy'
+import { TermsOfService } from '@/pages/legal/terms'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { LandlordLayout } from '@/components/layout/landlord-layout'
 import { TenantLayout } from '@/components/layout/tenant-layout'
@@ -21,6 +23,7 @@ import { TenantDocuments } from '@/pages/tenant/documents'
 import { TenantFinances } from '@/pages/tenant/finances'
 import { TenantMessages } from '@/pages/tenant/messages'
 import { TenantLeaseDetail } from '@/pages/tenant/lease-detail'
+import { TenantPayRent } from '@/pages/tenant/pay-rent'
 import { LandlordMessages } from '@/pages/landlord/messages'
 import { LeaseDetail } from '@/pages/landlord/lease-detail'
 import { SettingsPage } from '@/pages/settings'
@@ -37,6 +40,12 @@ import { AdminSystem } from '@/pages/admin/system'
 import { AdminPerformance } from '@/pages/admin/performance'
 import { AdminPayments } from '@/pages/admin/payments'
 import { AdminAuditSecurity } from '@/pages/admin/audit-security'
+import { AdminWaitlist } from '@/pages/admin/waitlist'
+import { AdminPromotions } from '@/pages/admin/promotions'
+import { AdminNewsletter } from '@/pages/admin/newsletter'
+import { AdminLeads } from '@/pages/admin/leads'
+import { AdminReleases } from '@/pages/admin/releases'
+import { LeadUpload } from '@/pages/admin/leads/upload'
 
 export const router = createBrowserRouter(
   [
@@ -68,6 +77,14 @@ export const router = createBrowserRouter(
         {
           path: 'accept-invite/:token',
           element: <AcceptInvite />,
+        },
+        {
+          path: 'privacy',
+          element: <PrivacyPolicy />,
+        },
+        {
+          path: 'terms',
+          element: <TermsOfService />,
         },
         {
           path: 'dev/bypass',
@@ -156,6 +173,10 @@ export const router = createBrowserRouter(
               element: <TenantFinances />,
             },
             {
+              path: 'pay-rent/:recordId',
+              element: <TenantPayRent />,
+            },
+            {
               path: 'messages',
               element: <TenantMessages />,
             },
@@ -217,6 +238,30 @@ export const router = createBrowserRouter(
             {
               path: 'performance',
               element: <AdminPerformance />,
+            },
+            {
+              path: 'waitlist',
+              element: <AdminWaitlist />,
+            },
+            {
+              path: 'promotions',
+              element: <AdminPromotions />,
+            },
+            {
+              path: 'newsletter',
+              element: <AdminNewsletter />,
+            },
+            {
+              path: 'leads',
+              element: <AdminLeads />,
+            },
+            {
+              path: 'leads/upload',
+              element: <LeadUpload />,
+            },
+            {
+              path: 'releases',
+              element: <AdminReleases />,
             },
           ],
         },

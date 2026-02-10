@@ -67,10 +67,10 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
     try {
       setLoading(true)
 
-      // First, get all properties owned by the landlord
+      // First, get all active properties owned by the landlord
       const { data: properties, error: propertiesError } = await supabase
         .from('properties')
-        .select('id')
+        .select('id, is_active')
         .eq('owner_id', user.id)
 
       if (propertiesError) throw propertiesError
@@ -80,17 +80,18 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
         return
       }
 
-      const propertyIds = properties.map(p => p.id)
+      // Filter to only active properties (is_active !== false)
+      const activePropertyIds = properties
+        .filter(p => p.is_active !== false)
+        .map(p => p.id)
 
-      // Build query
+      // Build query - use a simpler select to avoid RLS issues with nested JOINs
+      // The tenant→users join can fail if RLS policies restrict user table access
       let query = supabase.from('rent_records').select(
         `
           *,
           property:properties(id, name, address),
-          tenant:tenants(
-            id,
-            user:users(email)
-          )
+          tenant:tenants(id)
         `
       )
 
@@ -101,9 +102,9 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
         // For backward compatibility, also check property_id
         query = query.eq('property_id', filter.propertyId)
       } else {
-        // If no specific filter, get all records for landlord's properties
+        // If no specific filter, get all records for landlord's active properties
         // RLS will handle access control
-        query = query.in('property_id', propertyIds)
+        query = query.in('property_id', activePropertyIds)
       }
 
       if (filter?.status) {
@@ -121,14 +122,14 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
       const { data, error } = await query
 
       if (error) {
-        console.error('[useLandlordRentRecords] Query error:', error)
+        console.error('[useLandlordRentRecords] Query error:', JSON.stringify(error))
         throw error
       }
 
       if (import.meta.env.DEV) {
-        console.debug('[useLandlordRentRecords] Fetched records:', {
+        console.debug('[useLandlordRentRecords] Fetched records:', JSON.stringify({
           count: data?.length || 0,
-          propertyIds,
+          activePropertyIds,
           sampleRecords: data?.slice(0, 3).map(r => ({
             id: r.id,
             property_id: r.property_id,
@@ -137,7 +138,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
             paid_date: r.paid_date,
             due_date: r.due_date,
           })),
-        })
+        }))
       }
 
       setRecords(data || [])
@@ -167,10 +168,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
           `
           *,
           property:properties(id, name, address),
-          tenant:tenants(
-            id,
-            user:users(email)
-          )
+          tenant:tenants(id)
         `
         )
         .single()
@@ -195,10 +193,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
           `
           *,
           property:properties(id, name, address),
-          tenant:tenants(
-            id,
-            user:users(email)
-          )
+          tenant:tenants(id)
         `
         )
         .single()

@@ -19,6 +19,7 @@ Use this checklist when deploying to production for the first time.
 ### Supabase
 - [x] Database schema deployed (`supabase/schema.sql`)
 - [x] RLS policies active
+- [ ] Entity audit log migration applied (`supabase/migrations/add_entity_audit_log.sql`)
 - [ ] Storage bucket created (`documents`)
 - [ ] Storage RLS policies configured (if using private storage)
 - [ ] OAuth redirect URLs configured:

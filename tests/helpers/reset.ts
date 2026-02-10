@@ -6,6 +6,8 @@
  */
 
 import { getSupabaseClient, getSupabaseAdminClient } from './db-helpers'
+import { isProduction } from './env-guard'
+import { assertEnvironmentCapabilities } from '../../src/lib/env-safety'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
@@ -37,8 +39,16 @@ export async function resetDevState(page: any): Promise<void> {
  * Reset staging database fixtures
  * Deletes all test data tagged with is_test = true
  * Call this in beforeEach hooks
+ * Hard-fails if called when SUPABASE_ENV=production
  */
 export async function resetStagingFixtures(): Promise<void> {
+  assertEnvironmentCapabilities({ canResetDb: true })
+  if (isProduction()) {
+    throw new Error(
+      '❌ resetStagingFixtures cannot run against production. ' +
+        'SUPABASE_ENV=production or VITE_SUPABASE_URL points to production.'
+    )
+  }
   // Use admin client to bypass RLS for cleanup operations
   const supabase = getSupabaseAdminClient()
 

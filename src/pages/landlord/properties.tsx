@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useProperties } from '@/hooks/use-properties'
+import { useLeases } from '@/hooks/use-leases'
 import { useTenants } from '@/hooks/use-tenants'
 import { PropertyCard } from '@/components/landlord/property-card'
 import { PropertyForm } from '@/components/landlord/property-form'
@@ -16,6 +17,7 @@ import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 type PropertyTypeFilter = string | 'all'
 type OccupancyFilter = 'occupied' | 'vacant' | 'all'
+type StatusFilter = 'all' | 'active' | 'inactive'
 type RentRangeFilter = 'all' | 'low' | 'medium' | 'high'
 type SortFilter = 'newest' | 'oldest' | 'rent_high' | 'rent_low' | 'name_az' | 'name_za'
 
@@ -23,6 +25,7 @@ export function LandlordProperties() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordProperties' })
   const { properties, loading, error, createProperty, deleteProperty } = useProperties()
+  const { leases } = useLeases()
   const { tenants } = useTenants()
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -32,6 +35,7 @@ export function LandlordProperties() {
   const [searchQuery, setSearchQuery] = useState('')
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeFilter>('all')
   const [occupancyFilter, setOccupancyFilter] = useState<OccupancyFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [rentRangeFilter, setRentRangeFilter] = useState<RentRangeFilter>('all')
   const [sortFilter, setSortFilter] = useState<SortFilter>('newest')
 
@@ -44,16 +48,44 @@ export function LandlordProperties() {
     return Array.from(types).sort()
   }, [properties])
 
+  // Prefer lease rent amounts when property rent is missing/zero
+  const rentByProperty = useMemo(() => {
+    const rentMap = new Map<string, number>()
+    leases.forEach(lease => {
+      if (!lease.property_id) return
+      const rentAmount = lease.rent_amount || 0
+      if (rentAmount <= 0) return
+      const current = rentMap.get(lease.property_id) || 0
+      if (rentAmount > current) {
+        rentMap.set(lease.property_id, rentAmount)
+      }
+    })
+    return rentMap
+  }, [leases])
+
+  const propertiesWithRent = useMemo(() => {
+    return properties.map(property => {
+      if (property.rent_amount && property.rent_amount > 0) {
+        return property
+      }
+      const fallbackRent = rentByProperty.get(property.id) || 0
+      return {
+        ...property,
+        rent_amount: fallbackRent,
+      }
+    })
+  }, [properties, rentByProperty])
+
   // Calculate rent ranges
   const rentRanges = useMemo(() => {
-    if (properties.length === 0) return { low: 0, medium: 0, high: 0 }
-    const rents = properties.map(p => p.rent_amount).filter(r => r > 0)
+    if (propertiesWithRent.length === 0) return { low: 0, medium: 0, high: 0 }
+    const rents = propertiesWithRent.map(p => p.rent_amount).filter(r => r > 0)
     if (rents.length === 0) return { low: 0, medium: 0, high: 0 }
     rents.sort((a, b) => a - b)
     const low = rents[Math.floor(rents.length / 3)]
     const medium = rents[Math.floor((rents.length * 2) / 3)]
     return { low, medium, high: rents[rents.length - 1] }
-  }, [properties])
+  }, [propertiesWithRent])
 
   // Check if property is occupied
   const isPropertyOccupied = (propertyId: string): boolean => {
@@ -66,7 +98,7 @@ export function LandlordProperties() {
 
   // Apply all filters
   const filteredProperties = useMemo(() => {
-    let filtered = [...properties]
+    let filtered = [...propertiesWithRent]
 
     // Search filter
     if (searchQuery.trim()) {
@@ -88,6 +120,13 @@ export function LandlordProperties() {
       filtered = filtered.filter(p => isPropertyOccupied(p.id))
     } else if (occupancyFilter === 'vacant') {
       filtered = filtered.filter(p => !isPropertyOccupied(p.id))
+    }
+
+    // Status filter (active/inactive)
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(p => p.is_active !== false)
+    } else if (statusFilter === 'inactive') {
+      filtered = filtered.filter(p => p.is_active === false)
     }
 
     // Rent range filter
@@ -118,7 +157,7 @@ export function LandlordProperties() {
 
     return filtered
   }, [
-    properties,
+    propertiesWithRent,
     searchQuery,
     propertyTypeFilter,
     occupancyFilter,
@@ -152,7 +191,7 @@ export function LandlordProperties() {
 
   if (showForm) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative">
         <GrainOverlay />
         <div className="relative z-10">
           {createError && (
@@ -176,7 +215,7 @@ export function LandlordProperties() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">
@@ -238,6 +277,22 @@ export function LandlordProperties() {
                     </div>
                   )}
 
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Status:
+                    </label>
+                    <select
+                      value={statusFilter}
+                      onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                      className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+
                   {/* Occupancy Filter */}
                   <div className="flex items-center gap-1.5">
                     <label className="text-xs text-muted-foreground whitespace-nowrap">
@@ -291,6 +346,7 @@ export function LandlordProperties() {
                   {/* Clear All Filters */}
                   {(searchQuery.trim() !== '' ||
                     propertyTypeFilter !== 'all' ||
+                    statusFilter !== 'all' ||
                     occupancyFilter !== 'all' ||
                     rentRangeFilter !== 'all' ||
                     sortFilter !== 'newest') && (
@@ -300,6 +356,7 @@ export function LandlordProperties() {
                       onClick={() => {
                         setSearchQuery('')
                         setPropertyTypeFilter('all')
+                        setStatusFilter('all')
                         setOccupancyFilter('all')
                         setRentRangeFilter('all')
                         setSortFilter('newest')
@@ -340,6 +397,7 @@ export function LandlordProperties() {
               onClick: () => {
                 setSearchQuery('')
                 setPropertyTypeFilter('all')
+                setStatusFilter('all')
                 setOccupancyFilter('all')
                 setRentRangeFilter('all')
                 setSortFilter('newest')

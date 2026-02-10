@@ -6,22 +6,28 @@ import { PropertyRulesEditor } from '@/components/landlord/property-rules-editor
 import { TenantInviteForm } from '@/components/landlord/tenant-invite-form'
 import { PropertyDocuments } from '@/components/landlord/property-documents'
 import { WorkOrderForm } from '@/components/landlord/work-order-form'
+import { PaymentSettingsForm } from '@/components/landlord/payment-settings-form'
+import { ConnectOnboarding } from '@/components/billing/connect-onboarding'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
 import { useTenants } from '@/hooks/use-tenants'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useProperties } from '@/hooks/use-properties'
 // import { useLeases } from '@/hooks/use-leases' // Unused
-import { ArrowLeft, Plus, Users, Wrench, Calendar, User, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Users, Wrench, Calendar, User, Trash2, MessageSquare } from 'lucide-react'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { useNavigate } from 'react-router-dom'
+import { isFeatureEnabled } from '@/lib/feature-flags'
+import { navigateToTenantMessaging } from '@/lib/messaging-helpers'
 import type { Database } from '@/types/database'
 import { cn } from '@/lib/utils'
 
 type Property = Database['public']['Tables']['properties']['Row'] & {
+  is_active?: boolean // Optional in case migration hasn't been run
   late_fee_rules?: {
     amount?: number
     grace_period_days?: number
@@ -45,6 +51,7 @@ export function PropertyDetail() {
   const [showInviteForm, setShowInviteForm] = useState(false)
   const [showWorkOrderForm, setShowWorkOrderForm] = useState(false)
   const [tenantView, setTenantView] = useState<'active' | 'all'>('active')
+  const messagingEnabled = isFeatureEnabled('ENABLE_MESSAGING_ENTRY_POINTS')
 
   useEffect(() => {
     if (id) {
@@ -61,10 +68,17 @@ export function PropertyDetail() {
 
     try {
       setLoading(true)
-      const { data, error } = await supabase.from('properties').select('*').eq('id', id).single()
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', id)
+        .single()
 
       if (error) throw error
-      setProperty(data)
+      // Ensure is_active defaults to true if not set (for backward compatibility)
+      // Handle case where is_active column might not exist yet (migration not run)
+      const isActive = data.is_active !== undefined ? data.is_active !== false : true
+      setProperty({ ...data, is_active: isActive })
     } catch (error) {
       console.error('Error fetching property:', error)
     } finally {
@@ -152,7 +166,7 @@ export function PropertyDetail() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="relative z-10 text-center py-12">
           <p className="text-muted-foreground">Loading property...</p>
@@ -163,7 +177,7 @@ export function PropertyDetail() {
 
   if (!property) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="relative z-10 text-center py-12">
           <p className="text-muted-foreground mb-4">Property not found</p>
@@ -177,7 +191,7 @@ export function PropertyDetail() {
 
   if (editing) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative">
         <GrainOverlay />
         <div className="relative z-10">
           <Button variant="ghost" onClick={() => setEditing(false)} className="mb-4">
@@ -196,7 +210,7 @@ export function PropertyDetail() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl relative">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-6xl relative">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">
@@ -234,6 +248,74 @@ export function PropertyDetail() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="mt-6">
             <div className="space-y-6">
+              {/* Property Status Toggle */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Property Status</CardTitle>
+                  <CardDescription>
+                    {property.is_active === true || property.is_active === undefined
+                      ? 'Property is included in calculations and metrics'
+                      : 'Property is excluded from calculations and metrics'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                          property.is_active === true || property.is_active === undefined
+                            ? 'bg-green-500'
+                            : 'bg-red-500'
+                        }`}
+                        title={
+                          property.is_active === true || property.is_active === undefined
+                            ? 'Active'
+                            : 'Inactive'
+                        }
+                      />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {property.is_active === true || property.is_active === undefined
+                            ? 'Active'
+                            : 'Inactive'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {property.is_active === true || property.is_active === undefined
+                            ? 'Included in all calculations'
+                            : 'Excluded from all calculations'}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={property.is_active === true || property.is_active === undefined}
+                      onCheckedChange={async (checked) => {
+                        setSubmitting(true)
+                        try {
+                          const { error } = await supabase
+                            .from('properties')
+                            .update({ is_active: checked })
+                            .eq('id', property.id)
+                          if (error) throw error
+                          // Update local state
+                          setProperty({ ...property, is_active: checked })
+                        } catch (err) {
+                          console.error('Error updating property status:', err)
+                          alert('Failed to update property status')
+                        } finally {
+                          setSubmitting(false)
+                        }
+                      }}
+                      disabled={submitting}
+                      aria-label={
+                        property.is_active === true || property.is_active === undefined
+                          ? 'Mark property inactive'
+                          : 'Mark property active'
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Rent Information */}
               <Card className="glass-card">
                 <CardHeader>
@@ -373,6 +455,16 @@ export function PropertyDetail() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Stripe Connect Onboarding - Only show if Stripe Connect is enabled */}
+              {isFeatureEnabled('ENABLE_STRIPE_CONNECT') && (
+                <ConnectOnboarding propertyId={property.id} />
+              )}
+
+              {/* Payment Settings - Only show if Stripe Connect is enabled */}
+              {isFeatureEnabled('ENABLE_STRIPE_CONNECT') && (
+                <PaymentSettingsForm propertyId={property.id} />
+              )}
             </div>
           </TabsContent>
 
@@ -482,6 +574,25 @@ export function PropertyDetail() {
                                 >
                                   View Details
                                 </Button>
+                                {messagingEnabled && id && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                      await navigateToTenantMessaging(
+                                        tenant.id,
+                                        id,
+                                        'general',
+                                        'landlord',
+                                        url => navigate(url)
+                                      )
+                                    }}
+                                    title="Message tenant"
+                                  >
+                                    <MessageSquare className="w-4 h-4 mr-2" />
+                                    Message
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -505,7 +616,7 @@ export function PropertyDetail() {
 
           {/* Work Orders Tab */}
           <TabsContent value="work-orders" className="mt-6">
-            <div className="space-y-6">
+            <div className="space-y-6 min-h-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-foreground">Work Orders</h2>
@@ -520,14 +631,16 @@ export function PropertyDetail() {
               </div>
 
               {showWorkOrderForm && (
-                <WorkOrderForm
-                  propertyId={id}
-                  onSubmit={() => {
-                    setShowWorkOrderForm(false)
-                    refetchWorkOrders()
-                  }}
-                  onCancel={() => setShowWorkOrderForm(false)}
-                />
+                <div className="w-full">
+                  <WorkOrderForm
+                    propertyId={id}
+                    onSubmit={() => {
+                      setShowWorkOrderForm(false)
+                      refetchWorkOrders()
+                    }}
+                    onCancel={() => setShowWorkOrderForm(false)}
+                  />
+                </div>
               )}
 
               {workOrders.length === 0 && !showWorkOrderForm ? (

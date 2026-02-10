@@ -20,6 +20,7 @@ import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
+import { DataHealthCard } from '@/components/data-health/data-health-card'
 
 export function TenantDashboard() {
   // Track performance metrics
@@ -88,7 +89,7 @@ export function TenantDashboard() {
 
   if (tenantLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="text-center py-12 relative z-10">
           <p className="text-muted-foreground">Loading...</p>
@@ -99,7 +100,7 @@ export function TenantDashboard() {
 
   if (!tenantData) {
     return (
-      <div className="container mx-auto px-4 py-8 relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <div className="mb-8 relative z-10">
           <h1 className="text-3xl font-semibold text-foreground">Dashboard</h1>
@@ -131,11 +132,12 @@ export function TenantDashboard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 
       <div className="relative z-10">
+        <DataHealthCard className="mb-6" />
         {user && <HeroGreeting name={user.email?.split('@')[0] || 'User'} />}
 
         {nextRentRecord && (

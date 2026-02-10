@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isProduction } from './env-guard'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
@@ -20,8 +21,16 @@ export function getSupabaseClient(): SupabaseClient {
 /**
  * Get Supabase admin client for admin operations
  * Uses service key (bypasses RLS, allows admin operations like creating users)
+ * Hard-fails if called when SUPABASE_ENV=production
  */
 export function getSupabaseAdminClient(): SupabaseClient {
+  if (isProduction()) {
+    throw new Error(
+      '❌ getSupabaseAdminClient cannot be used against production. ' +
+        'SUPABASE_ENV=production or VITE_SUPABASE_URL points to production. ' +
+        'Tests and seeds must use local or staging.'
+    )
+  }
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error('Missing Supabase service key (SUPABASE_SERVICE_KEY) in .env.test')
   }
