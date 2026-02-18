@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 1000 --host",
+    "dev:demo": "tsx scripts/boot-demo.ts && vite --port 1000 --host",
+    "demo:reset": "tsx scripts/boot-demo.ts",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",

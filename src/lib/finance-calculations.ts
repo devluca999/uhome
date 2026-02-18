@@ -62,6 +62,11 @@ export interface FinanceFilters {
   }
 }
 
+/** Get expense date - schema may use expense_date (initial) or date (legacy) */
+export function getExpenseDate(e: { expense_date?: string; date?: string }): string {
+  return (e as { expense_date?: string; date?: string }).expense_date ?? (e as { date: string }).date
+}
+
 /**
  * Filter rent records by property and date range
  */
@@ -130,7 +135,7 @@ export function filterExpenses(
     const endStr = formatDateForComparison(end)
 
     filtered = filtered.filter(e => {
-      const expenseDateStr = formatDateForComparison(e.date)
+      const expenseDateStr = formatDateForComparison(getExpenseDate(e))
       return expenseDateStr >= startStr && expenseDateStr <= endStr
     })
   }

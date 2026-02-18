@@ -8,6 +8,7 @@ import { FinanceSummaryCard } from '@/components/tenant/finance-summary-card'
 import { JoinHouseholdForm } from '@/components/tenant/join-household-form'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useRentRecords } from '@/hooks/use-rent-records'
+import { useLeases } from '@/hooks/use-leases'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useTenantTasks } from '@/hooks/use-tasks'
 import { TaskCard } from '@/components/ui/task-card'
@@ -26,7 +27,11 @@ export function TenantDashboard() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'TenantDashboard' })
   const { data: tenantData, loading: tenantLoading } = useTenantData()
-  const { records: rentRecords, loading: rentLoading } = useRentRecords(tenantData?.tenant.id)
+  const { leases } = useLeases(undefined, tenantData?.tenant.id)
+  const activeLease = leases?.find(
+    l => !l.lease_end_date || new Date(l.lease_end_date) > new Date()
+  )
+  const { records: rentRecords, loading: rentLoading } = useRentRecords(activeLease?.id)
   const { requests, loading: maintenanceLoading } = useMaintenanceRequests(
     tenantData?.property.id,
     true

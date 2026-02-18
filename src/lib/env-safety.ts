@@ -48,8 +48,18 @@ export function assertEnvironmentCapabilities(
   required: Partial<EnvironmentCapabilities>,
   envSource?: { env?: string; url?: string }
 ): void {
-  const env = envSource?.env ?? (typeof process !== 'undefined' ? process.env.SUPABASE_ENV || process.env.VITE_SUPABASE_ENV || '' : '')
-  const url = envSource?.url ?? (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_URL || '' : '')
+  // Use envSource if passed; else import.meta.env (Vite/browser); else process.env (Node scripts)
+  const env =
+    envSource?.env ??
+    import.meta.env?.SUPABASE_ENV ??
+    import.meta.env?.VITE_SUPABASE_ENV ??
+    (typeof process !== 'undefined' ? process.env?.SUPABASE_ENV ?? process.env?.VITE_SUPABASE_ENV : undefined) ??
+    ''
+  const url =
+    envSource?.url ??
+    import.meta.env?.VITE_SUPABASE_URL ??
+    (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : undefined) ??
+    ''
   const isProd = isProductionEnv(env, url)
   const isNonProd = isNonProductionEnv(env, url)
 

@@ -8,6 +8,7 @@ import {
   calculateNetCashFlow,
   calculateUpcomingRent,
   calculateProjectedExpenses,
+  getExpenseDate,
   type FinanceFilters,
 } from '@/lib/finance-calculations'
 
@@ -157,7 +158,7 @@ export function useFinancialMetrics(
       })
 
       filteredExpenses = filteredExpenses.filter(e => {
-        const expenseDateStr = e.date.split('T')[0]
+        const expenseDateStr = getExpenseDate(e).split('T')[0]
         return expenseDateStr >= startStr && expenseDateStr <= endStr
       })
     }
@@ -194,7 +195,7 @@ export function useFinancialMetrics(
 
       const monthExpenseTotal = filteredExpenses
         .filter(e => {
-          const expenseDate = new Date(e.date)
+          const expenseDate = new Date(getExpenseDate(e))
           return expenseDate >= monthStart && expenseDate <= monthEnd
         })
         .reduce((sum, e) => sum + Number(e.amount), 0)
@@ -375,14 +376,14 @@ function calculateExpenseAveragesByCategory(
 
     const last3MonthsTotal = categoryExpenses
       .filter(e => {
-        const expenseDate = new Date(e.date)
+        const expenseDate = new Date(getExpenseDate(e))
         return expenseDate >= last3MonthsStart && expenseDate <= last3MonthsEnd
       })
       .reduce((sum, e) => sum + Number(e.amount), 0)
 
     const prev3MonthsTotal = categoryExpenses
       .filter(e => {
-        const expenseDate = new Date(e.date)
+        const expenseDate = new Date(getExpenseDate(e))
         return expenseDate >= prev3MonthsStart && expenseDate <= prev3MonthsEnd
       })
       .reduce((sum, e) => sum + Number(e.amount), 0)

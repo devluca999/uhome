@@ -11,7 +11,6 @@
 import { getSupabaseAdminClient } from './db-helpers'
 import { generateTestEmail, createAndConfirmUser } from './auth-helpers'
 import { seedTestScenario } from './seed'
-import { seedTestScenario } from './seed'
 
 /**
  * Seed admin test scenario with admin user and test users with varying statuses

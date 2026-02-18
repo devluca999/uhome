@@ -45,15 +45,23 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { calculateOccupancyRate } from '@/lib/finance-calculations'
+import { calculateOccupancyRate, getExpenseDate } from '@/lib/finance-calculations'
+import {
+  generateFallbackRentRecords,
+  generateFallbackExpenses,
+} from '@/lib/fallback-financial-data'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 import { DataHealthCard } from '@/components/data-health/data-health-card'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
+import { useSettings } from '@/contexts/settings-context'
+import type { DashboardTimeline } from '@/contexts/settings-context'
 
 export function LandlordDashboard() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordDashboard' })
   const navigate = useNavigate()
+  const { settings, updateSettings } = useSettings()
+  const dashboardTimeline = settings.dashboardTimeline ?? 'monthly'
   const { properties, loading: propertiesLoading, error: propertiesError } = useProperties()
   const { tenants, loading: tenantsLoading, error: tenantsError } = useTenants()
   const { requests, loading: requestsLoading, error: requestsError } = useMaintenanceRequests()
@@ -63,15 +71,46 @@ export function LandlordDashboard() {
   const { documents } = useDocuments() // Get all documents for activity feed
   const { format: formatCurrency } = useCurrencyFormatter()
 
-  // Calculate current calendar month range (full month, not month-to-date)
-  // Dashboard always shows current calendar month only - no filters, no month-to-date
-  const currentMonthRange = useMemo(() => {
+  // Date range and chart config based on dashboard timeline setting
+  const { dateRange, timeRange, chartMonths, kpiMonths, timelineLabel } = useMemo(() => {
     const now = new Date()
-    return {
-      start: new Date(now.getFullYear(), now.getMonth(), 1),
-      end: new Date(now.getFullYear(), now.getMonth() + 1, 0), // Last day of month
+    switch (dashboardTimeline) {
+      case 'quarterly': {
+        const q = Math.floor(now.getMonth() / 3) + 1
+        const quarterStart = new Date(now.getFullYear(), (q - 1) * 3, 1)
+        const quarterEnd = new Date(now.getFullYear(), q * 3, 0)
+        return {
+          dateRange: { start: quarterStart, end: quarterEnd },
+          timeRange: 'quarter' as const,
+          chartMonths: 12, // 4 quarters of data
+          kpiMonths: 3,
+          timelineLabel: 'Quarterly',
+        }
+      }
+      case 'yearly': {
+        const yearStart = new Date(now.getFullYear(), 0, 1)
+        const yearEnd = new Date(now.getFullYear(), 11, 31)
+        return {
+          dateRange: { start: yearStart, end: yearEnd },
+          timeRange: 'year' as const,
+          chartMonths: 48, // 4 years for chart
+          kpiMonths: 12,
+          timelineLabel: 'Yearly',
+        }
+      }
+      default: {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        return {
+          dateRange: { start: monthStart, end: monthEnd },
+          timeRange: 'month' as const,
+          chartMonths: 6,
+          kpiMonths: 1,
+          timelineLabel: 'Monthly',
+        }
+      }
     }
-  }, [])
+  }, [dashboardTimeline])
 
   // Get active property IDs for filtering calculations
   const activePropertyIds = useMemo(() => {
@@ -90,40 +129,53 @@ export function LandlordDashboard() {
   // Wait for critical data to load before calculating metrics
   const isDataReady = !propertiesLoading && !rentRecordsLoading && !expensesLoading
 
+  // Use fallback data when no real data (ensures charts render after demo reset, etc.)
+  const rentRecordsForMetrics = useMemo(() => {
+    if (!isDataReady) return []
+    if (rentRecords.length === 0 && properties.length > 0) {
+      return generateFallbackRentRecords(properties)
+    }
+    return rentRecords
+  }, [isDataReady, rentRecords, properties])
+
+  const expensesForMetrics = useMemo(() => {
+    if (!isDataReady) return []
+    if (expenses.length === 0 && properties.length > 0) {
+      return generateFallbackExpenses(properties)
+    }
+    return expenses
+  }, [isDataReady, expenses, properties])
+
   // Use financial metrics for dashboard
-  // For chart data (monthlyRentCollected), we need all historical data (no dateRange filter)
-  // For KPI cards (revenue, expenses, net income), we use currentMonthRange calculations directly
-  // We call useFinancialMetrics twice: once for historical charts, once for current month KPIs
-  // Only calculate if data is ready to avoid showing 0s while loading
+  // For chart data - all historical data in the selected granularity
+  // For KPI cards - filtered to current period (month/quarter/year)
   const historicalMetrics = useFinancialMetrics(
-    isDataReady ? rentRecords : [],
-    isDataReady ? expenses : [],
-    6,
+    rentRecordsForMetrics,
+    expensesForMetrics,
+    chartMonths,
     undefined, // propertyId - all properties
-    'month', // timeRange
-    undefined, // dateRange - no filter for chart data (charts need all historical data)
+    timeRange,
+    undefined, // dateRange - no filter for chart data
     activePropertyIds
   )
-  
-  // Get current month metrics for KPI cards to match finances page
-  const currentMonthMetrics = useFinancialMetrics(
-    isDataReady ? rentRecords : [],
-    isDataReady ? expenses : [],
-    1, // Only need current month
-    undefined, // propertyId - all properties
-    'month', // timeRange
-    currentMonthRange, // dateRange - filter to current month for KPI consistency
+
+  const kpiMetrics = useFinancialMetrics(
+    rentRecordsForMetrics,
+    expensesForMetrics,
+    kpiMonths,
+    undefined,
+    timeRange,
+    dateRange, // filter to current period for KPIs
     activePropertyIds
   )
-  
-  // Use historical metrics for charts, current month metrics for KPIs
+
+  // Use historical metrics for charts, kpiMetrics for KPI cards
   const metrics = {
     ...historicalMetrics,
-    // Override KPI values with current month filtered values
-    rentCollected: currentMonthMetrics.rentCollected,
-    totalExpenses: currentMonthMetrics.totalExpenses,
-    netProfit: currentMonthMetrics.netProfit,
-    marginPercentage: currentMonthMetrics.marginPercentage,
+    rentCollected: kpiMetrics.rentCollected,
+    totalExpenses: kpiMetrics.totalExpenses,
+    netProfit: kpiMetrics.netProfit,
+    marginPercentage: kpiMetrics.marginPercentage,
   }
   
 
@@ -154,7 +206,7 @@ export function LandlordDashboard() {
             id: e.id,
             property_id: e.property_id,
             amount: e.amount,
-            date: e.date,
+            date: getExpenseDate(e),
           })),
         },
         activePropertyIds: {
@@ -213,53 +265,38 @@ export function LandlordDashboard() {
     return occupiedPropertyIds.size
   }, [tenants])
 
-  // Calculate monthly revenue (collected rent in current month)
-  // Use currentMonthMetrics.rentCollected to ensure consistency with metrics.rentCollected
-  const monthlyRevenue = useMemo(() => {
-    return currentMonthMetrics.rentCollected
-  }, [currentMonthMetrics.rentCollected])
+  // Revenue for current period (month/quarter/year based on timeline)
+  const periodRevenue = useMemo(() => {
+    return kpiMetrics.rentCollected
+  }, [kpiMetrics.rentCollected])
 
-  // Calculate monthly expenses (expenses with date in current month)
-  // This matches test helper calculateMonthlyExpenses logic exactly
-  // Use date string comparison (YYYY-MM-DD) to match test helper formatDate logic
-  // Filter to only active properties
-  const monthlyExpenses = useMemo(() => {
-    const monthStart = currentMonthRange.start
-    const monthEnd = currentMonthRange.end
+  // Expenses for current period (month/quarter/year based on timeline)
+  const periodExpenses = useMemo(() => {
+    const formatDateString = (d: Date) => d.toISOString().split('T')[0]
+    const startStr = formatDateString(dateRange.start)
+    const endStr = formatDateString(dateRange.end)
 
-    // Format dates as YYYY-MM-DD for comparison (matches test helper formatDate)
-    const formatDateString = (date: Date) => date.toISOString().split('T')[0]
-    const monthStartStr = formatDateString(monthStart)
-    const monthEndStr = formatDateString(monthEnd)
-
-    // Calculate expenses in the month (using date field)
-    // Filter to only active properties
-    // This matches the test helper calculateMonthlyExpenses logic exactly
-    return expenses
+    return expensesForMetrics
       .filter(e => {
-        // Filter by active properties
         if (!e.property_id || !activePropertyIds.has(e.property_id)) return false
-        const expenseDateStr = e.date.split('T')[0] // Get YYYY-MM-DD part
-        return expenseDateStr >= monthStartStr && expenseDateStr <= monthEndStr
+        const expenseDateStr = getExpenseDate(e).split('T')[0]
+        return expenseDateStr >= startStr && expenseDateStr <= endStr
       })
       .reduce((sum, e) => sum + Number(e.amount || 0), 0)
-  }, [expenses, currentMonthRange, activePropertyIds])
+  }, [expensesForMetrics, dateRange, activePropertyIds])
 
-  // Calculate net income (collected revenue - expenses)
-  // This matches test helper calculateMonthlyNetIncome logic exactly:
-  // - Revenue: monthlyRevenue (collected rent using paid_date in current month, cash accounting)
-  // - Expenses: monthlyExpenses (expenses with date in current month)
+  // Net income for current period
   const netIncome = useMemo(() => {
-    const result = monthlyRevenue - monthlyExpenses
+    const result = periodRevenue - periodExpenses
 
     // Defensive invariant (dev only) - catch value scaling bugs
     if (import.meta.env.DEV) {
-      if (monthlyRevenue > 0 && Math.abs(result) > monthlyRevenue * 2) {
+      if (periodRevenue > 0 && Math.abs(result) > periodRevenue * 2) {
         console.error('⚠️ Net Income Anomaly Detected!', {
           netIncome: result,
-          revenue: monthlyRevenue,
-          expenses: monthlyExpenses,
-          ratio: result / (monthlyRevenue || 1),
+          revenue: periodRevenue,
+          expenses: periodExpenses,
+          ratio: result / (periodRevenue || 1),
           message:
             'Net income should not exceed revenue by more than 2x. Possible value scaling bug.',
         })
@@ -268,80 +305,33 @@ export function LandlordDashboard() {
 
     // Debug logging for net income investigation
     if (import.meta.env.DEV) {
-      const monthStart = currentMonthRange.start
-      const monthEnd = currentMonthRange.end
-      const formatDateString = (date: Date) => date.toISOString().split('T')[0]
-      const monthStartStr = formatDateString(monthStart)
-      const monthEndStr = formatDateString(monthEnd)
+      const formatDateString = (d: Date) => d.toISOString().split('T')[0]
+      const startStr = formatDateString(dateRange.start)
+      const endStr = formatDateString(dateRange.end)
 
-      // Count records used in calculation
-      const revenueRecords = rentRecords.filter(r => {
-        if (r.status !== 'paid') return false
-        if (!r.paid_date) return false
+      const revenueRecords = rentRecordsForMetrics.filter(r => {
+        if (r.status !== 'paid' || !r.paid_date) return false
         const paidDateStr = r.paid_date.split('T')[0]
-        return paidDateStr >= monthStartStr && paidDateStr <= monthEndStr
+        return paidDateStr >= startStr && paidDateStr <= endStr
       })
 
-      const expenseRecords = expenses.filter(e => {
-        const expenseDateStr = e.date.split('T')[0]
-        return expenseDateStr >= monthStartStr && expenseDateStr <= monthEndStr
+      const expenseRecords = expensesForMetrics.filter(e => {
+        const expenseDateStr = getExpenseDate(e).split('T')[0]
+        return expenseDateStr >= startStr && expenseDateStr <= endStr
       })
-
-      // Calculate per-property revenue breakdown
-      const revenueByProperty = properties.map(p => ({
-        propertyId: p.id,
-        propertyName: p.name,
-        revenue: rentRecords
-          .filter(r => r.property_id === p.id && r.status === 'paid' && r.paid_date)
-          .filter(r => {
-            const paidDateStr = r.paid_date!.split('T')[0]
-            return paidDateStr >= monthStartStr && paidDateStr <= monthEndStr
-          })
-          .reduce((sum, r) => sum + Number(r.amount || 0) + Number(r.late_fee || 0), 0),
-      }))
-
-      // Calculate per-property expense breakdown
-      const expensesByProperty = properties.map(p => ({
-        propertyId: p.id,
-        propertyName: p.name,
-        expenses: expenses
-          .filter(e => e.property_id === p.id)
-          .filter(e => {
-            const expenseDateStr = e.date.split('T')[0]
-            return expenseDateStr >= monthStartStr && expenseDateStr <= monthEndStr
-          })
-          .reduce((sum, e) => sum + Number(e.amount || 0), 0),
-      }))
 
       console.debug('[Net Income Debug]', {
-        monthRange: `${monthStartStr} to ${monthEndStr}`,
-        propertiesCount: properties.length,
-        propertyIds: properties.map(p => p.id),
-        monthlyRevenue,
+        dateRange: `${startStr} to ${endStr}`,
+        periodRevenue,
         revenueRecordCount: revenueRecords.length,
-        revenueByProperty,
-        revenueRecords: revenueRecords.map(r => ({
-          id: r.id,
-          property_id: r.property_id,
-          amount: r.amount,
-          late_fee: r.late_fee,
-          paid_date: r.paid_date?.split('T')[0],
-        })),
-        monthlyExpenses,
+        periodExpenses,
         expenseRecordCount: expenseRecords.length,
-        expensesByProperty,
-        expenseRecords: expenseRecords.map(e => ({
-          id: e.id,
-          amount: e.amount,
-          date: e.date.split('T')[0],
-          property_id: e.property_id,
-        })),
         calculatedNetIncome: result,
       })
     }
 
     return result
-  }, [monthlyRevenue, monthlyExpenses, rentRecords, expenses, currentMonthRange])
+  }, [periodRevenue, periodExpenses, rentRecordsForMetrics, expensesForMetrics, dateRange])
 
   // Generate comprehensive activity feed
   const recentActivity = useMemo(() => {
@@ -437,7 +427,7 @@ export function LandlordDashboard() {
 
   // Recent expenses (last 5) - used in expense distribution modal
   // @ts-expect-error - Intentionally unused for future use
-  const recentExpenses = expenses.slice(0, 5)
+  const recentExpenses = expensesForMetrics.slice(0, 5)
 
   // Donut chart data - always show at least one entry to ensure chart renders
   const donutChartData = useMemo(() => {
@@ -465,11 +455,11 @@ export function LandlordDashboard() {
   // Calculate profit per property
   const profitByProperty = useMemo(() => {
     return properties.map(property => {
-      const propertyRent = rentRecords
+      const propertyRent = rentRecordsForMetrics
         .filter(r => r.property_id === property.id && r.status === 'paid')
         .reduce((sum, r) => sum + Number(r.amount), 0)
 
-      const propertyExpenses = expenses
+      const propertyExpenses = expensesForMetrics
         .filter(e => e.property_id === property.id)
         .reduce((sum, e) => sum + Number(e.amount), 0)
 
@@ -479,13 +469,13 @@ export function LandlordDashboard() {
         expenses: propertyExpenses,
       }
     })
-  }, [properties, rentRecords, expenses])
+  }, [properties, rentRecordsForMetrics, expensesForMetrics])
 
   // Smart insights
   const insights = useMemo(() => {
     const now = new Date()
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const thisMonthRecords = rentRecords.filter(r => {
+    const thisMonthRecords = rentRecordsForMetrics.filter(r => {
       const dueDate = new Date(r.due_date)
       return dueDate >= thisMonthStart && dueDate <= now
     })
@@ -508,8 +498,8 @@ export function LandlordDashboard() {
 
     // Check for properties with high upkeep
     const avgExpensePerProperty =
-      expenses.length > 0 && properties.length > 0
-        ? expenses.reduce((sum, e) => sum + Number(e.amount), 0) / properties.length
+      expensesForMetrics.length > 0 && properties.length > 0
+        ? expensesForMetrics.reduce((sum, e) => sum + Number(e.amount), 0) / properties.length
         : 0
 
     profitByProperty.forEach(({ property, expenses }) => {
@@ -522,7 +512,7 @@ export function LandlordDashboard() {
     })
 
     // Check for late payments
-    const overdueCount = rentRecords.filter(r => r.status === 'overdue').length
+    const overdueCount = rentRecordsForMetrics.filter(r => r.status === 'overdue').length
     if (overdueCount > 0) {
       insights.push({
         message: `${overdueCount} payment${overdueCount > 1 ? 's' : ''} ${overdueCount > 1 ? 'are' : 'is'} currently overdue.`,
@@ -531,7 +521,7 @@ export function LandlordDashboard() {
     }
 
     return insights.slice(0, 3) // Limit to 3 insights
-  }, [rentRecords, expenses, properties, profitByProperty])
+  }, [rentRecordsForMetrics, expensesForMetrics, properties, profitByProperty])
 
   return (
     <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
@@ -550,8 +540,29 @@ export function LandlordDashboard() {
           layout={false}
           className="mb-8"
         >
-          <h1 className="text-4xl font-semibold text-foreground mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, landlord</p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-semibold text-foreground mb-2">Dashboard</h1>
+              <p className="text-muted-foreground">Welcome back, landlord</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Summary:</span>
+              <select
+                value={dashboardTimeline}
+                onChange={e =>
+                  updateSettings({
+                    dashboardTimeline: e.target.value as DashboardTimeline,
+                  })
+                }
+                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                data-testid="dashboard-timeline-select"
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+          </div>
         </motion.div>
 
         {hasErrors && (
@@ -608,9 +619,15 @@ export function LandlordDashboard() {
             <ModalIndicator onClick={() => setRevenueModalOpen(true)} />
             <div className="[&_.card-header]:pr-12">
               <PortfolioCard
-                title="Monthly Revenue"
-                value={monthlyRevenue}
-                description="Paid rent due this month"
+                title={`${timelineLabel} Revenue`}
+                value={periodRevenue}
+                description={
+                  dashboardTimeline === 'monthly'
+                    ? 'Paid rent this month'
+                    : dashboardTimeline === 'quarterly'
+                      ? 'Paid rent this quarter'
+                      : 'Paid rent this year'
+                }
                 format={v => formatCurrency(v)}
                 index={3}
                 data-testid="dashboard-revenue"
@@ -683,8 +700,14 @@ export function LandlordDashboard() {
 
             <Card className="glass-card">
               <CardHeader>
-                <CardTitle>Monthly Collection</CardTitle>
-                <CardDescription>Last 6 months</CardDescription>
+                <CardTitle>{timelineLabel} Collection</CardTitle>
+                <CardDescription>
+                  {dashboardTimeline === 'monthly'
+                    ? 'Last 6 months'
+                    : dashboardTimeline === 'quarterly'
+                      ? 'Last 4 quarters'
+                      : 'Last 4 years'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {metrics.monthlyRentCollected.length > 0 ? (
@@ -730,8 +753,14 @@ export function LandlordDashboard() {
               <ModalIndicator onClick={() => setExpenseModalOpen(true)} />
               <MetricCard
                 title="Total Expenses"
-                value={formatCurrency(monthlyExpenses)}
-                description="This month"
+                value={formatCurrency(periodExpenses)}
+                description={
+                  dashboardTimeline === 'monthly'
+                    ? 'This month'
+                    : dashboardTimeline === 'quarterly'
+                      ? 'This quarter'
+                      : 'This year'
+                }
                 icon={<Receipt className="w-4 h-4" />}
                 onClick={() => setExpenseModalOpen(true)}
                 data-testid="dashboard-expenses"

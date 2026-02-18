@@ -17,7 +17,7 @@ enforceNonProduction()
  */
 export default defineConfig({
   testDir: './tests',
-  testIgnore: ['**/prod-smoke/**'],
+  testIgnore: ['**/prod-smoke/**', '**/unit/**'],
 
   /* Run tests in files in parallel, but limit parallelism for auth tests to avoid rate limits */
   fullyParallel: true,

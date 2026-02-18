@@ -25,6 +25,7 @@ export function LoginPage() {
   const [useMagicLink, setUseMagicLink] = useState(false)
   const {
     signIn,
+    signOut,
     signInWithGoogle,
     signInWithMagicLink,
     user,
@@ -34,8 +35,16 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const from =
-    (location.state as { from?: { pathname?: string } })?.from?.pathname || '/landlord/dashboard'
+  const locationState = location.state as { from?: { pathname?: string }; roleError?: boolean }
+  const from = locationState?.from?.pathname || '/landlord/dashboard'
+  const roleError = locationState?.roleError
+
+  // Clear orphaned session when redirected due to roleError (e.g. after db reset)
+  useEffect(() => {
+    if (roleError && signOut) {
+      signOut()
+    }
+  }, [roleError]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Redirect authenticated users to their appropriate dashboard
   useEffect(() => {
@@ -58,6 +67,18 @@ export function LoginPage() {
       errorLower.includes('invalid credentials') ||
       errorLower.includes('email not found') ||
       errorLower.includes('user not found')
+    )
+  }, [error])
+
+  // Check if error is a network/connection failure (show helpful message)
+  const isConnectionError = useMemo(() => {
+    if (!error) return false
+    const errorLower = error.toLowerCase()
+    return (
+      errorLower.includes('failed to fetch') ||
+      errorLower.includes('authretryablefetcherror') ||
+      errorLower.includes('network error') ||
+      errorLower.includes('networkerror')
     )
   }, [error])
 
@@ -192,9 +213,28 @@ export function LoginPage() {
           </CardHeader>
           <CardContent className="pb-8">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {roleError && (
+                <div className="p-3 text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
+                  Database was reset. Please sign in again with your demo credentials.
+                </div>
+              )}
               {error && (
                 <div className="p-3 text-sm text-red-800 dark:text-red-500 bg-destructive/20 rounded-md border border-destructive/30">
-                  {error}
+                  {isConnectionError ? (
+                    <>
+                      <strong>Connection failed.</strong> Unable to reach the auth server.
+                      {import.meta.env.DEV && (
+                        <span className="block mt-2 text-muted-foreground">
+                          Ensure Docker is running and Supabase is started:{' '}
+                          <code className="text-xs">npx supabase start</code>. If using local
+                          Supabase, check that <code className="text-xs">.env.local</code> has{' '}
+                          <code className="text-xs">VITE_SUPABASE_URL=http://127.0.0.1:54321</code>.
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    error
+                  )}
                 </div>
               )}
               <div className="space-y-4">

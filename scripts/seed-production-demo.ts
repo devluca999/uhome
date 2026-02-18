@@ -70,7 +70,13 @@ async function createAndConfirmDemoUser(
 
   if (signUpError) {
     // If user already exists, try to sign in to verify the password works
-    if (signUpError.message?.includes('already registered') || signUpError.status === 422) {
+    const msg = (signUpError.message || '').toLowerCase()
+    const isAlreadyRegistered =
+      signUpError.status === 422 ||
+      msg.includes('already registered') ||
+      msg.includes('already exists') ||
+      msg.includes('user already')
+    if (isAlreadyRegistered) {
       console.log(
         `[createAndConfirmDemoUser] User already exists, attempting sign in to verify password...`
       )
@@ -130,13 +136,38 @@ async function createAndConfirmDemoUser(
         await supabaseAnon!.auth.signOut()
       }
     } else {
-      // Other error
-      const errorMsg = signUpError.message || 'No user returned from signup'
+      // Other error - extract message (AuthError may not serialize to JSON)
+      const errorMsg =
+        signUpError?.message ??
+        (signUpError as { error_description?: string })?.error_description ??
+        String(signUpError)
       console.error(`[createAndConfirmDemoUser] SignUp error:`, errorMsg)
+      if (signUpError?.status) console.error(`  Status: ${signUpError.status}`)
       throw new Error(`Failed to sign up user: ${errorMsg}`)
     }
   } else if (!data.user) {
-    throw new Error(`Failed to sign up user: No user returned from signup`)
+    // signUp can return no error but user: null when user already exists (identities: [])
+    const identities = (data as { identities?: unknown[] })?.identities
+    if (Array.isArray(identities) && identities.length === 0) {
+      console.log(
+        `[createAndConfirmDemoUser] User already exists (identities empty), attempting sign in...`
+      )
+      const { data: signInData, error: signInError } = await supabaseAnon!.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (signInError || !signInData.user) {
+        throw new Error(
+          `User already exists but sign in failed. Try deleting the user in Supabase Studio (Auth > Users) and re-run, or use the correct password. Error: ${signInError?.message || 'no user'}`
+        )
+      }
+      userId = signInData.user.id
+      isNewUser = false
+      console.log(`[createAndConfirmDemoUser] Existing user sign in ok. User ID: ${userId}`)
+      await supabaseAnon!.auth.signOut()
+    } else {
+      throw new Error(`Failed to sign up user: No user returned from signup`)
+    }
   } else {
     userId = data.user.id
     isNewUser = true
@@ -419,11 +450,12 @@ async function acceptInviteProgrammatically(
   }
 
   // Update lease to active and link to tenant
+  // leases.tenant_id references users(id), not tenants(id)
   const { error: updateLeaseError } = await supabase
     .from('leases')
     .update({
       status: 'active',
-      tenant_id: tenant.id,
+      tenant_id: userId,
     })
     .eq('id', lease.id)
 
@@ -822,12 +854,13 @@ async function seedProductionDemoData() {
           if (!property) {
             throw new Error(`Property not found for unit ${selectedUnit.id}`)
           }
+          // leases.tenant_id references users(id), not tenants(id)
           const { data: lease, error: leaseError } = await supabase
             .from('leases')
             .insert({
               unit_id: selectedUnit.id,
               property_id: property.id, // Still required until migration removes it
-              tenant_id: tenantId,
+              tenant_id: userId,
               status: 'active',
               lease_start_date: new Date().toISOString().split('T')[0],
               lease_end_date: null, // Month-to-month
@@ -901,7 +934,6 @@ async function seedProductionDemoData() {
       due_date: string
       status: 'paid' | 'pending' | 'overdue'
       paid_date: string | null
-      late_fee: number
     }> = []
 
     // Track if we've created an overdue record (guarantee at least one for tests)
@@ -1023,7 +1055,6 @@ async function seedProductionDemoData() {
           due_date: dueDateObj.toISOString().split('T')[0],
           status,
           paid_date: paidDate,
-          late_fee: lateFee,
         })
       }
     }
@@ -1057,7 +1088,7 @@ async function seedProductionDemoData() {
         console.error(`   Error details:`, rentError)
         console.warn(`   Schema issue detected. Trying with minimal fields...`)
 
-        // Fallback: try with only required fields
+        // Fallback: try with only required fields (schema may lack late_fee)
         const minimalRentRecords = rentRecords.map(r => ({
           property_id: r.property_id,
           tenant_id: r.tenant_id,
@@ -1066,7 +1097,6 @@ async function seedProductionDemoData() {
           due_date: r.due_date,
           status: r.status,
           paid_date: r.paid_date,
-          late_fee: r.late_fee || 0,
         }))
 
         const { data: fallbackData, error: fallbackError } = await supabase
@@ -1135,10 +1165,10 @@ async function seedProductionDemoData() {
 
     const expenses: Array<{
       property_id: string
-      name: string
+      description: string
       category: 'maintenance' | 'utilities' | 'repairs' | null
       amount: number
-      date: string
+      expense_date: string
     }> = []
 
     // Distribute expenses across 12 months, ensuring current month has expenses for E2E tests
@@ -1176,10 +1206,10 @@ async function seedProductionDemoData() {
 
         expenses.push({
           property_id: propertyId,
-          name,
+          description: name,
           category,
           amount,
-          date: expenseDate.toISOString().split('T')[0],
+          expense_date: expenseDate.toISOString().split('T')[0],
         })
       }
     }

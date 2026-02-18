@@ -12,6 +12,7 @@ import { ThemePreview } from '@/components/settings/theme-preview'
 import { NavItemReorder } from '@/components/settings/nav-item-reorder'
 import { useAuth } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
+import type { DashboardTimeline } from '@/contexts/settings-context'
 import { useTheme, type ThemePreference } from '@/contexts/theme-context'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
@@ -31,11 +32,15 @@ const LANDLORD_NAV_ITEMS = [
   { path: '/landlord/documents', label: 'Documents', required: false },
 ]
 
-// Navigation items for tenant
+// Navigation items for tenant (must match tenant-layout ALL_NAV_ITEMS)
 const TENANT_NAV_ITEMS = [
   { path: '/tenant/dashboard', label: 'Dashboard', required: true },
+  { path: '/tenant/finances', label: 'Payment History', required: false },
+  { path: '/tenant/household', label: 'Household', required: false },
   { path: '/tenant/maintenance', label: 'Maintenance', required: false },
   { path: '/tenant/documents', label: 'Documents', required: false },
+  { path: '/tenant/messages', label: 'Messages', required: false },
+  { path: '/tenant/settings', label: 'Settings', required: false },
 ]
 
 export function SettingsPage() {
@@ -419,6 +424,36 @@ export function SettingsPage() {
             </div>
           </div>
         </SettingsSection>
+
+        {/* Section: Dashboard (landlord only) */}
+        {role === 'landlord' && (
+          <SettingsSection
+            title="Dashboard"
+            description="Control how the dashboard displays financial summary"
+          >
+            <div className="space-y-3">
+              <Label htmlFor="dashboard-timeline">Summary Period</Label>
+              <p className="text-xs text-muted-foreground">
+                Choose whether the dashboard shows monthly, quarterly, or yearly summary
+              </p>
+              <select
+                id="dashboard-timeline"
+                value={settings.dashboardTimeline ?? 'monthly'}
+                onChange={e =>
+                  updateSettings({
+                    dashboardTimeline: e.target.value as DashboardTimeline,
+                  })
+                }
+                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 max-w-xs"
+                data-testid="settings-dashboard-timeline"
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+          </SettingsSection>
+        )}
 
         {/* Section D: Interface Preferences */}
         <SettingsSection title="Interface Preferences" description="Adjust interface behavior">

@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
@@ -22,7 +22,15 @@ import { useProperties } from '@/hooks/use-properties'
 import { useTenants } from '@/hooks/use-tenants'
 import { useExpenses } from '@/hooks/use-expenses'
 import { useFinancialMetrics } from '@/hooks/use-financial-metrics'
-import { calculateActiveProperties, calculateOccupancyRate } from '@/lib/finance-calculations'
+import {
+  calculateActiveProperties,
+  calculateOccupancyRate,
+  getExpenseDate,
+} from '@/lib/finance-calculations'
+import {
+  generateFallbackRentRecords,
+  generateFallbackExpenses,
+} from '@/lib/fallback-financial-data'
 import { exportLedgerToCSV } from '@/utils/export-csv'
 import { FileText, Plus, Download, X, Edit } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
@@ -30,180 +38,6 @@ import type { Database } from '@/types/database'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
-type RentRecordWithRelations = import('@/hooks/use-landlord-rent-records').RentRecordWithRelations
-
-// Generate fallback mock rent records for demo purposes (power-user simulation)
-// IMPORTANT: Uses actual property IDs from properties array to ensure property filter works
-function generateFallbackRentRecords(
-  properties: Array<{ id: string; name: string; address?: string | null }>
-): RentRecordWithRelations[] {
-  const today = new Date()
-  const records: RentRecordWithRelations[] = []
-  const amounts = [2400, 2800, 3200]
-  const paymentMethods = ['Zelle', 'Cash', 'Check', 'Venmo', 'Bank Transfer']
-
-  // Use actual properties, or fallback to 3 if none exist
-  const propsToUse =
-    properties.length > 0
-      ? properties
-      : [
-          { id: 'fallback-property-0', name: 'Property 1', address: '123 Demo St' },
-          { id: 'fallback-property-1', name: 'Property 2', address: '456 Demo St' },
-          { id: 'fallback-property-2', name: 'Property 3', address: '789 Demo St' },
-        ]
-
-  // Generate 12 months of data (enhanced for realistic power-user simulation)
-  for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
-    const dueDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, 1)
-    const isPastMonth = monthOffset > 0
-    const isCurrentMonth = monthOffset === 0
-
-    for (let i = 0; i < propsToUse.length; i++) {
-      const property = propsToUse[i]
-      const amount = amounts[i % amounts.length]
-      let status: 'paid' | 'pending' | 'overdue' = 'pending'
-      let paidDate: string | null = null
-      let paymentMethodType: 'manual' | 'external' | null = null
-      let paymentMethodLabel: string | null = null
-
-      if (isPastMonth) {
-        status = 'paid'
-        paymentMethodType = 'external'
-        paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
-
-        // Vary payment dates: 70% on time or early, 30% late (realistic distribution)
-        const paymentVariation = Math.random()
-        if (paymentVariation < 0.3) {
-          // Late payment (1-5 days after due date)
-          const daysLate = Math.floor(Math.random() * 5) + 1
-          paidDate = new Date(dueDate.getTime() + daysLate * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0]
-        } else if (paymentVariation < 0.7) {
-          // On time (due date)
-          paidDate = dueDate.toISOString().split('T')[0]
-        } else {
-          // Early payment (1-2 days before)
-          const daysEarly = Math.floor(Math.random() * 2) + 1
-          paidDate = new Date(dueDate.getTime() - daysEarly * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0]
-        }
-      } else if (isCurrentMonth && Math.random() > 0.3) {
-        // 70% chance current month is paid
-        status = 'paid'
-        paymentMethodType = 'external'
-        paymentMethodLabel = paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
-        const daysAgo = Math.floor(Math.random() * 5) // Paid 0-5 days ago
-        paidDate = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0]
-      } else if (isCurrentMonth) {
-        // 30% chance current month is still pending
-        status = 'pending'
-      }
-
-      records.push({
-        id: `fallback-${monthOffset}-${i}`,
-        property_id: property.id, // Use actual property ID
-        tenant_id: `fallback-tenant-${i}`,
-        amount: amount, // Keep as number
-        due_date: dueDate.toISOString().split('T')[0],
-        status,
-        paid_date: paidDate,
-        payment_method_type: paymentMethodType,
-        payment_method_label: paymentMethodLabel,
-        notes: null,
-        receipt_url: null,
-        created_at: dueDate.toISOString(),
-        updated_at: dueDate.toISOString(),
-        property: {
-          id: property.id,
-          name: property.name,
-          address: property.address || null,
-        },
-        tenant: {
-          id: `fallback-tenant-${i}`,
-          user: {
-            id: `fallback-user-${i}`,
-            email: `tenant${i + 1}@example.com`,
-          },
-        },
-      } as RentRecordWithRelations)
-    }
-  }
-
-  return records
-}
-
-// Generate fallback mock expenses for demo purposes
-// IMPORTANT: Uses actual property IDs from properties array to ensure property filter works
-function generateFallbackExpenses(properties: Array<{ id: string; name: string }>): Expense[] {
-  const today = new Date()
-  const expenses: Expense[] = []
-  const categories = ['maintenance', 'utilities', 'repairs', 'insurance', 'taxes']
-  const descriptions = {
-    maintenance: ['HVAC service', 'Gutter cleaning', 'Lawn mowing'],
-    utilities: ['Water bill', 'Electricity bill', 'Gas bill'],
-    repairs: ['Plumbing repair', 'Electrical repair', 'Roof repair'],
-    insurance: ['Property insurance', 'Liability insurance'],
-    taxes: ['Property tax', 'Quarterly tax'],
-  }
-
-  // Use actual properties, or fallback to 3 if none exist
-  const propsToUse =
-    properties.length > 0
-      ? properties
-      : [
-          { id: 'fallback-property-0', name: 'Property 1' },
-          { id: 'fallback-property-1', name: 'Property 2' },
-          { id: 'fallback-property-2', name: 'Property 3' },
-        ]
-
-  // Generate 12 months of expenses (enhanced for realistic simulation)
-  for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
-    const expenseDate = new Date(
-      today.getFullYear(),
-      today.getMonth() - monthOffset,
-      Math.floor(Math.random() * 28) + 1
-    )
-    const numExpenses = Math.random() > 0.5 ? 2 : 1
-
-    for (let e = 0; e < numExpenses; e++) {
-      const property = propsToUse[e % propsToUse.length] // Distribute expenses across properties
-      const category = categories[Math.floor(Math.random() * categories.length)]
-      const categoryDescriptions = descriptions[category as keyof typeof descriptions]
-      const description =
-        categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)]
-
-      let amount: number
-      if (category === 'insurance' || category === 'taxes') {
-        amount = Math.floor(Math.random() * 500) + 200
-      } else if (category === 'repairs') {
-        amount = Math.floor(Math.random() * 400) + 100
-      } else {
-        amount = Math.floor(Math.random() * 200) + 50
-      }
-
-      expenses.push({
-        id: `fallback-expense-${monthOffset}-${e}`,
-        property_id: property.id, // Use actual property ID
-        name: description, // Use description as name
-        category: category as 'maintenance' | 'utilities' | 'repairs' | null,
-        amount: amount, // Keep as number
-        date: expenseDate.toISOString().split('T')[0],
-        is_recurring: category === 'utilities' && Math.random() > 0.5,
-        recurring_frequency: null,
-        recurring_start_date: null,
-        recurring_end_date: null,
-        created_at: expenseDate.toISOString(),
-        updated_at: expenseDate.toISOString(),
-      } as Expense)
-    }
-  }
-
-  return expenses
-}
 
 export function LandlordFinances() {
   // Track performance metrics
@@ -215,7 +49,7 @@ export function LandlordFinances() {
   const [searchParams, setSearchParams] = useSearchParams()
   // Page-level filter state
   // These two filters control ALL financial data on the page: KPIs, Ledger, Graph (default state)
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('yearToDate') // Default to year-to-date for better demo showcase
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly') // Default to monthly to align with dashboard
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
   // Legacy filter state (for ledger section)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
@@ -332,23 +166,10 @@ export function LandlordFinances() {
     return filter
   }, [selectedPropertyId])
 
-  // Filter for KPI calculations (includes dateRange)
-  const kpiFilter: RentRecordFilter = useMemo(() => {
-    const filter: RentRecordFilter = {}
-    if (selectedPropertyId && selectedPropertyId !== 'all') {
-      filter.propertyId = selectedPropertyId
-    }
-    if (dateRange) {
-      filter.dateRange = dateRange
-    }
-    return filter
-  }, [selectedPropertyId, dateRange])
-
-  // Fetch ALL records for charts (no dateRange filter)
+  // Fetch ALL records - use same data for both charts and KPIs
+  // CRITICAL: Do NOT filter by dateRange in the DB - useLandlordRentRecords filters by due_date,
+  // but rent collected uses paid_date (cash accounting). Date filtering happens in useFinancialMetrics.
   const { records: allRecords, loading, refetch } = useLandlordRentRecords(chartFilter)
-
-  // Fetch filtered records for KPI calculations
-  const { records: filteredRecords } = useLandlordRentRecords(kpiFilter)
 
   // Map dateGranularity to graphTimeRange (derived from timePeriod)
   const graphTimeRange = useMemo(() => {
@@ -374,13 +195,13 @@ export function LandlordFinances() {
     return allRecords
   }, [allRecords, loading, properties])
 
-  // Use filtered records for KPI calculations (with dateRange filter)
+  // Use same records for KPIs as charts - dateRange is applied in useFinancialMetrics (paid_date for revenue)
   const recordsForKPIs = useMemo(() => {
-    if (filteredRecords.length === 0 && !loading) {
+    if (allRecords.length === 0 && !loading) {
       return generateFallbackRentRecords(properties)
     }
-    return filteredRecords
-  }, [filteredRecords, loading, properties])
+    return allRecords
+  }, [allRecords, loading, properties])
 
   // Use fallback expenses if no real expenses exist
   // IMPORTANT: Pass properties so fallback data uses real property IDs
@@ -459,7 +280,7 @@ export function LandlordFinances() {
     }
     if (dateRange) {
       filtered = filtered.filter(e => {
-        const expenseDate = new Date(e.date)
+        const expenseDate = new Date(getExpenseDate(e))
         return expenseDate >= dateRange.start && expenseDate <= dateRange.end
       })
     }

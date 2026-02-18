@@ -18,7 +18,8 @@ export function useExpenses(propertyId?: string) {
   async function fetchExpenses() {
     try {
       setLoading(true)
-      let query = supabase.from('expenses').select('*').order('date', { ascending: false })
+      // Schema uses expense_date (initial_schema); some migrations use date - try expense_date first
+      let query = supabase.from('expenses').select('*').order('expense_date', { ascending: false })
 
       if (propertyId) {
         query = query.eq('property_id', propertyId)

@@ -2,11 +2,13 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 export type ThemePreference = 'light' | 'dark' | 'system'
 export type NavLayout = 'header' | 'sidebar'
+export type DashboardTimeline = 'monthly' | 'quarterly' | 'yearly'
 
 export type NotificationFrequency = 'immediate' | 'digest' | 'disabled'
 
 export interface Settings {
   theme: ThemePreference
+  dashboardTimeline: DashboardTimeline
   useSystemTheme: boolean
   navLayout: NavLayout
   reduceMotion: boolean
@@ -26,6 +28,7 @@ export interface Settings {
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
+  dashboardTimeline: 'monthly',
   useSystemTheme: false,
   navLayout: 'header',
   reduceMotion: false,

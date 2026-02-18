@@ -66,14 +66,19 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <>{children}</>
   }
 
-  // If we have allowed roles but role is not yet loaded, wait for it
-  // This prevents race conditions where the component renders before role is available
-  if (allowedRoles && !role && user) {
+  // If we have allowed roles but role is not yet loaded, wait only while loading
+  // Once loading is false and role is still null, role fetch failed - redirect to login
+  if (allowedRoles && !role && user && loading) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-stone-600">Loading...</div>
       </div>
     )
+  }
+
+  // Role fetch completed but role is null (user not in users table, RLS, etc.)
+  if (allowedRoles && !role && user && !loading) {
+    return <Navigate to="/login" state={{ from: location, roleError: true }} replace />
   }
 
   return <>{children}</>

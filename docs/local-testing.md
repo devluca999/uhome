@@ -9,7 +9,31 @@ Local Supabase (CLI + Docker) is the canonical test backend for E2E tests, finan
 - Docker (running)
 - Supabase CLI (`npm install -g supabase` or install from [supabase.com/docs/guides/cli](https://supabase.com/docs/guides/cli))
 
-## Setup
+## Quick Start: Full Demo (Recommended)
+
+**One command** to boot the app with complete demo data (6–12 months of finances, work orders, congruent landlord/tenant data):
+
+```bash
+npx supabase start    # If not already running
+npm run dev:demo
+```
+
+This will:
+1. Ensure local Supabase is reachable
+2. Reset the database (apply migrations)
+3. Seed 12 months of rent records, expenses, work orders
+4. Start the dev server at http://localhost:1000
+
+**Demo credentials:**
+- Landlord: `demo-landlord@uhome.internal` / `DemoLandlord2024!`
+- Tenant: `demo-tenant@uhome.internal` / `DemoTenant2024!`
+
+Use `demo:reset` to re-seed without restarting the dev server (when Supabase is already running):
+```bash
+npm run demo:reset
+```
+
+## Manual Setup
 
 ### 1. Start local Supabase
 
@@ -33,7 +57,7 @@ This applies all migrations in `supabase/migrations/` in order.
 npm run seed:demo
 ```
 
-Creates demo landlord (`demo-landlord@uhome.internal`) and tenant (`demo-tenant@uhome.internal`).
+Creates demo landlord (`demo-landlord@uhome.internal`) and tenant (`demo-tenant@uhome.internal`) with 12 months of financial and operational data.
 
 ## Running tests
 
@@ -72,6 +96,16 @@ Set `.env.test` (or job env) with:
 | DB | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
 
 Get anon key and service key: `supabase status`
+
+## Why Did My Data Disappear?
+
+Demo data is stored in the local Supabase database. It is lost when:
+
+- You run `npx supabase db reset` (wipes DB, reapplies migrations)
+- Docker containers restart (depending on volume setup)
+- You start from a fresh clone without re-seeding
+
+**To restore full demo data:** Run `npm run dev:demo` (full boot) or `npm run demo:reset` (reset + seed only). This guarantees 12 months of rent records, expenses, work orders, and congruent landlord/tenant data.
 
 ## Troubleshooting
 

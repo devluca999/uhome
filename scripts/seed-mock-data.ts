@@ -409,11 +409,12 @@ async function seedMockData() {
           console.log(`✅ Created ${createdTenants.length} tenant assignments`)
 
           // Create Leases (first-class entities per lease-model architecture)
+          // leases.tenant_id references users(id), not tenants(id)
           const leases = createdTenants.map(tenant => {
             const property = createdProperties.find(p => p.id === tenant.property_id)
             return {
               property_id: tenant.property_id,
-              tenant_id: tenant.id,
+              tenant_id: tenant.user_id,
               status: 'active',
               lease_start_date: tenant.move_in_date,
               lease_end_date: tenant.lease_end_date,
@@ -462,9 +463,9 @@ async function seedMockData() {
             const tenantIndex = propIndex % createdTenants.length
             const tenant = createdTenants[tenantIndex]
             if (!tenant) continue // Skip if no tenants exist
-            // Find corresponding lease
+            // Find corresponding lease (leases.tenant_id = users.id, not tenants.id)
             const lease = createdLeases.find(
-              l => l.tenant_id === tenant.id && l.property_id === property.id
+              l => l.tenant_id === tenant.user_id && l.property_id === property.id
             )
             if (!lease) continue // Skip if no lease exists
             const rentAmount = property.rent_amount
