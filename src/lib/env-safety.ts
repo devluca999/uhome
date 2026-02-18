@@ -5,6 +5,14 @@
 
 export const ALLOWED_ENVS = ['local', 'staging', 'test'] as const
 
+// Safe accessor for Node-style env without depending on Node types.
+// Uses globalThis to avoid referencing `process` directly (which would
+// require @types/node in browser builds).
+function getNodeEnvValue(key: string): string | undefined {
+  const g = globalThis as any
+  return g?.process?.env?.[key]
+}
+
 /**
  * Check if the given env/url combination indicates production.
  */
@@ -48,17 +56,19 @@ export function assertEnvironmentCapabilities(
   required: Partial<EnvironmentCapabilities>,
   envSource?: { env?: string; url?: string }
 ): void {
-  // Use envSource if passed; else import.meta.env (Vite/browser); else process.env (Node scripts)
+  // Prefer explicit envSource; fall back to Vite's import.meta.env (browser)
+  // and finally to Node-style env via globalThis for scripts.
   const env =
     envSource?.env ??
-    import.meta.env?.SUPABASE_ENV ??
-    import.meta.env?.VITE_SUPABASE_ENV ??
-    (typeof process !== 'undefined' ? process.env?.SUPABASE_ENV ?? process.env?.VITE_SUPABASE_ENV : undefined) ??
+    (import.meta as any)?.env?.SUPABASE_ENV ??
+    (import.meta as any)?.env?.VITE_SUPABASE_ENV ??
+    getNodeEnvValue('SUPABASE_ENV') ??
+    getNodeEnvValue('VITE_SUPABASE_ENV') ??
     ''
   const url =
     envSource?.url ??
-    import.meta.env?.VITE_SUPABASE_URL ??
-    (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : undefined) ??
+    (import.meta as any)?.env?.VITE_SUPABASE_URL ??
+    getNodeEnvValue('VITE_SUPABASE_URL') ??
     ''
   const isProd = isProductionEnv(env, url)
   const isNonProd = isNonProductionEnv(env, url)
