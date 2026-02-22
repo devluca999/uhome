@@ -123,10 +123,10 @@ export function LeadUpload() {
       const uploadResult = await ingestLeads(parsedData, {
         source: 'manual_upload',
         actorId: user.id,
-        environment: 'production', // TODO: Detect from environment
-        sandboxMode: false,
-        autoEnrollWaitlist: false, // TODO: Add UI toggle
-        autoEnrollNewsletter: false, // TODO: Add UI toggle
+        environment: import.meta.env.MODE === 'production' ? 'production' : 'staging',
+        sandboxMode: import.meta.env.MODE !== 'production',
+        autoEnrollWaitlist: false, // Deferred: Add UI toggle
+        autoEnrollNewsletter: false, // Deferred: Add UI toggle
         fieldMapping,
       })
 

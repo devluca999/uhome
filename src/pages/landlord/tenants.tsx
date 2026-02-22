@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
+import { useNavigate } from 'react-router-dom'
 import { useUrlParams } from '@/lib/url-params'
 import { isFeatureEnabled } from '@/lib/feature-flags'
 import { Plus, Users, Mail, X, Search, Filter, LayoutGrid, List, Group } from 'lucide-react'
@@ -28,6 +29,7 @@ const VIEW_MODE_STORAGE_KEY = 'tenant-view-mode'
 const GROUP_BY_PROPERTY_STORAGE_KEY = 'tenant-group-by-property'
 
 export function LandlordTenants() {
+  const navigate = useNavigate()
   const { tenants, loading, createTenant, deleteTenant } = useTenants()
   const { properties } = useProperties()
   const { getFilterParam, clearFilterParam } = useUrlParams()
@@ -517,7 +519,7 @@ export function LandlordTenants() {
             tenant={selectedTenant}
             onMessage={() => {
               handleCloseDetailModal()
-              // TODO: Navigate to messages (Phase 2)
+              navigate('/landlord/messages')
             }}
           />
         )}

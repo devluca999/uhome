@@ -466,6 +466,21 @@ export function LandlordFinances() {
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 
+      {/* Page Header */}
+      <div className="container mx-auto px-4 pt-6 pb-2 relative z-10">
+        <motion.div
+          initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
+          animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+          transition={{
+            duration: motionTokens.duration.normal,
+            ease: motionTokens.easing.standard,
+          }}
+        >
+          <h1 className="text-4xl font-semibold text-foreground mb-2">Finances</h1>
+          <p className="text-muted-foreground">All your metrics at a glance</p>
+        </motion.div>
+      </div>
+
       {/* Section A: Page-Level Filter Bar (Authoritative Scope) - ABOVE KPI Strip */}
       {/* Page-wide filters define the base scope for all financial data on the page */}
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-sm border-b border-border">
@@ -526,24 +541,6 @@ export function LandlordFinances() {
       />
 
       <div className="container mx-auto px-4 pt-0.5 pb-8 relative z-10">
-        {/* Page Header */}
-        <motion.div
-          initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
-          animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-          transition={{
-            duration: motionTokens.duration.normal,
-            ease: motionTokens.easing.standard,
-          }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-semibold text-foreground mb-2">Finances</h1>
-              <p className="text-muted-foreground">All your metrics at a glance</p>
-            </div>
-          </div>
-        </motion.div>
-
         {/* Onboarding Tooltips */}
         <FinancesOnboarding />
 
@@ -586,7 +583,7 @@ export function LandlordFinances() {
                   month: item.month,
                   amount: item.amount,
                 }))}
-                outstandingRentData={[]} // TODO: Calculate outstanding rent by month
+                outstandingRentData={[]} // Deferred: use calculateUnpaidRent by month
                 expensesData={metrics.monthlyExpenses.map(item => ({
                   month: item.month,
                   amount: item.amount,

@@ -208,8 +208,10 @@ class PerformanceTracker {
     if (this.metricQueue.length > 0) {
       // Note: sendBeacon doesn't work with Edge Functions directly
       // Fallback to sync flush attempt
-      this.flush().catch(() => {
-        // Silently fail on unload
+      this.flush().catch((err) => {
+        if (import.meta.env.DEV) {
+          console.debug('[Performance] Flush on unload failed:', err)
+        }
       })
     }
   }

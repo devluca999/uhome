@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
+import { getPostLoginRedirectPath } from '@/lib/post-login-routing'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
@@ -30,10 +31,9 @@ export function HomePage() {
   const buttonSpring = useMemo(() => createSpring('button'), [])
 
   useEffect(() => {
-    // Redirect authenticated users to their dashboard
+    // Redirect authenticated users to their role-appropriate dashboard
     if (!loading && user && role) {
-      const redirectPath = role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'
-      navigate(redirectPath, { replace: true })
+      navigate(getPostLoginRedirectPath(role), { replace: true })
     }
   }, [user, role, loading, navigate])
 

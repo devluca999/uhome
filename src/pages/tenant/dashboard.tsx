@@ -22,6 +22,9 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 import { DataHealthCard } from '@/components/data-health/data-health-card'
+import { usePendingOnboarding } from '@/hooks/use-onboarding'
+import { OnboardingModal } from '@/components/tenant/onboarding-modal'
+import { OnboardingReminderBanner } from '@/components/tenant/onboarding-reminder-banner'
 
 export function TenantDashboard() {
   // Track performance metrics
@@ -42,12 +45,29 @@ export function TenantDashboard() {
     // toggleTaskStatus, // Not available in useTenantTasks
     // updateChecklistItem, // Not available in useTenantTasks
   } = useTenantTasks(tenantData?.tenant.id)
-  const { user, role } = useAuth()
+  const { user, role, viewMode } = useAuth()
   const navigate = useNavigate()
   // const [announcementsOpen, setAnnouncementsOpen] = useState(false) // Unused
   const [showTaskReminder, setShowTaskReminder] = useState<string | null>(null)
   const [showJoinHousehold, setShowJoinHousehold] = useState(false)
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const cardSpring = createSpring('card')
+
+  const pendingOnboarding = usePendingOnboarding(
+    tenantData?.tenant.id,
+    tenantData?.property.id
+  )
+
+  // Auto-open onboarding modal on first visit when pending and not_started
+  useEffect(() => {
+    if (
+      pendingOnboarding.hasPending &&
+      pendingOnboarding.submission?.status === 'not_started' &&
+      !pendingOnboarding.loading
+    ) {
+      setShowOnboardingModal(true)
+    }
+  }, [pendingOnboarding.hasPending, pendingOnboarding.submission?.status, pendingOnboarding.loading])
 
   // Role guard: Prevent landlords from accessing tenant dashboard
   // ProtectedRoute should handle this, but add defensive check for race conditions
@@ -143,7 +163,32 @@ export function TenantDashboard() {
 
       <div className="relative z-10">
         <DataHealthCard className="mb-6" />
-        {user && <HeroGreeting name={user.email?.split('@')[0] || 'User'} />}
+
+        {pendingOnboarding.hasPending && (
+          <OnboardingReminderBanner
+            pending={pendingOnboarding}
+            onContinue={() => setShowOnboardingModal(true)}
+          />
+        )}
+
+        {pendingOnboarding.template && (
+          <OnboardingModal
+            template={pendingOnboarding.template}
+            tenantId={tenantData.tenant.id}
+            isOpen={showOnboardingModal}
+            onClose={() => setShowOnboardingModal(false)}
+            onSubmitted={() => {
+              setShowOnboardingModal(false)
+              pendingOnboarding.refetch()
+            }}
+          />
+        )}
+
+        {user && (
+          <HeroGreeting
+            name={viewMode === 'tenant-demo' ? 'Demo Tenant' : (user.email?.split('@')[0] || 'User')}
+          />
+        )}
 
         {nextRentRecord && (
           <div className="mb-6">

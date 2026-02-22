@@ -82,7 +82,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
+    command: 'vite --port 1000 --host --mode test',
     url: 'http://localhost:1000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

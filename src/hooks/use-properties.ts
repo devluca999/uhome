@@ -1,38 +1,39 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
+import { getProperties } from '@/lib/data/property-service'
 import type { Database } from '@/types/database'
 
 type Property = Database['public']['Tables']['properties']['Row']
 
+function isDemoMode(viewMode: string, role: string | null): boolean {
+  return role === 'admin' && (viewMode === 'landlord-demo' || viewMode === 'tenant-demo')
+}
+
 export function useProperties() {
+  const { role, viewMode, demoState } = useAuth()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    // Wait a bit for auth to initialize
-    const timer = setTimeout(() => {
-      fetchProperties()
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [])
-
-  async function fetchProperties() {
+  const fetchProperties = useCallback(async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setProperties(data || [])
+      const data = await getProperties(viewMode, demoState)
+      setProperties(data)
     } catch (err) {
       setError(err as Error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [viewMode, demoState])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchProperties()
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [fetchProperties])
 
   async function createProperty(property: {
     name: string
@@ -43,6 +44,7 @@ export function useProperties() {
     property_type?: string | null
     group_ids?: string[]
   }) {
+    if (isDemoMode(viewMode, role)) return Promise.resolve(null as any)
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -82,6 +84,7 @@ export function useProperties() {
   }
 
   async function updateProperty(id: string, updates: Partial<Property & { group_ids?: string[] }>) {
+    if (isDemoMode(viewMode, role)) return Promise.resolve(null as any)
     const { group_ids, ...propertyUpdates } = updates
 
     // Filter out undefined values and null values for optional fields that might not exist in schema
@@ -151,6 +154,7 @@ export function useProperties() {
   }
 
   async function deleteProperty(id: string) {
+    if (isDemoMode(viewMode, role)) return
     const { error } = await supabase.from('properties').delete().eq('id', id)
 
     if (error) throw error

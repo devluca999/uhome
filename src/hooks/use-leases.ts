@@ -1,49 +1,45 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
+import { getLeases } from '@/lib/data/lease-service'
 import type { Database } from '@/types/database'
 
 type Lease = Database['public']['Tables']['leases']['Row']
 type LeaseInsert = Database['public']['Tables']['leases']['Insert']
 type LeaseUpdate = Database['public']['Tables']['leases']['Update']
 
+function isDemoMode(viewMode: string, role: string | null): boolean {
+  return role === 'admin' && (viewMode === 'landlord-demo' || viewMode === 'tenant-demo')
+}
+
 export function useLeases(propertyId?: string, tenantId?: string) {
+  const { role, viewMode, demoState } = useAuth()
   const [leases, setLeases] = useState<Lease[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    fetchLeases()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propertyId, tenantId])
-
-  async function fetchLeases() {
+  const fetchLeases = useCallback(async () => {
     try {
       setLoading(true)
-      let query = supabase
-        .from('leases')
-        .select('*')
-        .order('lease_start_date', { ascending: false })
-
-      if (propertyId) {
-        query = query.eq('property_id', propertyId)
-      }
-
-      if (tenantId) {
-        query = query.eq('tenant_id', tenantId)
-      }
-
-      const { data, error: fetchError } = await query
-
-      if (fetchError) throw fetchError
-      setLeases(data || [])
+      const data = await getLeases(
+        { propertyId, tenantId },
+        viewMode,
+        demoState
+      )
+      setLeases(data)
     } catch (err) {
       setError(err as Error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [propertyId, tenantId, viewMode, demoState])
+
+  useEffect(() => {
+    fetchLeases()
+  }, [fetchLeases])
 
   async function createLease(data: LeaseInsert) {
+    if (isDemoMode(viewMode, role)) return { data: null, error: null }
     try {
       const { data: newLease, error: createError } = await supabase
         .from('leases')
@@ -62,6 +58,7 @@ export function useLeases(propertyId?: string, tenantId?: string) {
   }
 
   async function updateLease(id: string, data: LeaseUpdate) {
+    if (isDemoMode(viewMode, role)) return { data: null, error: null }
     try {
       // Check if lease is ended before attempting update (if status column exists)
       try {
@@ -108,6 +105,7 @@ export function useLeases(propertyId?: string, tenantId?: string) {
   }
 
   async function deleteLease(id: string) {
+    if (isDemoMode(viewMode, role)) return { error: null }
     try {
       // Check if lease is ended before attempting delete (if status column exists)
       try {

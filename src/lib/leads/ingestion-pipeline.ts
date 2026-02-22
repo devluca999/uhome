@@ -281,5 +281,5 @@ async function enrollLeads(
   // This would integrate with waitlist and newsletter systems
   // For now, it's a placeholder
   console.log('Enrolling leads:', { emails: emails.length, options })
-  // TODO: Implement waitlist/newsletter enrollment
+  // Deferred: Implement waitlist/newsletter enrollment (ticket)
 }

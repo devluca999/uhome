@@ -36,7 +36,9 @@
     "test:prod-smoke": "playwright test --config=playwright.prod-smoke.config.ts",
     "ensure:local-supabase": "tsx scripts/ensure-local-supabase.ts",
     "validate:env": "tsx scripts/validate-env.ts",
-    "verify:staging-decommission": "tsx scripts/staging-decommission-readiness.ts"
+    "verify:staging-decommission": "tsx scripts/staging-decommission-readiness.ts",
+    "verify:cloud-parity": "tsx scripts/verify-cloud-parity.ts",
+    "verify:schema-congruence": "tsx scripts/verify-schema-congruence.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

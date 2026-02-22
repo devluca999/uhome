@@ -1,16 +1,49 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 import { isDevModeAvailable, shouldActivateDevMode } from '@/lib/tenant-dev-mode'
 
+export type ViewMode = 'admin' | 'landlord-demo' | 'tenant-demo'
+export type DemoState = 'populated' | 'empty'
+
+const DEMO_VIEW_MODE_KEY = 'demo_view_mode'
+const DEMO_STATE_KEY = 'demo_state'
+
 type UserRole = 'landlord' | 'tenant' | 'admin' | null
+
+function loadViewMode(): ViewMode {
+  if (typeof window === 'undefined') return 'admin'
+  const stored = localStorage.getItem(DEMO_VIEW_MODE_KEY)
+  if (stored === 'admin' || stored === 'landlord-demo' || stored === 'tenant-demo') {
+    return stored
+  }
+  return 'admin'
+}
+
+function loadDemoState(): DemoState {
+  if (typeof window === 'undefined') return 'populated'
+  const stored = localStorage.getItem(DEMO_STATE_KEY)
+  if (stored === 'populated' || stored === 'empty') return stored
+  return 'populated'
+}
+
+function clearDemoStorage() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(DEMO_VIEW_MODE_KEY)
+    localStorage.removeItem(DEMO_STATE_KEY)
+  }
+}
 
 interface AuthContextType {
   user: User | null
   session: Session | null
   role: UserRole
   loading: boolean
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
+  demoState: DemoState
+  setDemoState: (state: DemoState) => void
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (
     email: string,
@@ -29,6 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [role, setRole] = useState<UserRole>(null)
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewModeState] = useState<ViewMode>(loadViewMode)
+  const [demoState, setDemoStateState] = useState<DemoState>(loadDemoState)
+
+  const setViewMode = useCallback((mode: ViewMode) => {
+    setViewModeState(mode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DEMO_VIEW_MODE_KEY, mode)
+    }
+  }, [])
+
+  const setDemoState = useCallback((state: DemoState) => {
+    setDemoStateState(state)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DEMO_STATE_KEY, state)
+    }
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -243,6 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    clearDemoStorage()
     await supabase.auth.signOut()
   }
 
@@ -279,6 +329,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     role,
     loading,
+    viewMode,
+    setViewMode,
+    demoState,
+    setDemoState,
     signIn,
     signUp,
     signOut,

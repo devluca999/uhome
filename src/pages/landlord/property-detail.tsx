@@ -17,6 +17,7 @@ import { useTenants } from '@/hooks/use-tenants'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useProperties } from '@/hooks/use-properties'
 // import { useLeases } from '@/hooks/use-leases' // Unused
+import { OnboardingTemplateEditor } from '@/components/landlord/onboarding-template-editor'
 import { ArrowLeft, Plus, Users, Wrench, Calendar, User, Trash2, MessageSquare } from 'lucide-react'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
@@ -243,6 +244,7 @@ export function PropertyDetail() {
             <TabsTrigger value="tenants">Tenants</TabsTrigger>
             <TabsTrigger value="work-orders">Work Orders</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -723,6 +725,10 @@ export function PropertyDetail() {
           {/* Documents Tab */}
           <TabsContent value="documents" className="mt-6">
             {id && <PropertyDocuments propertyId={id} />}
+          </TabsContent>
+
+          <TabsContent value="onboarding" className="mt-6">
+            {id && <OnboardingTemplateEditor propertyId={id} />}
           </TabsContent>
         </Tabs>
       </div>

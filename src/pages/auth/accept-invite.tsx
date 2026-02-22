@@ -153,6 +153,34 @@ export function AcceptInvite() {
 
       if (acceptError) throw acceptError
 
+      // Auto-create onboarding submission if property has an active template
+      try {
+        const { data: activeTemplate } = await supabase
+          .from('onboarding_templates')
+          .select('id, fields')
+          .eq('property_id', invite.property_id || invite.property?.id)
+          .eq('is_active', true)
+          .limit(1)
+          .single()
+
+        if (activeTemplate) {
+          const requiredCount = (activeTemplate.fields as any[])?.filter(
+            (f: any) => f.required
+          ).length || 0
+
+          await supabase.from('onboarding_submissions').insert({
+            tenant_id: tenantId,
+            template_id: activeTemplate.id,
+            lease_id: invite.lease_id,
+            status: 'not_started',
+            completed_fields: 0,
+            total_fields: requiredCount,
+          })
+        }
+      } catch {
+        // Non-critical: template may not exist, or submission may already exist (unique constraint)
+      }
+
       setSuccess(true)
 
       // Redirect to tenant dashboard after a moment

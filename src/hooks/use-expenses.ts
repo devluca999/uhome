@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { withRetry } from '@/lib/retry'
 import type { Database } from '@/types/database'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
@@ -18,15 +19,14 @@ export function useExpenses(propertyId?: string) {
   async function fetchExpenses() {
     try {
       setLoading(true)
-      // Schema uses expense_date (initial_schema); some migrations use date - try expense_date first
       let query = supabase.from('expenses').select('*').order('expense_date', { ascending: false })
-
       if (propertyId) {
         query = query.eq('property_id', propertyId)
       }
-
-      const { data, error: fetchError } = await query
-
+      const { data, error: fetchError } = await withRetry(async () => {
+        const res = await query
+        return res
+      })
       if (fetchError) throw fetchError
       setExpenses(data || [])
     } catch (err) {

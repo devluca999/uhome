@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { AuthContext } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
+import { AdminDemoToolbar } from '@/components/admin/admin-demo-toolbar'
 import { useScrollReset } from '@/hooks/use-scroll-reset'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
@@ -84,12 +85,19 @@ export function LandlordLayout() {
 
   // Render sidebar layout
   if (effectiveLayout === 'sidebar') {
-    return <SidebarLayout navItems={visibleNavItems} basePath="/landlord" role="landlord" />
+    return (
+      <>
+        <SidebarLayout navItems={visibleNavItems} basePath="/landlord" role="landlord" />
+        <AdminDemoToolbar />
+      </>
+    )
   }
 
   // Render header layout (default)
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <AdminDemoToolbar />
+      <div className="min-h-screen bg-background">
       <nav className="glass-nav sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
@@ -168,5 +176,6 @@ export function LandlordLayout() {
         </AnimatePresence>
       </main>
     </div>
+    </>
   )
 }

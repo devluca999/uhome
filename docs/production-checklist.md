@@ -4,6 +4,9 @@ Use this checklist when deploying to production for the first time.
 
 ## Pre-Deployment
 
+### Backup
+- [ ] Database backup taken (see [docs/backup-recovery.md](backup-recovery.md))
+
 ### Code
 - [x] All code committed and pushed to main branch
 - [x] CI/CD passing (lint, type-check, build)

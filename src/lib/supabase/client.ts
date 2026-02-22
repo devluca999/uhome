@@ -35,7 +35,9 @@ if (import.meta.env.DEV) {
     } else {
       console.debug('[Supabase Client] Connection test passed')
     }
-  }).catch(() => {
-    // Silently fail - connection test is optional
+  }).catch((err) => {
+    if (import.meta.env.DEV) {
+      console.debug('[Supabase Client] Connection test error (optional):', err)
+    }
   })
 }

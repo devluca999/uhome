@@ -461,9 +461,15 @@ export async function loginAsLandlord(page: Page, email: string, password: strin
       // Wait a moment for login to process
       await page.waitForTimeout(2000)
 
-      // Check for error message before waiting for navigation
+      // Check if already navigated away from login (success)
+      const postSubmitPath = new URL(page.url()).pathname
+      if (postSubmitPath === expectedDashboardPath) {
+        return
+      }
+
+      // Still on login — check for a visible error message (narrow selector)
       const errorElement = page
-        .locator('.text-destructive, [class*="destructive"], [class*="error"]')
+        .locator('.text-destructive, .bg-destructive\\/20')
         .first()
       const hasError = await errorElement.isVisible({ timeout: 3000 }).catch(() => false)
 
@@ -519,8 +525,21 @@ export async function loginAsLandlord(page: Page, email: string, password: strin
       )
     }
   } catch (error) {
-    // If Promise.race times out, neither redirect nor form appeared
+    // Re-throw specific errors we already formatted
+    if (error instanceof Error && (
+      error.message.includes('[AUTH SEED FAILURE]') ||
+      error.message.includes('Login failed:') ||
+      error.message.includes('Login navigation timeout') ||
+      error.message.includes('Unexpected state:')
+    )) {
+      throw error
+    }
+    // Check if we actually made it to the dashboard despite the error
     const currentUrl = page.url()
+    const currentPath = new URL(currentUrl).pathname
+    if (currentPath === expectedDashboardPath) {
+      return
+    }
     const formVisible = await formLocator.isVisible().catch(() => false)
     const screenshotPath = `test-results/login-timeout-${Date.now()}.png`
     await page.screenshot({ path: screenshotPath })
@@ -601,9 +620,15 @@ export async function loginAsTenant(page: Page, email: string, password: string)
       // Wait a moment for login to process
       await page.waitForTimeout(2000)
 
-      // Check for error message before waiting for navigation
+      // Check if already navigated away from login (success)
+      const postSubmitPath = new URL(page.url()).pathname
+      if (postSubmitPath === expectedDashboardPath) {
+        return
+      }
+
+      // Still on login — check for a visible error message (narrow selector)
       const errorElement = page
-        .locator('.text-destructive, [class*="destructive"], [class*="error"]')
+        .locator('.text-destructive, .bg-destructive\\/20')
         .first()
       const hasError = await errorElement.isVisible({ timeout: 3000 }).catch(() => false)
 
@@ -659,8 +684,21 @@ export async function loginAsTenant(page: Page, email: string, password: string)
       )
     }
   } catch (error) {
-    // If Promise.race times out, neither redirect nor form appeared
+    // Re-throw specific errors we already formatted
+    if (error instanceof Error && (
+      error.message.includes('[AUTH SEED FAILURE]') ||
+      error.message.includes('Login failed:') ||
+      error.message.includes('Login navigation timeout') ||
+      error.message.includes('Unexpected state:')
+    )) {
+      throw error
+    }
+    // Check if we actually made it to the dashboard despite the error
     const currentUrl = page.url()
+    const currentPath = new URL(currentUrl).pathname
+    if (currentPath === expectedDashboardPath) {
+      return
+    }
     const formVisible = await formLocator.isVisible().catch(() => false)
     const screenshotPath = `test-results/login-timeout-${Date.now()}.png`
     await page.screenshot({ path: screenshotPath })

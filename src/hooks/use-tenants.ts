@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
+import { getTenants } from '@/lib/data/tenant-service'
+import { landlordDemoProperties } from '@/demo-data/landlordDemoData'
 
 export type Tenant = {
   id: string
@@ -21,19 +24,35 @@ export type Tenant = {
   }
 }
 
+function isDemoMode(viewMode: string, role: string | null): boolean {
+  return role === 'admin' && (viewMode === 'landlord-demo' || viewMode === 'tenant-demo')
+}
+
 export function useTenants() {
+  const { role, viewMode, demoState } = useAuth()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    fetchTenants()
-  }, [])
-
-  async function fetchTenants() {
+  const fetchTenants = useCallback(async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      if (isDemoMode(viewMode, role)) {
+        const rawTenants = await getTenants(viewMode, demoState)
+        const enriched = rawTenants.map(t => {
+          const prop = landlordDemoProperties.find(p => p.id === t.property_id)
+          return {
+            ...t,
+            property_id: t.property_id || '',
+            user: { email: 'demo@example.com', role: 'tenant' },
+            property: prop ? { name: prop.name, address: prop.address ?? undefined } : undefined,
+          }
+        })
+        setTenants(enriched)
+        return
+      }
+
+      const { data, error: fetchError } = await supabase
         .from('tenants')
         .select(
           `
@@ -44,28 +63,25 @@ export function useTenants() {
         )
         .order('created_at', { ascending: false })
 
-      if (error) {
-        // Fallback to simpler query if nested select fails
-        console.warn('Nested query failed, trying simple query:', error)
+      if (fetchError) {
+        console.warn('Nested query failed, trying simple query:', fetchError)
         const { data: simpleData, error: simpleError } = await supabase
           .from('tenants')
           .select('*')
           .order('created_at', { ascending: false })
-
         if (simpleError) throw simpleError
-
-        // Fetch related data separately
         const tenantsWithRelations = await Promise.all(
           (simpleData || []).map(async tenant => {
             const [userData, propertyData] = await Promise.all([
               supabase.from('users').select('email, role').eq('id', tenant.user_id).single(),
-              supabase
-                .from('properties')
-                .select('name, address')
-                .eq('id', tenant.property_id)
-                .single(),
+              tenant.property_id
+                ? supabase
+                    .from('properties')
+                    .select('name, address')
+                    .eq('id', tenant.property_id)
+                    .single()
+                : Promise.resolve({ data: null }),
             ])
-
             return {
               ...tenant,
               user: userData.data || undefined,
@@ -73,18 +89,15 @@ export function useTenants() {
             }
           })
         )
-
         setTenants(tenantsWithRelations)
         return
       }
 
-      // Map the nested structure to match our type
       const mappedData = (data || []).map((item: any) => ({
         ...item,
         user: item.users,
         property: item.properties,
       }))
-
       setTenants(mappedData)
     } catch (err) {
       setError(err as Error)
@@ -92,7 +105,11 @@ export function useTenants() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [viewMode, demoState, role])
+
+  useEffect(() => {
+    fetchTenants()
+  }, [fetchTenants])
 
   async function createTenant(tenant: {
     user_id: string
@@ -102,6 +119,7 @@ export function useTenants() {
     phone?: string
     notes?: string
   }) {
+    if (isDemoMode(viewMode, role)) return null as any
     const { data, error } = await supabase.from('tenants').insert(tenant).select('*').single()
 
     if (error) throw error
@@ -123,6 +141,7 @@ export function useTenants() {
   }
 
   async function updateTenant(id: string, updates: Partial<Tenant>) {
+    if (isDemoMode(viewMode, role)) return null as any
     const { data, error } = await supabase
       .from('tenants')
       .update(updates)
@@ -149,6 +168,7 @@ export function useTenants() {
   }
 
   async function deleteTenant(id: string) {
+    if (isDemoMode(viewMode, role)) return
     const { error } = await supabase.from('tenants').delete().eq('id', id)
 
     if (error) throw error
@@ -156,6 +176,7 @@ export function useTenants() {
   }
 
   async function unlinkTenant(id: string) {
+    if (isDemoMode(viewMode, role)) return
     // Set property_id to null to unlink tenant from property
     // Tenant record persists (per tenant lifecycle docs)
     const { data, error } = await supabase

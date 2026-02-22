@@ -73,16 +73,22 @@ After all pre-prod tests pass:
 
 After merge to `main`:
 
-1. **Automatic Production Deployment**
+1. **Run Database Migrations (before deploy)**
+   - Take a backup first (see [docs/backup-recovery.md](backup-recovery.md))
+   - Apply migrations to production: Supabase SQL Editor (copy/paste from `supabase/migrations/` in timestamp order) or `supabase db push` if linked
+   - Migrations run automatically via `supabase db reset` in CI (local-e2e); production requires manual run or `supabase db push`
+   - Verify: `npm run verify:schema-congruence` between local and production
+
+2. **Automatic Production Deployment**
    - CI/CD deploys to production
    - Deployment recorded in Releases tab (`environment='production'`)
 
-2. **Production Smoke Tests**
+3. **Production Smoke Tests**
    - Verify deployment successful
    - Check critical endpoints
    - Monitor error rates
 
-3. **Monitor**
+4. **Monitor**
    - Watch error logs
    - Monitor performance
    - Check user feedback

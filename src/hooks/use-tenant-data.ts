@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useTenantDevMode } from '@/contexts/tenant-dev-mode-context'
 import { useAuth } from '@/contexts/auth-context'
+import { getTenantData } from '@/lib/data/tenant-data-service'
 
 type TenantData = {
   tenant: {
@@ -36,50 +37,41 @@ export function useTenantData() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const devMode = useTenantDevMode()
-  const { role } = useAuth()
+  const { role, user, viewMode, demoState } = useAuth()
 
-  useEffect(() => {
-    // Don't fetch tenant data if user is a landlord
-    // This is a defensive guard in case the component somehow renders for a landlord
-    if (role === 'landlord') {
-      console.log('[useTenantData] Role is landlord - blocking tenant queries')
-      setLoading(false)
-      setData(null)
-      return
-    }
+  const isAdminTenantDemo = role === 'admin' && viewMode === 'tenant-demo'
 
-    // Only fetch if role is explicitly 'tenant'
-    // If role is null, wait - don't make queries until we know the role
-    // This prevents queries from being made for landlords during the role loading phase
-    if (role === 'tenant') {
-      console.log('[useTenantData] Role is tenant - fetching tenant data')
-      fetchTenantData()
-    } else if (role === null) {
-      // Role is still loading - keep loading state but don't make queries yet
-      // This prevents race conditions where queries are made before role is determined
-      console.log('[useTenantData] Role is null - waiting for role to load')
-      setLoading(true)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role])
-
-  async function fetchTenantData() {
+  const fetchTenantData = useCallback(async () => {
     try {
       setLoading(true)
 
-      // Check if Tenant Dev Mode is active
+      // Admin viewing as tenant (demo): use demo data
+      if (isAdminTenantDemo) {
+        const demoData = await getTenantData(user?.id || '', viewMode, demoState)
+        setData(demoData)
+        setLoading(false)
+        return
+      }
+
+      // Check if Tenant Dev Mode is active (URL-based dev mode)
       if (devMode?.isActive && devMode.state) {
-        // Return mock data from dev mode context
         setData(devMode.state.tenantData)
+        setLoading(false)
+        return
+      }
+
+      // Block if landlord (and not admin in tenant-demo)
+      if (role === 'landlord') {
+        setData(null)
         setLoading(false)
         return
       }
 
       // Production flow: fetch from Supabase
       const {
-        data: { user },
+        data: { user: authUser },
       } = await supabase.auth.getUser()
-      if (!user) {
+      if (!authUser) {
         throw new Error('Not authenticated')
       }
 
@@ -94,7 +86,7 @@ export function useTenantData() {
           properties(*)
         `
         )
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .single()
 
       if (tenantError) {
@@ -133,7 +125,20 @@ export function useTenantData() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [role, isAdminTenantDemo, user?.id, viewMode, demoState, devMode?.isActive, devMode?.state])
+
+  useEffect(() => {
+    if (role === 'landlord' && !isAdminTenantDemo) {
+      setLoading(false)
+      setData(null)
+      return
+    }
+    if (role === 'tenant' || isAdminTenantDemo) {
+      fetchTenantData()
+    } else if (role === null) {
+      setLoading(true)
+    }
+  }, [role, isAdminTenantDemo, fetchTenantData])
 
   return {
     data,

@@ -2,10 +2,11 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase/client'
+import { getPostLoginRedirectPath } from '@/lib/post-login-routing'
 
 export function AuthCallback() {
   const navigate = useNavigate()
-  const { role } = useAuth()
+  const { role, loading } = useAuth()
 
   useEffect(() => {
     async function handleCallback() {
@@ -18,21 +19,15 @@ export function AuthCallback() {
           return
         }
 
-        if (data.session) {
-          // Wait a bit for role to be fetched
-          setTimeout(() => {
-            let redirectPath: string
-            if (role === 'landlord') {
-              redirectPath = '/landlord/dashboard'
-            } else if (role === 'tenant') {
-              redirectPath = '/tenant/dashboard'
-            } else {
-              // Unknown role - redirect to login to resolve
-              redirectPath = '/login'
-            }
-            navigate(redirectPath)
-          }, 500)
-        } else {
+        if (!data.session) {
+          navigate('/login')
+          return
+        }
+
+        // Wait for role to be fetched by auth context
+        if (!loading && role) {
+          navigate(getPostLoginRedirectPath(role))
+        } else if (!loading && !role) {
           navigate('/login')
         }
       } catch (error) {
@@ -42,7 +37,7 @@ export function AuthCallback() {
     }
 
     handleCallback()
-  }, [navigate, role])
+  }, [navigate, role, loading])
 
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center">

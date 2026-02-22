@@ -146,7 +146,10 @@ export function SettingsPage() {
         body: JSON.stringify({}),
       })
 
-      const result = await res.json().catch(() => ({}))
+      const result = await res.json().catch((err) => {
+        console.warn('[Settings] Failed to parse delete-account response:', err)
+        return {} as Record<string, unknown>
+      })
       if (!res.ok) throw new Error(result.error || 'Failed to delete account')
 
       await signOut()

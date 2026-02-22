@@ -14,6 +14,7 @@ import {
   DEMO_LANDLORD_CREDENTIALS,
 } from '@/lib/tenant-dev-mode'
 import { logFailedLogin } from '@/lib/security/security-scanner'
+import { getPostLoginRedirectPath } from '@/lib/post-login-routing'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -36,7 +37,6 @@ export function LoginPage() {
   const location = useLocation()
 
   const locationState = location.state as { from?: { pathname?: string }; roleError?: boolean }
-  const from = locationState?.from?.pathname || '/landlord/dashboard'
   const roleError = locationState?.roleError
 
   // Clear orphaned session when redirected due to roleError (e.g. after db reset)
@@ -46,15 +46,10 @@ export function LoginPage() {
     }
   }, [roleError]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Redirect authenticated users to their appropriate dashboard
+  // Redirect authenticated users to their role-appropriate dashboard
   useEffect(() => {
     if (!authLoading && user && role) {
-      if (role === 'landlord') {
-        navigate('/landlord/dashboard', { replace: true })
-      } else if (role === 'tenant') {
-        navigate('/tenant/dashboard', { replace: true })
-      }
-      // Don't redirect if role is null/undefined/unknown
+      navigate(getPostLoginRedirectPath(role), { replace: true })
     }
   }, [user, role, authLoading, navigate])
 
@@ -94,10 +89,8 @@ export function LoginPage() {
       // Log failed login attempt
       await logFailedLogin(email, error.message)
       setLoading(false)
-    } else {
-      // Navigation will happen automatically via auth state change
-      navigate(from, { replace: true })
     }
+    // Navigation happens automatically via useEffect when auth state + role are ready
   }
 
   async function handleGoogleSignIn() {

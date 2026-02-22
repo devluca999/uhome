@@ -1,10 +1,26 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useContext } from 'react'
-import { AuthContext } from '@/contexts/auth-context'
+import { AuthContext, type ViewMode } from '@/contexts/auth-context'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   allowedRoles?: ('landlord' | 'tenant' | 'admin')[]
+}
+
+function isRoleAllowed(
+  allowedRoles: ('landlord' | 'tenant' | 'admin')[],
+  role: 'landlord' | 'tenant' | 'admin' | null,
+  viewMode: ViewMode
+): boolean {
+  if (!role || !allowedRoles.length) return false
+  return allowedRoles.some(r => {
+    if (r === 'admin') return role === 'admin'
+    if (r === 'landlord')
+      return role === 'landlord' || (role === 'admin' && viewMode === 'landlord-demo')
+    if (r === 'tenant')
+      return role === 'tenant' || (role === 'admin' && viewMode === 'tenant-demo')
+    return false
+  })
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -20,7 +36,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     )
   }
 
-  const { user, role, loading } = authContext
+  const { user, role, loading, viewMode } = authContext
 
   // Dev bypass check (only in development)
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
@@ -37,8 +53,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   // Allow dev bypass in development mode
   if (devBypass && devRole) {
     if (allowedRoles && !allowedRoles.includes(devRole)) {
-      // Redirect to appropriate dashboard based on dev role
-      const redirectPath = devRole === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'
+      const redirectPath =
+        devRole === 'admin'
+          ? '/admin/overview'
+          : devRole === 'landlord'
+            ? '/landlord/dashboard'
+            : '/tenant/dashboard'
       return <Navigate to={redirectPath} replace />
     }
     return <>{children}</>
@@ -49,20 +69,25 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   // If we have allowed roles and the user has a role, check if they're allowed
+  // Admin demo: admin can access landlord/tenant routes when viewMode is landlord-demo/tenant-demo
   if (allowedRoles && role) {
-    if (!allowedRoles.includes(role)) {
-      // Redirect to appropriate dashboard based on role
+    if (!isRoleAllowed(allowedRoles, role, viewMode)) {
+      // Redirect to appropriate dashboard based on role (or admin's current view)
       if (role === 'admin') {
-        return <Navigate to="/admin/overview" replace />
+        const target =
+          viewMode === 'landlord-demo'
+            ? '/landlord/dashboard'
+            : viewMode === 'tenant-demo'
+              ? '/tenant/dashboard'
+              : '/admin/overview'
+        return <Navigate to={target} replace />
       } else if (role === 'landlord') {
         return <Navigate to="/landlord/dashboard" replace />
       } else if (role === 'tenant') {
         return <Navigate to="/tenant/dashboard" replace />
       }
-      // If role is unknown, redirect to login
       return <Navigate to="/login" replace />
     }
-    // Role matches allowed roles, allow access
     return <>{children}</>
   }
 
