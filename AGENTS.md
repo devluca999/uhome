@@ -32,6 +32,7 @@ uhome is a property management SaaS (React + Vite + TypeScript + Tailwind CSS v4
 - Full backend functionality (auth, data, storage) requires either a cloud Supabase project or local Supabase (`npx supabase start`, requires Docker).
 - Without Supabase, the app UI still renders; public pages (`/`, `/login`, `/signup`, `/privacy`, `/terms`) load fully. Auth-protected pages redirect or show error boundaries.
 - E2E tests (`npm run test:e2e:headless`) require a running local Supabase instance.
+- When using a cloud Supabase URL, set `VITE_SUPABASE_ENV=local` in `.env.local` to allow dev mode activation (the `isNonProductionEnv` guard only recognizes localhost/staging/test URLs by default).
 
 ### Gotchas
 
