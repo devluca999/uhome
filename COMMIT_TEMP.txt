@@ -1,0 +1,50 @@
+refactor: massive cleanup and enhancement
+
+This commit represents a major overhaul of the Haume (uhome) codebase with the following key changes:
+
+## Database Migrations
+- Archive 100+ legacy migration files into supabase/migrations/archive/
+- Keep only core migrations with versioned naming (20240219xxxx)
+- Reduces repository clutter while preserving historical migrations
+
+## New Features
+- Add comprehensive onboarding flows for landlords and tenants
+  - New hooks: use-onboarding
+  - New components: onboarding-modal, onboarding-reminder-banner, onboarding-template-editor
+- Add draggable demo selector for admin users with view mode switching
+- Enhanced financial dashboards with better metrics and visualizations
+- New data service layer (src/lib/data/) for better abstraction
+
+## Testing Infrastructure
+- Add critical-path E2E test suite (onboarding, property lifecycle, tenant invite, work orders)
+- Add mutation tests for edge cases (double-submit, etc.)
+- Add permission tests (RLS boundary verification)
+- Add idempotency tests
+- Update auth-helpers with better utilities
+
+## Code Quality
+- Fix critical lint error in draggable-demo-selector (conditional hooks)
+- Resolve 273+ lint warnings across codebase
+- Improve React hook dependency management
+- Standardize error handling patterns
+
+## Documentation
+- Add comprehensive docs: backup-recovery, monitoring, environment-variables
+- Update release process and production checklists
+- Add LAUNCH_READINESS_REPORT and TEST_MATRIX
+
+## Tooling
+- Add scripts: promote-demo-admin.ts, verify-cloud-parity.ts
+- Enhance performance tracking
+- Improve Supabase client configuration
+
+## Demo Data
+- Add deterministic demo data for landlord and tenant views
+- Enables reliable visual UAT and demo mode
+
+Total: 189 files changed, 11262 insertions(+), 250 deletions(-)
+
+This is a preparatory commit for launch readiness, improving test coverage,
+documentation, and code quality while adding essential user-facing features.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
