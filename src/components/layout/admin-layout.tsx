@@ -127,7 +127,9 @@ export function AdminLayout() {
                       : undefined
                   }
                 >
-                  <Link to={item.path} className="block truncate">{item.label}</Link>
+                  <Link to={item.path} className="block truncate">
+                    {item.label}
+                  </Link>
                 </Button>
               </motion.div>
             ))}

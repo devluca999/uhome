@@ -134,7 +134,9 @@ export function SettingsPage() {
     setDeleting(true)
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session?.access_token) throw new Error('Not authenticated')
 
       const res = await fetch(`${supabaseUrl}/functions/v1/delete-own-account`, {
@@ -146,7 +148,7 @@ export function SettingsPage() {
         body: JSON.stringify({}),
       })
 
-      const result = await res.json().catch((err) => {
+      const result = await res.json().catch(err => {
         console.warn('[Settings] Failed to parse delete-account response:', err)
         return {} as Record<string, unknown>
       })
@@ -502,9 +504,7 @@ export function SettingsPage() {
                 <Label htmlFor="dense-tables" className="text-sm">
                   Dense Tables
                 </Label>
-                <p className="text-xs text-muted-foreground">
-                  Show more rows per page in tables
-                </p>
+                <p className="text-xs text-muted-foreground">Show more rows per page in tables</p>
               </div>
               <Switch
                 id="dense-tables"
@@ -520,9 +520,7 @@ export function SettingsPage() {
                 <Label htmlFor="show-tooltips" className="text-sm">
                   Show Tooltips
                 </Label>
-                <p className="text-xs text-muted-foreground">
-                  Display helpful tooltips on hover
-                </p>
+                <p className="text-xs text-muted-foreground">Display helpful tooltips on hover</p>
               </div>
               <Switch
                 id="show-tooltips"

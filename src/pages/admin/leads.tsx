@@ -173,9 +173,7 @@ export function AdminLeads() {
                           {lead.source}
                         </Badge>
                       </div>
-                      {lead.name && (
-                        <p className="text-sm text-muted-foreground">{lead.name}</p>
-                      )}
+                      {lead.name && <p className="text-sm text-muted-foreground">{lead.name}</p>}
                       {lead.company && (
                         <p className="text-sm text-muted-foreground">{lead.company}</p>
                       )}

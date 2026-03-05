@@ -6,12 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
-import {
-  Settings,
-  ChevronRight,
-  ChevronLeft,
-  GripVertical,
-} from 'lucide-react'
+import { Settings, ChevronRight, ChevronLeft, GripVertical } from 'lucide-react'
 
 type ViewMode = 'admin' | 'landlord-demo' | 'tenant-demo'
 type DemoState = 'populated' | 'empty'
@@ -30,55 +25,67 @@ export function DraggableDemoSelector() {
   const prefersReducedMotion = useReducedMotion()
 
   // Handlers defined with useCallback MUST come before conditional returns
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode)
-    if (mode === 'admin') {
-      navigate('/admin/overview')
-    } else if (mode === 'landlord-demo') {
-      navigate('/landlord/dashboard')
-    } else if (mode === 'tenant-demo') {
-      navigate('/tenant/dashboard')
-    }
-  }, [setViewMode, navigate])
+  const handleViewModeChange = useCallback(
+    (mode: ViewMode) => {
+      setViewMode(mode)
+      if (mode === 'admin') {
+        navigate('/admin/overview')
+      } else if (mode === 'landlord-demo') {
+        navigate('/landlord/dashboard')
+      } else if (mode === 'tenant-demo') {
+        navigate('/tenant/dashboard')
+      }
+    },
+    [setViewMode, navigate]
+  )
 
-  const handleDemoStateChange = useCallback((state: DemoState) => {
-    setDemoState(state)
-  }, [setDemoState])
+  const handleDemoStateChange = useCallback(
+    (state: DemoState) => {
+      setDemoState(state)
+    },
+    [setDemoState]
+  )
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev)
   }, [])
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (isSidebarOpen) return
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (isSidebarOpen) return
 
-    setIsDragging(true)
-    const rect = floatingRef.current?.getBoundingClientRect()
-    if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+      setIsDragging(true)
+      const rect = floatingRef.current?.getBoundingClientRect()
+      if (rect) {
+        setDragOffset({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        })
+      }
+    },
+    [isSidebarOpen]
+  )
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || isSidebarOpen) return
+
+      const newX = e.clientX - dragOffset.x
+      const newY = e.clientY - dragOffset.y
+
+      // Keep within viewport bounds
+      const maxX = window.innerWidth - 60
+      const maxY = window.innerHeight - 60
+      const minX = 0
+      const minY = 0
+
+      setPosition({
+        x: Math.max(minX, Math.min(maxX, newX)),
+        y: Math.max(minY, Math.min(maxY, newY)),
       })
-    }
-  }, [isSidebarOpen])
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || isSidebarOpen) return
-
-    const newX = e.clientX - dragOffset.x
-    const newY = e.clientY - dragOffset.y
-
-    // Keep within viewport bounds
-    const maxX = window.innerWidth - 60
-    const maxY = window.innerHeight - 60
-    const minX = 0
-    const minY = 0
-
-    setPosition({
-      x: Math.max(minX, Math.min(maxX, newX)),
-      y: Math.max(minY, Math.min(maxY, newY)),
-    })
-  }, [isDragging, isSidebarOpen, dragOffset])
+    },
+    [isDragging, isSidebarOpen, dragOffset]
+  )
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -128,12 +135,7 @@ export function DraggableDemoSelector() {
             <Settings className="w-4 h-4 text-muted-foreground" />
             <span className="font-semibold text-foreground">Admin Demo Mode</span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="h-8 w-8 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={toggleSidebar} className="h-8 w-8 p-0">
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
@@ -173,7 +175,11 @@ export function DraggableDemoSelector() {
           <div className="text-xs text-muted-foreground mb-2">Current State:</div>
           <div className="flex items-center gap-2 text-sm">
             <span className="px-2 py-1 bg-muted rounded text-foreground">
-              {viewMode === 'admin' ? 'Admin Mode' : viewMode === 'landlord-demo' ? 'Landlord Demo' : 'Tenant Demo'}
+              {viewMode === 'admin'
+                ? 'Admin Mode'
+                : viewMode === 'landlord-demo'
+                  ? 'Landlord Demo'
+                  : 'Tenant Demo'}
             </span>
             {(viewMode === 'landlord-demo' || viewMode === 'tenant-demo') && (
               <span className="px-2 py-1 bg-muted rounded text-foreground">
@@ -215,12 +221,7 @@ export function DraggableDemoSelector() {
             <Settings className="w-3 h-3 text-muted-foreground" />
             <span className="text-xs font-medium text-foreground">Demo</span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="h-6 w-6 p-0 ml-1"
-          >
+          <Button variant="ghost" size="sm" onClick={toggleSidebar} className="h-6 w-6 p-0 ml-1">
             <ChevronLeft className="w-3 h-3" />
           </Button>
         </div>

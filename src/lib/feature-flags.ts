@@ -1,6 +1,6 @@
 /**
  * Feature Flag Utility
- * 
+ *
  * Simple feature flag system that checks environment variables.
  * For Phase 8, this will be enhanced with database-backed feature flags.
  */

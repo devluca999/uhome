@@ -14,7 +14,7 @@ import { isFeatureEnabled } from '@/lib/feature-flags'
 
 /**
  * Tenant Pay Rent Page
- * 
+ *
  * Allows tenants to pay rent online via Stripe Connect.
  * Shows payment form for a specific rent record.
  */
@@ -24,7 +24,9 @@ export function TenantPayRent() {
   const navigate = useNavigate()
   const { data: tenantData } = useTenantData()
   const { leases } = useLeases(undefined, tenantData?.tenant.id)
-  const activeLease = leases?.find(l => !l.lease_end_date || new Date(l.lease_end_date) > new Date())
+  const activeLease = leases?.find(
+    l => !l.lease_end_date || new Date(l.lease_end_date) > new Date()
+  )
   const { records: rentRecords } = useRentRecords(activeLease?.id)
 
   // Check if payment was successful (from redirect)
@@ -73,8 +75,8 @@ export function TenantPayRent() {
             <CardContent>
               <Alert>
                 <AlertDescription>
-                  Your payment has been successfully processed. You will receive a receipt via email,
-                  and your payment history will be updated shortly.
+                  Your payment has been successfully processed. You will receive a receipt via
+                  email, and your payment history will be updated shortly.
                 </AlertDescription>
               </Alert>
               <Button onClick={() => navigate('/tenant/finances')} className="mt-4 w-full">

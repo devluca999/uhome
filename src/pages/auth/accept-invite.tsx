@@ -164,9 +164,8 @@ export function AcceptInvite() {
           .single()
 
         if (activeTemplate) {
-          const requiredCount = (activeTemplate.fields as any[])?.filter(
-            (f: any) => f.required
-          ).length || 0
+          const requiredCount =
+            (activeTemplate.fields as any[])?.filter((f: any) => f.required).length || 0
 
           await supabase.from('onboarding_submissions').insert({
             tenant_id: tenantId,

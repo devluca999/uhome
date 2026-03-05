@@ -78,12 +78,26 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
   }
 
   return (
-    <Card className="glass-card">
+    <Card className="glass-card relative z-20" data-testid="property-form">
       <CardHeader>
-        <CardTitle>{property ? 'Edit Property' : 'Add New Property'}</CardTitle>
-        <CardDescription>
-          {property ? 'Update property information' : 'Create a new property listing'}
-        </CardDescription>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <CardTitle>{property ? 'Edit Property' : 'Add New Property'}</CardTitle>
+            <CardDescription>
+              {property ? 'Update property information' : 'Create a new property listing'}
+            </CardDescription>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onCancel}
+            disabled={loading}
+            className="shrink-0"
+          >
+            Back to list
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -171,11 +185,18 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
               className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 relative z-20">
             <Button type="submit" disabled={loading} className="flex-1">
               {loading ? 'Saving...' : property ? 'Update Property' : 'Create Property'}
             </Button>
-            <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={loading}
+              data-testid="property-form-cancel"
+              className="relative z-20"
+            >
               Cancel
             </Button>
           </div>

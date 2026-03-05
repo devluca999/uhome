@@ -23,7 +23,8 @@ export function DataExport() {
   const [_loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
 
-  const enabled = isFeatureEnabled('ENABLE_GDPR_COMPLIANCE') || isFeatureEnabled('ENABLE_CCPA_COMPLIANCE')
+  const enabled =
+    isFeatureEnabled('ENABLE_GDPR_COMPLIANCE') || isFeatureEnabled('ENABLE_CCPA_COMPLIANCE')
 
   useEffect(() => {
     if (enabled && user) {
@@ -110,9 +111,7 @@ export function DataExport() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Your data export will include:
-          </p>
+          <p className="text-sm text-muted-foreground">Your data export will include:</p>
           <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
             <li>Profile information</li>
             <li>Properties and leases</li>
@@ -133,7 +132,9 @@ export function DataExport() {
                       <Badge variant="default">Ready</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Generated {readyRequest.generated_at && new Date(readyRequest.generated_at).toLocaleString()}
+                      Generated{' '}
+                      {readyRequest.generated_at &&
+                        new Date(readyRequest.generated_at).toLocaleString()}
                     </p>
                     {readyRequest.expires_at && (
                       <p className="text-xs text-muted-foreground mt-1">

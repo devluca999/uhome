@@ -46,7 +46,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <ReflectiveGradient />
-        <div className="relative z-10">{props.children}</div>
+        <div className="relative z-20 isolate">{props.children}</div>
       </motion.div>
     )
   }

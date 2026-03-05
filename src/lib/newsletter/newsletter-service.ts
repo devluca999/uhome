@@ -1,6 +1,6 @@
 /**
  * Newsletter Service
- * 
+ *
  * Handles sending newsletter campaigns to subscribers
  * with email integration, analytics tracking, and template rendering
  */
@@ -183,16 +183,13 @@ export async function sendNewsletterCampaign(
 
         // Replace links with tracking URLs if enabled
         if (options.trackClicks) {
-          finalHtml = finalHtml.replace(
-            /href="([^"]+)"/g,
-            (match, url) => {
-              if (url.startsWith('http') && !url.includes('/api/newsletter/track')) {
-                const trackingUrl = `${window.location.origin}/api/newsletter/track-click?campaign=${campaign.id}&url=${encodeURIComponent(url)}&email=${encodeURIComponent(recipient.email)}`
-                return `href="${trackingUrl}"`
-              }
-              return match
+          finalHtml = finalHtml.replace(/href="([^"]+)"/g, (match, url) => {
+            if (url.startsWith('http') && !url.includes('/api/newsletter/track')) {
+              const trackingUrl = `${window.location.origin}/api/newsletter/track-click?campaign=${campaign.id}&url=${encodeURIComponent(url)}&email=${encodeURIComponent(recipient.email)}`
+              return `href="${trackingUrl}"`
             }
-          )
+            return match
+          })
         }
 
         const emailResult = await sendEmail({

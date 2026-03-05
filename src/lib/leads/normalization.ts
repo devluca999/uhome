@@ -1,6 +1,6 @@
 /**
  * Lead Data Normalization
- * 
+ *
  * Normalizes lead data fields for consistent storage and deduplication.
  */
 
@@ -67,10 +67,8 @@ export function normalizeIcpTags(tags: string | string[] | null | undefined): st
   if (!tags) return []
 
   const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())
-  
-  return tagArray
-    .map(tag => tag.toLowerCase().trim())
-    .filter(tag => tag.length > 0)
+
+  return tagArray.map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0)
 }
 
 /**
@@ -80,15 +78,15 @@ export function generateDedupeHash(email: string, phone: string | null): string 
   const normalizedEmail = normalizeEmail(email)
   const normalizedPhone = phone ? normalizePhone(phone) : ''
   const combined = `${normalizedEmail}|${normalizedPhone || ''}`
-  
+
   // Simple hash (in production, use crypto.subtle.digest for better hashing)
   let hash = 0
   for (let i = 0; i < combined.length; i++) {
     const char = combined.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
+    hash = (hash << 5) - hash + char
     hash = hash & hash // Convert to 32-bit integer
   }
-  
+
   return Math.abs(hash).toString(36)
 }
 

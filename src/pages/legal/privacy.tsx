@@ -23,14 +23,17 @@ export function PrivacyPolicy() {
           </Link>
         </Button>
         <h1 className="text-3xl font-semibold mb-6">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-8">Last updated: {new Date().toLocaleDateString()}</p>
+        <p className="text-sm text-muted-foreground mb-8">
+          Last updated: {new Date().toLocaleDateString()}
+        </p>
 
         <div className="prose prose-stone dark:prose-invert max-w-none space-y-6 text-foreground">
           <section>
             <h2 className="text-xl font-medium mb-2">1. Overview</h2>
             <p>
-              uhome ("we", "our", or "us") respects your privacy. This policy describes how we collect, use, and
-              protect your personal information when you use our property management platform.
+              uhome ("we", "our", or "us") respects your privacy. This policy describes how we
+              collect, use, and protect your personal information when you use our property
+              management platform.
             </p>
           </section>
 
@@ -49,16 +52,17 @@ export function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-medium mb-2">3. How We Use Your Information</h2>
             <p>
-              We use your information to provide, maintain, and improve our services; to communicate with you; and to
-              comply with legal obligations.
+              We use your information to provide, maintain, and improve our services; to communicate
+              with you; and to comply with legal obligations.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-medium mb-2">4. Data Sharing</h2>
             <p>
-              We do not sell your personal information. We share data only with service providers (Supabase, Stripe,
-              Postal) as necessary to operate the platform, under data processing agreements.
+              We do not sell your personal information. We share data only with service providers
+              (Supabase, Stripe, Postal) as necessary to operate the platform, under data processing
+              agreements.
             </p>
           </section>
 
@@ -76,7 +80,8 @@ export function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-medium mb-2">6. Contact</h2>
             <p>
-              For privacy requests or questions, contact us at support@uhome.app or through the app's Settings.
+              For privacy requests or questions, contact us at support@uhome.app or through the
+              app's Settings.
             </p>
           </section>
         </div>

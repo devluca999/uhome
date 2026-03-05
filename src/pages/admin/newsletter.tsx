@@ -171,21 +171,29 @@ export function AdminNewsletter() {
                       {campaign.sent_at && (
                         <div className="mt-2 space-y-1">
                           <p className="text-xs text-muted-foreground">
-                            {campaign.recipients_count} recipients • {campaign.opened_count} opened •{' '}
-                            {campaign.clicked_count} clicked
+                            {campaign.recipients_count} recipients • {campaign.opened_count} opened
+                            • {campaign.clicked_count} clicked
                           </p>
                           {campaign.recipients_count > 0 && (
                             <div className="flex gap-4 text-xs text-muted-foreground">
                               <span>
                                 Open rate:{' '}
                                 <span className="font-medium text-foreground">
-                                  {((campaign.opened_count / campaign.recipients_count) * 100).toFixed(1)}%
+                                  {(
+                                    (campaign.opened_count / campaign.recipients_count) *
+                                    100
+                                  ).toFixed(1)}
+                                  %
                                 </span>
                               </span>
                               <span>
                                 Click rate:{' '}
                                 <span className="font-medium text-foreground">
-                                  {((campaign.clicked_count / campaign.recipients_count) * 100).toFixed(1)}%
+                                  {(
+                                    (campaign.clicked_count / campaign.recipients_count) *
+                                    100
+                                  ).toFixed(1)}
+                                  %
                                 </span>
                               </span>
                             </div>

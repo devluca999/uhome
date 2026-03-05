@@ -80,16 +80,23 @@ export function useFinancialMetrics(
 
     // Debug logging
     if (import.meta.env.DEV) {
-      console.debug('[useFinancialMetrics] Input:', JSON.stringify({
-        rentRecordsCount: rentRecords.length,
-        expensesCount: expenses.length,
-        months,
-        propertyId,
-        timeRange,
-        dateRangeFilter,
-        activePropertyIdsCount: activePropertyIds?.size,
-        activePropertyIds: activePropertyIds ? Array.from(activePropertyIds) : undefined,
-      }, null, 2))
+      console.debug(
+        '[useFinancialMetrics] Input:',
+        JSON.stringify(
+          {
+            rentRecordsCount: rentRecords.length,
+            expensesCount: expenses.length,
+            months,
+            propertyId,
+            timeRange,
+            dateRangeFilter,
+            activePropertyIdsCount: activePropertyIds?.size,
+            activePropertyIds: activePropertyIds ? Array.from(activePropertyIds) : undefined,
+          },
+          null,
+          2
+        )
+      )
     }
 
     // Use centralized calculation functions (exclude inactive properties)
@@ -130,18 +137,25 @@ export function useFinancialMetrics(
 
     // Debug logging for filtering
     if (import.meta.env.DEV) {
-      console.debug('[useFinancialMetrics] Filtering:', JSON.stringify({
-        beforeFilter: {
-          rentRecords: rentRecords.length,
-          expenses: expenses.length,
-        },
-        afterFilter: {
-          rentRecords: filteredRentRecords.length,
-          expenses: filteredExpenses.length,
-        },
-        propertyId,
-        activePropertyIdsCount: activePropertyIds?.size,
-      }, null, 2))
+      console.debug(
+        '[useFinancialMetrics] Filtering:',
+        JSON.stringify(
+          {
+            beforeFilter: {
+              rentRecords: rentRecords.length,
+              expenses: expenses.length,
+            },
+            afterFilter: {
+              rentRecords: filteredRentRecords.length,
+              expenses: filteredExpenses.length,
+            },
+            propertyId,
+            activePropertyIdsCount: activePropertyIds?.size,
+          },
+          null,
+          2
+        )
+      )
     }
 
     // Apply dateRange filter if provided
@@ -315,27 +329,34 @@ export function useFinancialMetrics(
 
     // Debug logging for output
     if (import.meta.env.DEV) {
-      console.debug('[useFinancialMetrics] Output:', JSON.stringify({
-        rentCollected,
-        rentOutstanding,
-        upcomingRent,
-        totalExpenses,
-        netProfit,
-        projectedNet,
-        marginPercentage,
-        monthlyRentCollected: {
-          length: aggregatedRentCollected.length,
-          data: aggregatedRentCollected,
-        },
-        monthlyExpenses: {
-          length: aggregatedExpenses.length,
-          data: aggregatedExpenses,
-        },
-        monthlyNet: {
-          length: aggregatedNet.length,
-          data: aggregatedNet,
-        },
-      }, null, 2))
+      console.debug(
+        '[useFinancialMetrics] Output:',
+        JSON.stringify(
+          {
+            rentCollected,
+            rentOutstanding,
+            upcomingRent,
+            totalExpenses,
+            netProfit,
+            projectedNet,
+            marginPercentage,
+            monthlyRentCollected: {
+              length: aggregatedRentCollected.length,
+              data: aggregatedRentCollected,
+            },
+            monthlyExpenses: {
+              length: aggregatedExpenses.length,
+              data: aggregatedExpenses,
+            },
+            monthlyNet: {
+              length: aggregatedNet.length,
+              data: aggregatedNet,
+            },
+          },
+          null,
+          2
+        )
+      )
     }
 
     return result

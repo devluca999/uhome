@@ -109,7 +109,8 @@ export function TenantMaintenance() {
         <Card className="relative z-10">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
-              You&apos;ll be able to submit maintenance requests once your landlord adds you to a lease.
+              You&apos;ll be able to submit maintenance requests once your landlord adds you to a
+              lease.
             </p>
           </CardContent>
         </Card>

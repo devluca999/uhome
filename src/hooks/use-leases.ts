@@ -21,11 +21,7 @@ export function useLeases(propertyId?: string, tenantId?: string) {
   const fetchLeases = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getLeases(
-        { propertyId, tenantId },
-        viewMode,
-        demoState
-      )
+      const data = await getLeases({ propertyId, tenantId }, viewMode, demoState)
       setLeases(data)
     } catch (err) {
       setError(err as Error)

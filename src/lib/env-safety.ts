@@ -29,12 +29,15 @@ export function isProductionEnv(env: string, url: string): boolean {
  */
 export function isNonProductionEnv(env: string, url: string): boolean {
   if (isProductionEnv(env, url)) return false
+
+  // If env is explicitly set to a known non-production value, allow even when URL is missing.
+  if (ALLOWED_ENVS.includes(env as (typeof ALLOWED_ENVS)[number])) return true
+
   const urlTrimmed = (url || '').trim()
   const urlLower = urlTrimmed.toLowerCase()
   if (!urlTrimmed) return false
   if (urlLower.includes('localhost') || urlLower.includes('127.0.0.1')) return true
   if (urlLower.includes('staging') || urlLower.includes('test')) return true
-  if (ALLOWED_ENVS.includes(env as (typeof ALLOWED_ENVS)[number])) return true
   return false
 }
 

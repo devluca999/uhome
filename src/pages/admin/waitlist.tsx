@@ -7,7 +7,11 @@ import { supabase } from '@/lib/supabase/client'
 import { isFeatureEnabled } from '@/lib/feature-flags'
 import { Users, Search, Download, UserPlus, X, CheckSquare, Square } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { sendWaitlistInvite, bulkInviteWaitlist, bulkRemoveWaitlist } from '@/lib/waitlist/waitlist-service'
+import {
+  sendWaitlistInvite,
+  bulkInviteWaitlist,
+  bulkRemoveWaitlist,
+} from '@/lib/waitlist/waitlist-service'
 
 type WaitlistEntry = {
   id: string
@@ -284,19 +288,11 @@ export function AdminWaitlist() {
             </Button>
             {selectedEntries.size > 0 && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={handleBulkInvite}
-                  disabled={bulkOperating}
-                >
+                <Button variant="outline" onClick={handleBulkInvite} disabled={bulkOperating}>
                   <UserPlus className="w-4 h-4 mr-2" />
                   Invite Selected ({selectedEntries.size})
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleBulkRemove}
-                  disabled={bulkOperating}
-                >
+                <Button variant="outline" onClick={handleBulkRemove} disabled={bulkOperating}>
                   <X className="w-4 h-4 mr-2" />
                   Remove Selected ({selectedEntries.size})
                 </Button>
@@ -368,12 +364,7 @@ export function AdminWaitlist() {
               <div className="space-y-2">
                 {filteredEntries.length > 0 && (
                   <div className="flex items-center gap-2 p-2 border-b border-border">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleSelectAll}
-                      className="h-8"
-                    >
+                    <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="h-8">
                       {selectedEntries.size === filteredEntries.length ? (
                         <CheckSquare className="w-4 h-4 mr-2" />
                       ) : (

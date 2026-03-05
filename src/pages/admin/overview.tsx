@@ -24,7 +24,6 @@ export function AdminOverview() {
   const { stats, loading, error } = useAdminStats()
   const [activeTab, setActiveTab] = useState<string>('metrics')
 
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-6">

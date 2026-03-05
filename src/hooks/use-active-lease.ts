@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
+import { getTenantData } from '@/lib/data/tenant-data-service'
 import type { Database } from '@/types/database'
 
 type Lease = Database['public']['Tables']['leases']['Row'] & {
@@ -25,21 +26,53 @@ export function useActiveLease() {
       try {
         setLoading(true)
 
-        // Get tenant record for this user
-        const { data: tenant, error: tenantError } = await supabase
-          .from('tenants')
-          .select('id')
-          .eq('user_id', user.id)
-          .single()
+        // Dev bypass: when signed in as demo tenant, use getTenantData so household shows (cross-account integrity)
+        const devBypass =
+          import.meta.env.DEV &&
+          typeof window !== 'undefined' &&
+          sessionStorage.getItem('dev_bypass') === 'true' &&
+          sessionStorage.getItem('dev_role') === 'tenant'
 
-        if (tenantError) {
-          // User is not a tenant (not invited yet)
+        if (devBypass) {
+          const tenantData = await getTenantData(user.id, 'tenant-demo', 'populated')
+          const firstLease = tenantData?.leases?.[0]
+          if (firstLease && tenantData?.property) {
+            const leaseWithUnit = firstLease as typeof firstLease & { unit_id?: string }
+            const synthetic: Lease = {
+              ...firstLease,
+              property: tenantData.property as Lease['property'],
+              unit: leaseWithUnit.unit_id
+                ? ({ id: leaseWithUnit.unit_id, unit_name: 'Unit' } as Lease['unit'])
+                : undefined,
+            } as Lease
+            setLease(synthetic)
+            setError(null)
+            setLoading(false)
+            return
+          }
+        }
+
+        // Get tenant record (use limit(1) to avoid .single() error when multiple rows)
+        const { data: tenantRows, error: tenantError } = await supabase
+          .from('tenants')
+          .select('id, lease_id')
+          .eq('user_id', user.id)
+          .limit(1)
+
+        const tenant = tenantRows?.[0]
+        if (tenantError || !tenant) {
           setLease(null)
           setLoading(false)
           return
         }
 
-        // Get active lease for this tenant
+        if (!tenant.lease_id) {
+          setLease(null)
+          setLoading(false)
+          return
+        }
+
+        // Fetch the lease using the tenant's lease_id foreign key
         const { data: leaseData, error: leaseError } = await supabase
           .from('leases')
           .select(
@@ -49,11 +82,8 @@ export function useActiveLease() {
             unit:units(*)
           `
           )
-          .eq('tenant_id', tenant.id)
-          .in('status', ['active', 'draft']) // Include draft leases where tenant is assigned
-          .neq('status', 'ended')
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .eq('id', tenant.lease_id)
+          .in('status', ['active', 'draft'])
           .maybeSingle()
 
         if (leaseError) {
@@ -61,7 +91,6 @@ export function useActiveLease() {
           setError(leaseError as Error)
           setLease(null)
 
-          // Dev-mode logging for lease resolution failure
           if (import.meta.env.DEV) {
             console.warn('[useActiveLease] Failed to resolve active lease for user:', user?.id)
           }
@@ -69,13 +98,11 @@ export function useActiveLease() {
           setLease(leaseData)
           setError(null)
 
-          // Dev-mode logging for lease resolution
-          if (import.meta.env.DEV) {
+          if (import.meta.env.DEV && leaseData) {
             console.log('[useActiveLease] Successfully resolved active lease:', {
               leaseId: leaseData.id,
               unitId: leaseData.unit_id,
-              propertyName: leaseData.property?.name,
-              unitName: leaseData.unit?.unit_name,
+              propertyName: (leaseData as Lease).property?.name,
               status: leaseData.status,
             })
           }
@@ -97,6 +124,6 @@ export function useActiveLease() {
     loading,
     error,
     hasLease: !!lease,
-    isTenant: !!user, // If user exists, they might be a tenant
+    isTenant: !!user,
   }
 }

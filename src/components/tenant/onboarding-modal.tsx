@@ -177,7 +177,9 @@ export function OnboardingModal({
           >
             <option value="">Select...</option>
             {field.options?.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
             ))}
           </select>
         )
@@ -231,10 +233,7 @@ export function OnboardingModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        <div
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-          onClick={handleDismiss}
-        />
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleDismiss} />
         <motion.div
           className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto"
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -284,7 +283,7 @@ export function OnboardingModal({
                     </div>
                   )}
 
-                  {template.fields.map((field) => (
+                  {template.fields.map(field => (
                     <div key={field.name} className="space-y-1.5">
                       {field.type !== 'checkbox' && (
                         <label className="text-sm font-medium text-foreground">

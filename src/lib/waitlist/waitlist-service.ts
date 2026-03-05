@@ -1,6 +1,6 @@
 /**
  * Waitlist Service
- * 
+ *
  * Handles waitlist operations including invitations and bulk actions
  */
 
@@ -27,7 +27,7 @@ export async function sendWaitlistInvite(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const inviteUrl = `${window.location.origin}/signup?invite=${options.entryId}`
-    const subject = 'You\'re Invited to Join Uhome!'
+    const subject = "You're Invited to Join Uhome!"
     const html = `
       <!DOCTYPE html>
       <html>
@@ -108,10 +108,7 @@ If you didn't request this invitation, you can safely ignore this email.
 
       if (emailResult.success) {
         // Update waitlist entry status
-        await supabase
-          .from('waitlist')
-          .update({ status: 'invited' })
-          .eq('id', options.entryId)
+        await supabase.from('waitlist').update({ status: 'invited' }).eq('id', options.entryId)
 
         return { success: true }
       } else {
@@ -166,10 +163,7 @@ If you didn't request this invitation, you can safely ignore this email.
         })
         .eq('id', delivery.id)
 
-      await supabase
-        .from('waitlist')
-        .update({ status: 'invited' })
-        .eq('id', options.entryId)
+      await supabase.from('waitlist').update({ status: 'invited' }).eq('id', options.entryId)
 
       return { success: true }
     }

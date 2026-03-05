@@ -23,14 +23,15 @@ export function isRetryableError(error: unknown): boolean {
   if (error == null) return false
   const msg = String((error as Error)?.message ?? error).toLowerCase()
   if (msg.includes('fetch') || msg.includes('network') || msg.includes('timeout')) return true
-  if (msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('504')) return true
+  if (msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('504'))
+    return true
   if (msg.includes('429') || msg.includes('rate limit')) return true
   return false
 }
 
 /** Sleep for ms (returns a Promise). */
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**
@@ -39,10 +40,7 @@ function sleep(ms: number): Promise<void> {
  * @param options - Retry options
  * @returns Result of fn()
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const opts = { ...DEFAULT_OPTIONS, ...options }
   const { maxAttempts, baseDelayMs, shouldRetry: customShouldRetry } = opts
   const shouldRetry = customShouldRetry ?? isRetryableError

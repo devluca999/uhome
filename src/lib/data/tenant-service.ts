@@ -10,10 +10,7 @@ import type { Database } from '@/types/database'
 
 type Tenant = Database['public']['Tables']['tenants']['Row']
 
-export async function getTenants(
-  viewMode: ViewMode,
-  demoState: DemoState
-): Promise<Tenant[]> {
+export async function getTenants(viewMode: ViewMode, demoState: DemoState): Promise<Tenant[]> {
   if (viewMode === 'landlord-demo') {
     return demoState === 'empty' ? [] : [...landlordDemoTenants]
   }

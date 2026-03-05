@@ -17,8 +17,7 @@ function isRoleAllowed(
     if (r === 'admin') return role === 'admin'
     if (r === 'landlord')
       return role === 'landlord' || (role === 'admin' && viewMode === 'landlord-demo')
-    if (r === 'tenant')
-      return role === 'tenant' || (role === 'admin' && viewMode === 'tenant-demo')
+    if (r === 'tenant') return role === 'tenant' || (role === 'admin' && viewMode === 'tenant-demo')
     return false
   })
 }

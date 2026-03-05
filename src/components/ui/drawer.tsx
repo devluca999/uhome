@@ -87,8 +87,8 @@ export function Drawer({
           }
           className={cn(
             'absolute z-10 w-full max-w-md',
-            side === 'left' || side === 'right' 
-              ? 'h-[90vh] max-h-[90vh] top-1/2 -translate-y-1/2' 
+            side === 'left' || side === 'right'
+              ? 'h-[90vh] max-h-[90vh] top-1/2 -translate-y-1/2'
               : 'max-h-[90vh]',
             side === 'left' ? 'left-0' : side === 'right' ? 'right-0' : sideClasses[side],
             className

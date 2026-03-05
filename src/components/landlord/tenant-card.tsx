@@ -116,7 +116,11 @@ export function TenantCard({ tenant, onDelete, onView }: TenantCardProps) {
                   variant="outline"
                   size="sm"
                   onClick={handleDelete}
-                  className={onView || messagingEnabled ? 'flex-1' : 'w-full text-destructive hover:text-destructive/90'}
+                  className={
+                    onView || messagingEnabled
+                      ? 'flex-1'
+                      : 'w-full text-destructive hover:text-destructive/90'
+                  }
                 >
                   Remove
                 </Button>

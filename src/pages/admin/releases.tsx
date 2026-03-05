@@ -256,7 +256,9 @@ export function AdminReleases() {
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <GitBranch className="w-3 h-3" />
-                            <span className="font-mono text-xs">{release.commit_hash.substring(0, 7)}</span>
+                            <span className="font-mono text-xs">
+                              {release.commit_hash.substring(0, 7)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />

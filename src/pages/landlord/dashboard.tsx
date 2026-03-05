@@ -116,12 +116,19 @@ export function LandlordDashboard() {
   const activePropertyIds = useMemo(() => {
     const ids = new Set(properties.filter(p => p.is_active !== false).map(p => p.id))
     if (import.meta.env.DEV) {
-      console.debug('[Dashboard Debug] Active Properties:', JSON.stringify({
-        totalProperties: properties.length,
-        activeCount: ids.size,
-        activeIds: Array.from(ids),
-        properties: properties.map(p => ({ id: p.id, name: p.name, is_active: p.is_active })),
-      }, null, 2))
+      console.debug(
+        '[Dashboard Debug] Active Properties:',
+        JSON.stringify(
+          {
+            totalProperties: properties.length,
+            activeCount: ids.size,
+            activeIds: Array.from(ids),
+            properties: properties.map(p => ({ id: p.id, name: p.name, is_active: p.is_active })),
+          },
+          null,
+          2
+        )
+      )
     }
     return ids
   }, [properties])
@@ -177,57 +184,63 @@ export function LandlordDashboard() {
     netProfit: kpiMetrics.netProfit,
     marginPercentage: kpiMetrics.marginPercentage,
   }
-  
 
   // Debug logging for data flow
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.debug('[Dashboard Debug] Data Summary:', JSON.stringify({
-        rentRecords: {
-          total: rentRecords.length,
-          byStatus: {
-            paid: rentRecords.filter(r => r.status === 'paid').length,
-            pending: rentRecords.filter(r => r.status === 'pending').length,
-            overdue: rentRecords.filter(r => r.status === 'overdue').length,
+      console.debug(
+        '[Dashboard Debug] Data Summary:',
+        JSON.stringify(
+          {
+            rentRecords: {
+              total: rentRecords.length,
+              byStatus: {
+                paid: rentRecords.filter(r => r.status === 'paid').length,
+                pending: rentRecords.filter(r => r.status === 'pending').length,
+                overdue: rentRecords.filter(r => r.status === 'overdue').length,
+              },
+              withPaidDate: rentRecords.filter(r => r.status === 'paid' && r.paid_date).length,
+              sample: rentRecords.slice(0, 3).map(r => ({
+                id: r.id,
+                property_id: r.property_id,
+                status: r.status,
+                amount: r.amount,
+                paid_date: r.paid_date,
+                due_date: r.due_date,
+              })),
+            },
+            expenses: {
+              total: expenses.length,
+              sample: expenses.slice(0, 3).map(e => ({
+                id: e.id,
+                property_id: e.property_id,
+                amount: e.amount,
+                date: getExpenseDate(e),
+              })),
+            },
+            activePropertyIds: {
+              count: activePropertyIds.size,
+              ids: Array.from(activePropertyIds),
+            },
+            metrics: {
+              rentCollected: metrics.rentCollected,
+              rentOutstanding: metrics.rentOutstanding,
+              upcomingRent: metrics.upcomingRent,
+              totalExpenses: metrics.totalExpenses,
+              monthlyRentCollected: {
+                length: metrics.monthlyRentCollected.length,
+                data: metrics.monthlyRentCollected,
+              },
+              monthlyExpenses: {
+                length: metrics.monthlyExpenses.length,
+                data: metrics.monthlyExpenses,
+              },
+            },
           },
-          withPaidDate: rentRecords.filter(r => r.status === 'paid' && r.paid_date).length,
-          sample: rentRecords.slice(0, 3).map(r => ({
-            id: r.id,
-            property_id: r.property_id,
-            status: r.status,
-            amount: r.amount,
-            paid_date: r.paid_date,
-            due_date: r.due_date,
-          })),
-        },
-        expenses: {
-          total: expenses.length,
-          sample: expenses.slice(0, 3).map(e => ({
-            id: e.id,
-            property_id: e.property_id,
-            amount: e.amount,
-            date: getExpenseDate(e),
-          })),
-        },
-        activePropertyIds: {
-          count: activePropertyIds.size,
-          ids: Array.from(activePropertyIds),
-        },
-        metrics: {
-          rentCollected: metrics.rentCollected,
-          rentOutstanding: metrics.rentOutstanding,
-          upcomingRent: metrics.upcomingRent,
-          totalExpenses: metrics.totalExpenses,
-          monthlyRentCollected: {
-            length: metrics.monthlyRentCollected.length,
-            data: metrics.monthlyRentCollected,
-          },
-          monthlyExpenses: {
-            length: metrics.monthlyExpenses.length,
-            data: metrics.monthlyExpenses,
-          },
-        },
-      }, null, 2))
+          null,
+          2
+        )
+      )
     }
   }, [rentRecords, expenses, activePropertyIds, metrics])
   // const cardSpring = createSpring('card') // Reserved for future use

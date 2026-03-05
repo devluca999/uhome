@@ -18,7 +18,9 @@ export function PaymentSettingsForm({ propertyId }: PaymentSettingsFormProps) {
   const [refundsEnabled, setRefundsEnabled] = useState(true)
   const [gracePeriodDays, setGracePeriodDays] = useState(5)
   const [autoWithdrawEnabled, setAutoWithdrawEnabled] = useState(false)
-  const [withdrawSchedule, setWithdrawSchedule] = useState<'daily' | 'weekly' | 'monthly' | 'manual'>('manual')
+  const [withdrawSchedule, setWithdrawSchedule] = useState<
+    'daily' | 'weekly' | 'monthly' | 'manual'
+  >('manual')
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
@@ -70,7 +72,8 @@ export function PaymentSettingsForm({ propertyId }: PaymentSettingsFormProps) {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Stripe Connect is not enabled. Enable it in your environment variables to use payment settings.
+              Stripe Connect is not enabled. Enable it in your environment variables to use payment
+              settings.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -104,9 +107,7 @@ export function PaymentSettingsForm({ propertyId }: PaymentSettingsFormProps) {
         <CardContent>
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Error loading payment settings: {error.message}
-            </AlertDescription>
+            <AlertDescription>Error loading payment settings: {error.message}</AlertDescription>
           </Alert>
         </CardContent>
       </Card>

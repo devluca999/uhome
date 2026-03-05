@@ -283,6 +283,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Error setting user role:', roleError)
           return { error: roleError }
         }
+
+        // Synchronise the in-memory role immediately so ProtectedRoute
+        // sees the correct value before the next onAuthStateChange fires.
+        setRole(role)
       }
 
       return { error: null }

@@ -1,6 +1,6 @@
 /**
  * Scraper Integration Adapter
- * 
+ *
  * Adapter for Python + Playwright scraper integration.
  * Handles communication with scraper via Supabase Edge Function.
  */
@@ -76,10 +76,7 @@ export async function fetchLeadsFromScraper(
  */
 async function checkScraperKillSwitch(): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .from('scraper_kill_switch')
-      .select('enabled')
-      .single()
+    const { data, error } = await supabase.from('scraper_kill_switch').select('enabled').single()
 
     if (error && error.code !== 'PGRST116') {
       // PGRST116 is "not found" - default to enabled (safe)

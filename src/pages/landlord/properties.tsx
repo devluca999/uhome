@@ -193,7 +193,7 @@ export function LandlordProperties() {
     return (
       <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative">
         <GrainOverlay />
-        <div className="relative z-10">
+        <div className="relative z-20 isolate">
           {createError && (
             <ErrorAlert
               error={createError}

@@ -53,10 +53,7 @@ export function TenantDashboard() {
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const cardSpring = createSpring('card')
 
-  const pendingOnboarding = usePendingOnboarding(
-    tenantData?.tenant.id,
-    tenantData?.property.id
-  )
+  const pendingOnboarding = usePendingOnboarding(tenantData?.tenant.id, tenantData?.property.id)
 
   // Auto-open onboarding modal on first visit when pending and not_started
   useEffect(() => {
@@ -67,7 +64,11 @@ export function TenantDashboard() {
     ) {
       setShowOnboardingModal(true)
     }
-  }, [pendingOnboarding.hasPending, pendingOnboarding.submission?.status, pendingOnboarding.loading])
+  }, [
+    pendingOnboarding.hasPending,
+    pendingOnboarding.submission?.status,
+    pendingOnboarding.loading,
+  ])
 
   // Role guard: Prevent landlords from accessing tenant dashboard
   // ProtectedRoute should handle this, but add defensive check for race conditions
@@ -186,7 +187,7 @@ export function TenantDashboard() {
 
         {user && (
           <HeroGreeting
-            name={viewMode === 'tenant-demo' ? 'Demo Tenant' : (user.email?.split('@')[0] || 'User')}
+            name={viewMode === 'tenant-demo' ? 'Demo Tenant' : user.email?.split('@')[0] || 'User'}
           />
         )}
 

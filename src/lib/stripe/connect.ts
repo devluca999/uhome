@@ -1,13 +1,13 @@
 /**
  * Stripe Connect Client
- * 
+ *
  * Handles Stripe Connect account management and onboarding.
  * Requires @stripe/stripe-js package to be installed.
  */
 
 /**
  * Create Stripe Connect account onboarding link
- * 
+ *
  * @param propertyId - Property ID to associate with Connect account
  * @param returnUrl - URL to return to after onboarding
  */
@@ -17,7 +17,7 @@ export async function createConnectOnboardingLink(
 ): Promise<{ url: string } | { error: Error }> {
   try {
     const { supabase } = await import('@/lib/supabase/client')
-    
+
     const { data, error } = await supabase.functions.invoke('create-connect-account', {
       body: {
         property_id: propertyId,
@@ -40,7 +40,7 @@ export async function getConnectAccountStatus(
 ): Promise<{ accountId: string | null; onboardingStatus: string } | { error: Error }> {
   try {
     const { supabase } = await import('@/lib/supabase/client')
-    
+
     const { data, error } = await supabase
       .from('stripe_connect_accounts')
       .select('account_id, onboarding_status')

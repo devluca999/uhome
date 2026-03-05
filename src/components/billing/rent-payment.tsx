@@ -15,7 +15,7 @@ interface RentPaymentProps {
 
 /**
  * Rent Payment Component
- * 
+ *
  * Uses Stripe Payment Element to process rent payments.
  * Requires Stripe Connect to be enabled and property to have active Connect account.
  */
@@ -215,7 +215,11 @@ export function RentPayment({ rentRecordId, amount, onSuccess, onCancel }: RentP
                   Cancel
                 </Button>
               )}
-              <Button type="submit" disabled={!paymentElementReady || submitting} className="ml-auto">
+              <Button
+                type="submit"
+                disabled={!paymentElementReady || submitting}
+                className="ml-auto"
+              >
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

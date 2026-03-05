@@ -1,6 +1,6 @@
 /**
  * Push Notification Service (VAPID)
- * 
+ *
  * Handles web push notifications using VAPID protocol.
  * Requires VAPID keys to be configured in environment variables.
  */
@@ -38,11 +38,7 @@ export function isPushEnabled(): boolean {
  */
 export function isPushSupported(): boolean {
   if (typeof window === 'undefined') return false
-  return (
-    'serviceWorker' in navigator &&
-    'PushManager' in window &&
-    'Notification' in window
-  )
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
 /**
@@ -187,10 +183,7 @@ export async function deletePushSubscription(
   endpoint: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .delete()
-      .eq('endpoint', endpoint)
+    const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
 
     if (error) {
       return { success: false, error: error.message }
@@ -208,9 +201,7 @@ export async function deletePushSubscription(
 /**
  * Get all push subscriptions for a user
  */
-export async function getUserPushSubscriptions(
-  userId: string
-): Promise<PushSubscriptionData[]> {
+export async function getUserPushSubscriptions(userId: string): Promise<PushSubscriptionData[]> {
   try {
     const { data, error } = await supabase
       .from('push_subscriptions')

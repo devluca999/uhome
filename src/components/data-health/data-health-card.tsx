@@ -1,6 +1,6 @@
 /**
  * Data Health Card Component
- * 
+ *
  * Displays data health status and provides actionable fixes.
  * Only shows in dev mode or when explicitly enabled.
  */
@@ -28,6 +28,14 @@ export function DataHealthCard({ className, showInProduction = false }: DataHeal
   // Only show in dev mode unless explicitly enabled
   const shouldShow = import.meta.env.DEV || showInProduction
 
+  // When using dev bypass, use dev_role so we run the correct health check (avoids showing tenant errors on landlord dashboard during account switch)
+  const effectiveRole =
+    import.meta.env.DEV &&
+    typeof window !== 'undefined' &&
+    sessionStorage.getItem('dev_bypass') === 'true'
+      ? (sessionStorage.getItem('dev_role') as 'landlord' | 'tenant' | 'admin' | null) || role
+      : role
+
   useEffect(() => {
     if (!shouldShow || !user || dismissed) {
       setLoading(false)
@@ -38,7 +46,7 @@ export function DataHealthCard({ className, showInProduction = false }: DataHeal
       if (!user) return
       try {
         setLoading(true)
-        const status = await checkDataHealth(user.id, role)
+        const status = await checkDataHealth(user.id, effectiveRole)
         setHealthStatus(status)
       } catch (error) {
         console.error('Error checking data health:', error)
@@ -48,11 +56,11 @@ export function DataHealthCard({ className, showInProduction = false }: DataHeal
     }
 
     fetchHealth()
-  }, [user, role, shouldShow, dismissed])
+  }, [user, role, effectiveRole, shouldShow, dismissed])
 
   // Only show if there are actual errors, not just warnings/info
   const hasErrors = healthStatus?.issues.some(i => i.severity === 'error') ?? false
-  
+
   if (!shouldShow || dismissed || !healthStatus || (!hasErrors && healthStatus.isHealthy)) {
     return null
   }
@@ -89,7 +97,11 @@ export function DataHealthCard({ className, showInProduction = false }: DataHeal
               Errors
             </div>
             {errorIssues.map((issue, index) => (
-              <Alert key={index} variant="destructive" className="text-xs border-destructive/50 bg-destructive/10">
+              <Alert
+                key={index}
+                variant="destructive"
+                className="text-xs border-destructive/50 bg-destructive/10"
+              >
                 <AlertTitle className="text-xs font-medium">{issue.message}</AlertTitle>
                 {issue.fix && (
                   <AlertDescription className="text-xs mt-1">{issue.fix}</AlertDescription>

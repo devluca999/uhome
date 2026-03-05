@@ -19,11 +19,7 @@ interface NavItemReorderProps {
   onReorder: (newOrder: string[]) => void
 }
 
-export function NavItemReorder({
-  items,
-  itemOrder,
-  onReorder,
-}: NavItemReorderProps) {
+export function NavItemReorder({ items, itemOrder, onReorder }: NavItemReorderProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -38,7 +34,10 @@ export function NavItemReorder({
       const y = e.clientY - rect.top
       if (y < SCROLL_ZONE && container.scrollTop > 0) {
         container.scrollTop = Math.max(0, container.scrollTop - SCROLL_SPEED)
-      } else if (y > rect.height - SCROLL_ZONE && container.scrollTop < container.scrollHeight - container.clientHeight) {
+      } else if (
+        y > rect.height - SCROLL_ZONE &&
+        container.scrollTop < container.scrollHeight - container.clientHeight
+      ) {
         container.scrollTop = Math.min(
           container.scrollHeight - container.clientHeight,
           container.scrollTop + SCROLL_SPEED
@@ -110,54 +109,50 @@ export function NavItemReorder({
           'rounded-lg border border-border space-y-2 pr-1',
           hasScrollableContent ? 'max-h-[min(560px,75vh)] overflow-y-scroll' : 'overflow-visible'
         )}
-        style={
-          hasScrollableContent
-            ? { scrollbarGutter: 'stable' }
-            : undefined
-        }
+        style={hasScrollableContent ? { scrollbarGutter: 'stable' } : undefined}
       >
         {orderedItems.map((item, index) => {
-        const isRequired = item.required || item.path.includes('dashboard')
+          const isRequired = item.required || item.path.includes('dashboard')
 
-        return (
-          <motion.div
-            key={item.path}
-            draggable={!isRequired}
-            onDragStart={e => {
-              handleDragStart(index, e.currentTarget as HTMLElement)
-            }}
-            onDragOver={e => handleDragOver(e, index)}
-            onDragLeave={handleDragLeave}
-            onDrop={e => handleDrop(e, index)}
-            onDragEnd={handleDragEnd}
-            initial={{ opacity: motionTokens.opacity.visible }}
-            animate={{
-              opacity: draggedIndex === index ? 0.7 : motionTokens.opacity.visible,
-            }}
-            className={cn(
-              'flex items-center gap-3 p-3 rounded-md border border-border bg-card scroll-m-2',
-              draggedIndex === index && 'cursor-grabbing z-10',
-              dragOverIndex === index && draggedIndex !== index && 'border-primary bg-primary/5'
-            )}
-          >
-            {!isRequired && (
-              <GripVertical
-                className={cn(
-                  'w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing',
-                  draggedIndex === index && 'cursor-grabbing'
-                )}
-              />
-            )}
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{item.label}</span>
-                {isRequired && <span className="text-xs text-muted-foreground">(Required)</span>}
+          return (
+            <motion.div
+              key={item.path}
+              draggable={!isRequired}
+              onDragStart={e => {
+                handleDragStart(index, e.currentTarget as HTMLElement)
+              }}
+              onDragOver={e => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={e => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              initial={{ opacity: motionTokens.opacity.visible }}
+              animate={{
+                opacity: draggedIndex === index ? 0.7 : motionTokens.opacity.visible,
+              }}
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-md border border-border bg-card scroll-m-2',
+                draggedIndex === index && 'cursor-grabbing z-10',
+                dragOverIndex === index && draggedIndex !== index && 'border-primary bg-primary/5'
+              )}
+            >
+              {!isRequired && (
+                <GripVertical
+                  className={cn(
+                    'w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing',
+                    draggedIndex === index && 'cursor-grabbing'
+                  )}
+                />
+              )}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">{item.label}</span>
+                  {isRequired && <span className="text-xs text-muted-foreground">(Required)</span>}
+                </div>
+                <span className="text-xs text-muted-foreground">{item.path}</span>
               </div>
-              <span className="text-xs text-muted-foreground">{item.path}</span>
-            </div>
-          </motion.div>
-        )
-      })}
+            </motion.div>
+          )
+        })}
       </div>
     </div>
   )

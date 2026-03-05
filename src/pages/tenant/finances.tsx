@@ -183,7 +183,9 @@ function TenantRentRecordRow({ record }: { record: any }) {
 
   const totalDue = Number(record.amount) + (record.late_fee || 0)
   const hasLateFee = (record.late_fee || 0) > 0
-  const canPayOnline = isFeatureEnabled('ENABLE_STRIPE_CONNECT') && (record.status === 'pending' || record.status === 'overdue')
+  const canPayOnline =
+    isFeatureEnabled('ENABLE_STRIPE_CONNECT') &&
+    (record.status === 'pending' || record.status === 'overdue')
 
   const getStatusBadge = () => {
     switch (record.status) {

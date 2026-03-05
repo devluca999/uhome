@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { AuthContext } from '@/contexts/auth-context'
 import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
+import { NotificationDropdown } from '@/components/ui/notification-dropdown'
 import { AdminDemoToolbar } from '@/components/admin/admin-demo-toolbar'
 import { useScrollReset } from '@/hooks/use-scroll-reset'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
@@ -98,84 +99,85 @@ export function LandlordLayout() {
     <>
       <AdminDemoToolbar />
       <div className="min-h-screen bg-background">
-      <nav className="glass-nav sticky top-0 z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                to="/landlord/dashboard"
-                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-              >
-                <img
-                  src="/logo.png"
-                  alt="uhome"
-                  className="h-8 w-8 object-contain flex-shrink-0"
-                  style={{ imageRendering: 'auto' }}
-                  onError={e => {
-                    console.error('Failed to load logo image from /logo.png')
-                    // Hide image if it fails to load
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-                <span className="text-xl font-semibold text-foreground">uhome</span>
-              </Link>
-              <nav className="flex gap-1 ml-8 flex-shrink-0" aria-label="Main navigation">
-                {visibleNavItems.map(item => {
-                  const isActive = location.pathname === item.path
-                  return (
-                    <Button
-                      key={item.path}
-                      variant={isActive ? 'default' : 'ghost'}
-                      asChild
-                      aria-current={isActive ? 'page' : undefined}
-                      className={cn(
-                        isActive
-                          ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
-                          : 'bg-transparent hover:bg-muted',
-                        'px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap'
-                      )}
-                    >
-                      <Link to={item.path}>{item.label}</Link>
-                    </Button>
-                  )
-                })}
-              </nav>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                {devBypass ? 'Dev Mode' : user?.email}
-              </span>
-              <ThemeToggle />
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                Sign out
-              </Button>
+        <nav className="glass-nav sticky top-0 z-50">
+          <div className="container mx-auto px-4">
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link
+                  to="/landlord/dashboard"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src="/logo.png"
+                    alt="uhome"
+                    className="h-8 w-8 object-contain flex-shrink-0"
+                    style={{ imageRendering: 'auto' }}
+                    onError={e => {
+                      console.error('Failed to load logo image from /logo.png')
+                      // Hide image if it fails to load
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                  <span className="text-xl font-semibold text-foreground">uhome</span>
+                </Link>
+                <nav className="flex gap-1 ml-8 flex-shrink-0" aria-label="Main navigation">
+                  {visibleNavItems.map(item => {
+                    const isActive = location.pathname === item.path
+                    return (
+                      <Button
+                        key={item.path}
+                        variant={isActive ? 'default' : 'ghost'}
+                        asChild
+                        aria-current={isActive ? 'page' : undefined}
+                        className={cn(
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
+                            : 'bg-transparent hover:bg-muted',
+                          'px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap'
+                        )}
+                      >
+                        <Link to={item.path}>{item.label}</Link>
+                      </Button>
+                    )
+                  })}
+                </nav>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  {devBypass ? 'Dev Mode' : user?.email}
+                </span>
+                <NotificationDropdown />
+                <ThemeToggle />
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  Sign out
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
-      <main
-        className="overscroll-contain pt-16"
-        style={{
-          overscrollBehavior: 'contain',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{
-              duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.base),
-              ease: motionTokens.ease.standard,
-            }}
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
-      </main>
-    </div>
+        </nav>
+        <main
+          className="overscroll-contain pt-16"
+          style={{
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{
+                duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.base),
+                ease: motionTokens.ease.standard,
+              }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
     </>
   )
 }

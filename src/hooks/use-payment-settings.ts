@@ -61,7 +61,8 @@ export function usePaymentSettings(propertyId: string | undefined) {
   }
 
   async function updateSettings(updates: PaymentSettingsUpdate) {
-    if (!propertyId || !settings) return { data: null, error: new Error('No property ID or settings') }
+    if (!propertyId || !settings)
+      return { data: null, error: new Error('No property ID or settings') }
 
     try {
       setError(null)

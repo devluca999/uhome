@@ -36,10 +36,10 @@ function isNonProductionEnvironment(): boolean {
   const env = process.env.SUPABASE_ENV || process.env.VITE_SUPABASE_ENV || ''
   const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 
-  if (!supabaseUrl || supabaseUrl.trim() === '') {
+  if (!env && (!supabaseUrl || supabaseUrl.trim() === '')) {
     throw new Error(
-      '❌ VITE_SUPABASE_URL is not set. Cannot determine environment. ' +
-        'Tests and seeds require explicit environment configuration.'
+      '❌ SUPABASE_ENV or VITE_SUPABASE_URL must be set. ' +
+        'Tests and seeds require explicit non-production environment configuration.'
     )
   }
 

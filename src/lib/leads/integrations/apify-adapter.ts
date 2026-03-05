@@ -1,6 +1,6 @@
 /**
  * Apify Integration Adapter
- * 
+ *
  * Adapter for Apify API integration.
  * Handles fetching leads from Apify actors.
  */
@@ -24,9 +24,7 @@ export interface ApifyLeadsResult {
 /**
  * Fetch leads from Apify
  */
-export async function fetchLeadsFromApify(
-  config: ApifyAdapterConfig
-): Promise<ApifyLeadsResult> {
+export async function fetchLeadsFromApify(config: ApifyAdapterConfig): Promise<ApifyLeadsResult> {
   try {
     // Apify API endpoint
     const baseUrl = 'https://api.apify.com/v2'
@@ -38,7 +36,7 @@ export async function fetchLeadsFromApify(
 
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${config.apiKey}`,
         'Content-Type': 'application/json',
       },
     })

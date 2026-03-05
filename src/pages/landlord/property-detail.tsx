@@ -69,11 +69,7 @@ export function PropertyDetail() {
 
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', id)
-        .single()
+      const { data, error } = await supabase.from('properties').select('*').eq('id', id).single()
 
       if (error) throw error
       // Ensure is_active defaults to true if not set (for backward compatibility)
@@ -290,7 +286,7 @@ export function PropertyDetail() {
                     </div>
                     <Switch
                       checked={property.is_active === true || property.is_active === undefined}
-                      onCheckedChange={async (checked) => {
+                      onCheckedChange={async checked => {
                         setSubmitting(true)
                         try {
                           const { error } = await supabase

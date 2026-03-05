@@ -64,7 +64,11 @@ export function useOnboardingTemplates(propertyId?: string) {
   const [error, setError] = useState<Error | null>(null)
 
   const fetchTemplates = useCallback(async () => {
-    if (!propertyId) { setTemplates([]); setLoading(false); return }
+    if (!propertyId) {
+      setTemplates([])
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       const { data, error: fetchErr } = await supabase
@@ -81,12 +85,11 @@ export function useOnboardingTemplates(propertyId?: string) {
     }
   }, [propertyId])
 
-  useEffect(() => { fetchTemplates() }, [fetchTemplates])
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
 
-  async function createTemplate(template: {
-    title: string
-    fields: OnboardingField[]
-  }) {
+  async function createTemplate(template: { title: string; fields: OnboardingField[] }) {
     if (isDemoMode(viewMode, role)) return null
     if (!propertyId) return null
 
@@ -109,11 +112,14 @@ export function useOnboardingTemplates(propertyId?: string) {
     return data as OnboardingTemplate
   }
 
-  async function updateTemplate(id: string, updates: {
-    title?: string
-    fields?: OnboardingField[]
-    is_active?: boolean
-  }) {
+  async function updateTemplate(
+    id: string,
+    updates: {
+      title?: string
+      fields?: OnboardingField[]
+      is_active?: boolean
+    }
+  ) {
     if (isDemoMode(viewMode, role)) return null
 
     const payload: Record<string, unknown> = {}
@@ -129,23 +135,28 @@ export function useOnboardingTemplates(propertyId?: string) {
       .single()
 
     if (updateErr) throw updateErr
-    setTemplates(prev => prev.map(t => t.id === id ? data as OnboardingTemplate : t))
+    setTemplates(prev => prev.map(t => (t.id === id ? (data as OnboardingTemplate) : t)))
     return data as OnboardingTemplate
   }
 
   async function deleteTemplate(id: string) {
     if (isDemoMode(viewMode, role)) return
 
-    const { error: deleteErr } = await supabase
-      .from('onboarding_templates')
-      .delete()
-      .eq('id', id)
+    const { error: deleteErr } = await supabase.from('onboarding_templates').delete().eq('id', id)
 
     if (deleteErr) throw deleteErr
     setTemplates(prev => prev.filter(t => t.id !== id))
   }
 
-  return { templates, loading, error, createTemplate, updateTemplate, deleteTemplate, refetch: fetchTemplates }
+  return {
+    templates,
+    loading,
+    error,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+    refetch: fetchTemplates,
+  }
 }
 
 // --- Tenant: submission management ---
@@ -157,7 +168,11 @@ export function useOnboardingSubmission(tenantId?: string, templateId?: string) 
   const [error, setError] = useState<Error | null>(null)
 
   const fetchSubmission = useCallback(async () => {
-    if (!tenantId || !templateId) { setSubmission(null); setLoading(false); return }
+    if (!tenantId || !templateId) {
+      setSubmission(null)
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       const { data, error: fetchErr } = await supabase
@@ -176,12 +191,11 @@ export function useOnboardingSubmission(tenantId?: string, templateId?: string) 
     }
   }, [tenantId, templateId])
 
-  useEffect(() => { fetchSubmission() }, [fetchSubmission])
+  useEffect(() => {
+    fetchSubmission()
+  }, [fetchSubmission])
 
-  async function saveProgress(
-    fieldData: Record<string, unknown>,
-    template: OnboardingTemplate
-  ) {
+  async function saveProgress(fieldData: Record<string, unknown>, template: OnboardingTemplate) {
     if (isDemoMode(viewMode, role)) return null
     if (!tenantId || !templateId) return null
 
@@ -311,7 +325,12 @@ export function usePendingOnboarding(tenantId?: string, propertyId?: string) {
 
   const fetchPending = useCallback(async () => {
     if (!tenantId || !propertyId) {
-      setPending({ hasPending: false, progress: { completed: 0, total: 0 }, submission: null, template: null })
+      setPending({
+        hasPending: false,
+        progress: { completed: 0, total: 0 },
+        submission: null,
+        template: null,
+      })
       setLoading(false)
       return
     }
@@ -328,7 +347,12 @@ export function usePendingOnboarding(tenantId?: string, propertyId?: string) {
         .single()
 
       if (!templates) {
-        setPending({ hasPending: false, progress: { completed: 0, total: 0 }, submission: null, template: null })
+        setPending({
+          hasPending: false,
+          progress: { completed: 0, total: 0 },
+          submission: null,
+          template: null,
+        })
         return
       }
 
@@ -342,7 +366,8 @@ export function usePendingOnboarding(tenantId?: string, propertyId?: string) {
         .single()
 
       const submission = sub as OnboardingSubmission | null
-      const needsAction = !submission ||
+      const needsAction =
+        !submission ||
         submission.status === 'not_started' ||
         submission.status === 'in_progress' ||
         submission.status === 'reopened'
@@ -357,13 +382,20 @@ export function usePendingOnboarding(tenantId?: string, propertyId?: string) {
         template,
       })
     } catch {
-      setPending({ hasPending: false, progress: { completed: 0, total: 0 }, submission: null, template: null })
+      setPending({
+        hasPending: false,
+        progress: { completed: 0, total: 0 },
+        submission: null,
+        template: null,
+      })
     } finally {
       setLoading(false)
     }
   }, [tenantId, propertyId])
 
-  useEffect(() => { fetchPending() }, [fetchPending])
+  useEffect(() => {
+    fetchPending()
+  }, [fetchPending])
 
   return { ...pending, loading, refetch: fetchPending }
 }

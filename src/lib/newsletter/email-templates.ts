@@ -1,6 +1,6 @@
 /**
  * Email Templates for Newsletter Campaigns
- * 
+ *
  * Provides template rendering for different newsletter styles
  */
 
@@ -21,12 +21,7 @@ export function renderNewsletterTemplate(
   style: TemplateStyle,
   variables: TemplateVariables
 ): string {
-  const {
-    content,
-    unsubscribeUrl = '#',
-    companyName = 'Uhome',
-    companyLogo = '',
-  } = variables
+  const { content, unsubscribeUrl = '#', companyName = 'Uhome', companyLogo = '' } = variables
 
   const baseStyles = `
     <style>
@@ -172,13 +167,16 @@ function renderMarkdown(markdown: string): string {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
 
   // Paragraphs (split by double newline)
-  html = html.split(/\n\n+/).map(para => {
-    para = para.trim()
-    if (para && !para.startsWith('<')) {
-      return `<p>${para}</p>`
-    }
-    return para
-  }).join('\n')
+  html = html
+    .split(/\n\n+/)
+    .map(para => {
+      para = para.trim()
+      if (para && !para.startsWith('<')) {
+        return `<p>${para}</p>`
+      }
+      return para
+    })
+    .join('\n')
 
   // Line breaks
   html = html.replace(/\n/g, '<br>')

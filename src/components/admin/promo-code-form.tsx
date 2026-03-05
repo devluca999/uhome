@@ -295,7 +295,11 @@ export function PromoCodeForm({ isOpen, onClose, promoCode, onSuccess }: PromoCo
                       Cancel
                     </Button>
                     <Button type="submit" disabled={submitting}>
-                      {submitting ? 'Saving...' : promoCode ? 'Update Promo Code' : 'Create Promo Code'}
+                      {submitting
+                        ? 'Saving...'
+                        : promoCode
+                          ? 'Update Promo Code'
+                          : 'Create Promo Code'}
                     </Button>
                   </div>
                 </form>

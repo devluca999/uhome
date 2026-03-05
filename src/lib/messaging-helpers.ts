@@ -1,6 +1,6 @@
 /**
  * Messaging Helper Functions
- * 
+ *
  * Utilities for navigating to messaging with proper lease context
  */
 
@@ -55,7 +55,7 @@ export function buildMessagingUrl(
   role: 'landlord' | 'tenant' = 'landlord'
 ): string {
   const basePath = role === 'landlord' ? '/landlord/messages' : '/tenant/messages'
-  
+
   if (!leaseId) {
     return basePath
   }
@@ -81,7 +81,7 @@ export async function navigateToTenantMessaging(
   onNavigate?: (url: string) => void
 ): Promise<void> {
   const leaseId = await getOrCreateLeaseForMessaging(tenantId, propertyId)
-  
+
   if (!leaseId) {
     // No lease exists - could show a message or navigate to messages page anyway
     // For now, just navigate to messages page (user can see empty state)

@@ -341,7 +341,8 @@ function AdminActionModal({ isOpen, onClose, user, action, onConfirm }: AdminAct
                   {actionInfo.destructive && (
                     <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                       <p className="text-sm text-destructive font-medium">
-                        ⚠️ This is a destructive action. Click &quot;Confirm Action&quot; to proceed.
+                        ⚠️ This is a destructive action. Click &quot;Confirm Action&quot; to
+                        proceed.
                       </p>
                     </div>
                   )}

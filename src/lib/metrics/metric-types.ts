@@ -1,6 +1,6 @@
 /**
  * Metric Type System
- * 
+ *
  * Prevents currency formatting from being applied to non-monetary metrics.
  * Provides type safety to distinguish between monetary and non-monetary metrics.
  */
@@ -26,20 +26,20 @@ export const METRIC_TYPES: Record<string, MetricMetadata> = {
   'Projected Net': { type: 'monetary', label: 'Projected Net', unit: 'currency' },
   'Monthly Revenue': { type: 'monetary', label: 'Monthly Revenue', unit: 'currency' },
   'Total Revenue': { type: 'monetary', label: 'Total Revenue', unit: 'currency' },
-  
+
   // Percentage metrics
   'Occupancy Rate': { type: 'percentage', label: 'Occupancy Rate', unit: '%' },
   'Profit Margin': { type: 'percentage', label: 'Profit Margin', unit: '%' },
   'Collection Rate': { type: 'percentage', label: 'Collection Rate', unit: '%' },
-  
+
   // Count metrics
   'Active Properties': { type: 'count', label: 'Active Properties', unit: 'count' },
-  'Properties': { type: 'count', label: 'Properties', unit: 'count' },
-  'Tenants': { type: 'count', label: 'Tenants', unit: 'count' },
-  'Occupancy': { type: 'count', label: 'Occupancy', unit: 'count' },
+  Properties: { type: 'count', label: 'Properties', unit: 'count' },
+  Tenants: { type: 'count', label: 'Tenants', unit: 'count' },
+  Occupancy: { type: 'count', label: 'Occupancy', unit: 'count' },
   'Work Orders': { type: 'count', label: 'Work Orders', unit: 'count' },
-  'Documents': { type: 'count', label: 'Documents', unit: 'count' },
-  
+  Documents: { type: 'count', label: 'Documents', unit: 'count' },
+
   // Ratio metrics
   'Tenant to Property Ratio': { type: 'ratio', label: 'Tenant to Property Ratio', unit: 'ratio' },
 }

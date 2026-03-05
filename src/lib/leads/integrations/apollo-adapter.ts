@@ -1,6 +1,6 @@
 /**
  * Apollo Integration Adapter
- * 
+ *
  * Adapter for Apollo API integration.
  * Handles fetching leads from Apollo search results.
  */

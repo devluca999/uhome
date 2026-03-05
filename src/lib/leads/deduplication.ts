@@ -1,6 +1,6 @@
 /**
  * Lead Deduplication Logic
- * 
+ *
  * Handles deduplication of leads based on email, phone, and unique IDs.
  */
 
@@ -128,13 +128,13 @@ export async function checkDuplicatesBatch(
   }
 
   // Check remaining by email
-  const remainingIndices = leads
-    .map((_, index) => index)
-    .filter(index => !results.has(index))
+  const remainingIndices = leads.map((_, index) => index).filter(index => !results.has(index))
 
   if (remainingIndices.length > 0) {
-    const emailsToCheck = remainingIndices.map(index => leads[index].normalized_email).filter(Boolean)
-    
+    const emailsToCheck = remainingIndices
+      .map(index => leads[index].normalized_email)
+      .filter(Boolean)
+
     if (emailsToCheck.length > 0) {
       const { data: emailMatches } = await supabase
         .from('leads')

@@ -1,6 +1,6 @@
 /**
  * Opt-In Logic
- * 
+ *
  * Handles opt-in/opt-out preferences for lead enrollment.
  */
 

@@ -1,6 +1,6 @@
 /**
  * Push Subscription Hook
- * 
+ *
  * Manages push notification subscription state and lifecycle.
  */
 
@@ -55,9 +55,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
         if (subscription) {
           // Check if subscription exists in database
           const dbSubscriptions = await getUserPushSubscriptions(user!.id)
-          const existsInDb = dbSubscriptions.some(
-            sub => sub.endpoint === subscription.endpoint
-          )
+          const existsInDb = dbSubscriptions.some(sub => sub.endpoint === subscription.endpoint)
 
           setIsSubscribed(existsInDb)
         } else {

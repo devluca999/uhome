@@ -21,11 +21,14 @@ export function useRentPayment() {
     setError(null)
 
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('create-payment-intent', {
-        body: {
-          rent_record_id: rentRecordId,
-        },
-      })
+      const { data, error: invokeError } = await supabase.functions.invoke(
+        'create-payment-intent',
+        {
+          body: {
+            rent_record_id: rentRecordId,
+          },
+        }
+      )
 
       if (invokeError) throw invokeError
       if (data.error) throw new Error(data.error)

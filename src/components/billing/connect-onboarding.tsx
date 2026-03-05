@@ -71,13 +71,16 @@ export function ConnectOnboarding({ propertyId, onComplete: _onComplete }: Conne
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>Enable Rent Collection</CardTitle>
-          <CardDescription>Connect your Stripe account to accept rent payments online</CardDescription>
+          <CardDescription>
+            Connect your Stripe account to accept rent payments online
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Stripe Connect is not enabled. Enable it in your environment variables to use rent collection.
+              Stripe Connect is not enabled. Enable it in your environment variables to use rent
+              collection.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -90,7 +93,9 @@ export function ConnectOnboarding({ propertyId, onComplete: _onComplete }: Conne
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>Enable Rent Collection</CardTitle>
-          <CardDescription>Connect your Stripe account to accept rent payments online</CardDescription>
+          <CardDescription>
+            Connect your Stripe account to accept rent payments online
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">

@@ -1,6 +1,6 @@
 /**
  * Lead Ingestion Pipeline
- * 
+ *
  * Unified processing logic for both manual and automated lead ingestion.
  * Handles parsing, normalization, deduplication, validation, enrichment, and import.
  */
@@ -68,9 +68,7 @@ export async function ingestLeads(
         }
 
         // Apply field mapping if provided
-        const mappedRaw = options.fieldMapping
-          ? applyFieldMapping(raw, options.fieldMapping)
-          : raw
+        const mappedRaw = options.fieldMapping ? applyFieldMapping(raw, options.fieldMapping) : raw
 
         const normalized = normalizeLead(mappedRaw)
         normalizedLeads.push(normalized)
@@ -121,10 +119,7 @@ export async function ingestLeads(
 
         // Check opt-in
         const optInCheck = await checkOptIn(lead.normalized_email)
-        const optInStatus = determineOptInStatus(
-          options.autoEnrollNewsletter,
-          optInCheck.status
-        )
+        const optInStatus = determineOptInStatus(options.autoEnrollNewsletter, optInCheck.status)
 
         if (!optInCheck.canEnroll && options.autoEnrollNewsletter) {
           validationErrors.push({

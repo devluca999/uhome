@@ -1,6 +1,6 @@
 /**
  * Notification Channels Hook
- * 
+ *
  * Manages user preferences for notification channels (email, push, in-app).
  */
 
@@ -90,15 +90,13 @@ export function useNotificationChannels(): UseNotificationChannelsReturn {
 
         // Update email preferences
         if ('email' in updates || 'emailDigest' in updates || 'emailMarketing' in updates) {
-          const { error: emailError } = await supabase
-            .from('email_preferences')
-            .upsert({
-              user_id: user.id,
-              email_notifications_enabled: updates.email ?? preferences?.email ?? true,
-              email_digest_enabled: updates.emailDigest ?? preferences?.emailDigest ?? true,
-              email_marketing_enabled: updates.emailMarketing ?? preferences?.emailMarketing ?? false,
-              updated_at: new Date().toISOString(),
-            })
+          const { error: emailError } = await supabase.from('email_preferences').upsert({
+            user_id: user.id,
+            email_notifications_enabled: updates.email ?? preferences?.email ?? true,
+            email_digest_enabled: updates.emailDigest ?? preferences?.emailDigest ?? true,
+            email_marketing_enabled: updates.emailMarketing ?? preferences?.emailMarketing ?? false,
+            updated_at: new Date().toISOString(),
+          })
 
           if (emailError) {
             throw emailError

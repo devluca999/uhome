@@ -14,7 +14,8 @@ export function DataDeletion() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const enabled = isFeatureEnabled('ENABLE_GDPR_COMPLIANCE') || isFeatureEnabled('ENABLE_CCPA_COMPLIANCE')
+  const enabled =
+    isFeatureEnabled('ENABLE_GDPR_COMPLIANCE') || isFeatureEnabled('ENABLE_CCPA_COMPLIANCE')
 
   async function handleSubmit() {
     if (!user) return
@@ -112,9 +113,7 @@ export function DataDeletion() {
         </CardHeader>
         <CardContent className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-            <li>
-              Your deletion request will be reviewed by an administrator before processing.
-            </li>
+            <li>Your deletion request will be reviewed by an administrator before processing.</li>
             <li>
               Once approved, your account and all associated data will be permanently deleted.
             </li>

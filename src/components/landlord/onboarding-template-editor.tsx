@@ -55,9 +55,24 @@ export function OnboardingTemplateEditor({ propertyId }: OnboardingTemplateEdito
     setFields([
       { name: 'emergency_contact', label: 'Emergency Contact Name', type: 'text', required: true },
       { name: 'emergency_phone', label: 'Emergency Contact Phone', type: 'text', required: true },
-      { name: 'vehicle_info', label: 'Vehicle Information (make, model, plate)', type: 'text', required: false },
-      { name: 'move_in_date_confirmed', label: 'I confirm my move-in date', type: 'checkbox', required: true },
-      { name: 'rules_acknowledged', label: 'I have read and agree to the house rules', type: 'checkbox', required: true },
+      {
+        name: 'vehicle_info',
+        label: 'Vehicle Information (make, model, plate)',
+        type: 'text',
+        required: false,
+      },
+      {
+        name: 'move_in_date_confirmed',
+        label: 'I confirm my move-in date',
+        type: 'checkbox',
+        required: true,
+      },
+      {
+        name: 'rules_acknowledged',
+        label: 'I have read and agree to the house rules',
+        type: 'checkbox',
+        required: true,
+      },
     ])
     setError(null)
   }
@@ -79,10 +94,7 @@ export function OnboardingTemplateEditor({ propertyId }: OnboardingTemplateEdito
 
   function addField() {
     const name = `field_${Date.now()}`
-    setFields(prev => [
-      ...prev,
-      { name, label: '', type: 'text', required: true },
-    ])
+    setFields(prev => [...prev, { name, label: '', type: 'text', required: true }])
   }
 
   function updateField(index: number, updates: Partial<OnboardingField>) {
@@ -189,18 +201,15 @@ export function OnboardingTemplateEditor({ propertyId }: OnboardingTemplateEdito
                 <div>
                   <CardTitle className="text-base">{t.title}</CardTitle>
                   <CardDescription>
-                    {t.fields.length} fields &middot;{' '}
-                    {t.fields.filter(f => f.required).length} required
+                    {t.fields.length} fields &middot; {t.fields.filter(f => f.required).length}{' '}
+                    required
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant={t.is_active ? 'default' : 'secondary'}>
                     {t.is_active ? 'Active' : 'Inactive'}
                   </Badge>
-                  <Switch
-                    checked={t.is_active}
-                    onCheckedChange={() => handleToggleActive(t)}
-                  />
+                  <Switch checked={t.is_active} onCheckedChange={() => handleToggleActive(t)} />
                 </div>
               </CardHeader>
               <CardContent className="flex gap-2 pt-0">
@@ -229,8 +238,8 @@ export function OnboardingTemplateEditor({ propertyId }: OnboardingTemplateEdito
               <div className="flex items-start gap-2 p-3 mt-2 text-sm bg-amber-50 text-amber-800 rounded-md border border-amber-200">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>
-                  {submissionCounts[editing]} tenant(s) have in-progress submissions.
-                  Changes apply only to new submissions.
+                  {submissionCounts[editing]} tenant(s) have in-progress submissions. Changes apply
+                  only to new submissions.
                 </span>
               </div>
             )}
@@ -294,7 +303,10 @@ export function OnboardingTemplateEditor({ propertyId }: OnboardingTemplateEdito
                           value={field.options?.join(', ') || ''}
                           onChange={e =>
                             updateField(i, {
-                              options: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
+                              options: e.target.value
+                                .split(',')
+                                .map(s => s.trim())
+                                .filter(Boolean),
                             })
                           }
                           placeholder="Option 1, Option 2, ..."

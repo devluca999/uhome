@@ -35,9 +35,7 @@ export function TenantListItem({ tenant, onDelete, onView }: TenantListItemProps
     ? new Date(tenant.lease_end_date).toLocaleDateString()
     : 'No end date'
 
-  const isLeaseActive = tenant.lease_end_date
-    ? new Date(tenant.lease_end_date) > new Date()
-    : true
+  const isLeaseActive = tenant.lease_end_date ? new Date(tenant.lease_end_date) > new Date() : true
 
   return (
     <div className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
@@ -74,12 +72,7 @@ export function TenantListItem({ tenant, onDelete, onView }: TenantListItemProps
             </Button>
           )}
           {messagingEnabled && tenant.property_id && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleMessage}
-              title="Message tenant"
-            >
+            <Button variant="outline" size="sm" onClick={handleMessage} title="Message tenant">
               <MessageSquare className="w-4 h-4" />
             </Button>
           )}

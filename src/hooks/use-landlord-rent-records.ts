@@ -81,9 +81,7 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
       }
 
       // Filter to only active properties (is_active !== false)
-      const activePropertyIds = properties
-        .filter(p => p.is_active !== false)
-        .map(p => p.id)
+      const activePropertyIds = properties.filter(p => p.is_active !== false).map(p => p.id)
 
       // Build query - use a simpler select to avoid RLS issues with nested JOINs
       // The tenant→users join can fail if RLS policies restrict user table access
@@ -127,18 +125,21 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
       }
 
       if (import.meta.env.DEV) {
-        console.debug('[useLandlordRentRecords] Fetched records:', JSON.stringify({
-          count: data?.length || 0,
-          activePropertyIds,
-          sampleRecords: data?.slice(0, 3).map(r => ({
-            id: r.id,
-            property_id: r.property_id,
-            amount: r.amount,
-            status: r.status,
-            paid_date: r.paid_date,
-            due_date: r.due_date,
-          })),
-        }))
+        console.debug(
+          '[useLandlordRentRecords] Fetched records:',
+          JSON.stringify({
+            count: data?.length || 0,
+            activePropertyIds,
+            sampleRecords: data?.slice(0, 3).map(r => ({
+              id: r.id,
+              property_id: r.property_id,
+              amount: r.amount,
+              status: r.status,
+              paid_date: r.paid_date,
+              due_date: r.due_date,
+            })),
+          })
+        )
       }
 
       setRecords(data || [])

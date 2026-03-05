@@ -18,7 +18,8 @@ export function DevBypass() {
       try {
         // Actually sign in as the demo user for dev bypass
         // This ensures RLS policies work correctly since they check auth.uid()
-        const email = role === 'tenant' ? 'demo-tenant@uhome.internal' : 'demo-landlord@uhome.internal'
+        const email =
+          role === 'tenant' ? 'demo-tenant@uhome.internal' : 'demo-landlord@uhome.internal'
         const password = role === 'tenant' ? 'DemoTenant2024!' : 'DemoLandlord2024!'
 
         const { error } = await supabase.auth.signInWithPassword({
@@ -39,7 +40,12 @@ export function DevBypass() {
         sessionStorage.setItem('dev_bypass', 'true')
         sessionStorage.setItem('dev_role', role)
 
-        const redirectPath = role === 'admin' ? '/admin/overview' : role === 'tenant' ? '/tenant/dashboard' : '/landlord/dashboard'
+        const redirectPath =
+          role === 'admin'
+            ? '/admin/overview'
+            : role === 'tenant'
+              ? '/tenant/dashboard'
+              : '/landlord/dashboard'
         navigate(redirectPath, { replace: true })
       } catch (err) {
         console.error('Dev bypass error:', err)

@@ -35,9 +35,15 @@ export function TenantDetailModal({
   const handleMessage = async (intent?: 'general' | 'maintenance' | 'billing' | 'notice') => {
     if (!tenant?.property_id) return
     onClose()
-    await navigateToTenantMessaging(tenant.id, tenant.property_id, intent || 'general', 'landlord', url => {
-      navigate(url)
-    })
+    await navigateToTenantMessaging(
+      tenant.id,
+      tenant.property_id,
+      intent || 'general',
+      'landlord',
+      url => {
+        navigate(url)
+      }
+    )
   }
 
   useEffect(() => {
@@ -75,9 +81,7 @@ export function TenantDetailModal({
       })
     : 'No end date'
 
-  const isLeaseActive = tenant.lease_end_date
-    ? new Date(tenant.lease_end_date) > new Date()
-    : true
+  const isLeaseActive = tenant.lease_end_date ? new Date(tenant.lease_end_date) > new Date() : true
 
   // Filter key documents (lease agreements, receipts)
   const keyDocuments = documents.filter(doc => {

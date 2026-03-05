@@ -1,6 +1,6 @@
 /**
  * Data Health Checker
- * 
+ *
  * Validates data availability and environment configuration.
  * Helps identify why data might be missing or not persisting.
  */
@@ -97,14 +97,15 @@ export async function checkDataHealth(
       }
     }
 
-    // Check for tenant data
+    // Check for tenant data (use limit(1) + first row to avoid .single() error when multiple rows exist)
     if (userRole === 'tenant') {
-      const { data: tenant, error: tenantError } = await supabase
+      const { data: tenantRows, error: tenantError } = await supabase
         .from('tenants')
         .select('id, property_id, move_in_date, lease_end_date')
         .eq('user_id', userId)
         .limit(1)
-        .single()
+
+      const tenant = tenantRows?.[0]
 
       if (tenantError) {
         issues.push({
@@ -129,18 +130,24 @@ export async function checkDataHealth(
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
         const thirtyDaysAgo = new Date()
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-        
-        const hasActiveLease = tenant.move_in_date && tenant.lease_end_date
-          ? new Date(tenant.move_in_date) <= thirtyDaysFromNow && new Date(tenant.lease_end_date) >= thirtyDaysAgo
-          : false
+
+        const hasActiveLease =
+          tenant.move_in_date && tenant.lease_end_date
+            ? new Date(tenant.move_in_date) <= thirtyDaysFromNow &&
+              new Date(tenant.lease_end_date) >= thirtyDaysAgo
+            : false
 
         // Only warn if lease is clearly expired (more than 30 days ago) or far in the future
         if (!hasActiveLease && tenant.move_in_date && tenant.lease_end_date) {
           const startDate = new Date(tenant.move_in_date)
           const endDate = new Date(tenant.lease_end_date)
-          const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-          const daysSinceEnd = Math.ceil((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
-          
+          const daysUntilStart = Math.ceil(
+            (startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          )
+          const daysSinceEnd = Math.ceil(
+            (now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24)
+          )
+
           // Only show warning if lease is more than 30 days expired or more than 30 days in the future
           if (daysSinceEnd > 30 || daysUntilStart > 30) {
             issues.push({
@@ -162,13 +169,14 @@ export async function checkDataHealth(
           })
           recommendations.push('Contact your landlord to be assigned to a property')
         } else {
-          // Check if property exists and is active
-          const { data: property, error: propertyError } = await supabase
+          // Check if property exists and is active (use first row to avoid .single() when multiple)
+          const { data: propertyRows, error: propertyError } = await supabase
             .from('properties')
             .select('id, is_active')
             .eq('id', tenant.property_id)
             .limit(1)
-            .single()
+
+          const property = propertyRows?.[0]
 
           if (propertyError) {
             issues.push({
@@ -262,11 +270,11 @@ export function checkEnvCongruence(): {
   issues: string[]
 } {
   const issues: string[] = []
-  
+
   // In browser, we can only check app env vars
   // Full congruence check should be done via verify-env-congruence.ts script
   const appUrl = import.meta.env.VITE_SUPABASE_URL
-  
+
   if (!appUrl) {
     issues.push('VITE_SUPABASE_URL is not set in app environment')
   }

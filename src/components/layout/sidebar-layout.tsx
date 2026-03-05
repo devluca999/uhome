@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useContext } from 'react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { NotificationDropdown } from '@/components/ui/notification-dropdown'
 import { AuthContext } from '@/contexts/auth-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
@@ -89,7 +90,9 @@ export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) 
                   )}
                   aria-current={location.pathname === item.path ? 'page' : undefined}
                 >
-                  <Link to={item.path} className="block truncate">{item.label}</Link>
+                  <Link to={item.path} className="block truncate">
+                    {item.label}
+                  </Link>
                 </Button>
               </motion.div>
             ))}
@@ -106,6 +109,7 @@ export function SidebarLayout({ navItems, basePath, role }: SidebarLayoutProps) 
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationDropdown />
               <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="flex-1">
                 Sign out

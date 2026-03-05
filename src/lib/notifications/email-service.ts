@@ -1,6 +1,6 @@
 /**
  * Email Service (Postal)
- * 
+ *
  * Wrapper for Postal SMTP email sending with delivery tracking,
  * throttling, and retry logic.
  */
@@ -88,7 +88,7 @@ async function checkThrottleLimit(userId: string): Promise<boolean> {
 
 /**
  * Send email via Postal (via Supabase Edge Function)
- * 
+ *
  * This function calls the Edge Function which handles actual SMTP sending.
  * The Edge Function should be configured with Postal SMTP credentials.
  */

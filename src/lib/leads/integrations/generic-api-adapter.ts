@@ -1,6 +1,6 @@
 /**
  * Generic API Integration Adapter
- * 
+ *
  * Adapter for generic REST API integrations.
  * Handles fetching leads from any REST API endpoint.
  */

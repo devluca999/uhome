@@ -1,11 +1,11 @@
 /**
  * Unified Notification Service
- * 
+ *
  * Abstraction layer for sending notifications across multiple channels:
  * - Email (Postal)
  * - Web Push (VAPID)
  * - In-app (existing notifications table)
- * 
+ *
  * Handles opt-out, throttling, and graceful degradation.
  */
 
@@ -88,15 +88,15 @@ export async function sendUnifiedNotification(
   // Create in-app notification if enabled
   if (channels.inApp) {
     try {
-    const { data: notification, error: inAppError } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: options.userId,
-        lease_id: options.leaseId,
-        type: options.type,
-      })
-      .select()
-      .single()
+      const { data: notification, error: inAppError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: options.userId,
+          lease_id: options.leaseId,
+          type: options.type,
+        })
+        .select()
+        .single()
 
       if (inAppError) {
         result.errors?.push(`In-app notification failed: ${inAppError.message}`)
@@ -164,9 +164,7 @@ export async function sendUnifiedNotification(
         result.errors?.push(`Push failed: ${pushResult.error || 'Unknown error'}`)
       }
     } catch (error) {
-      result.errors?.push(
-        `Push error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
+      result.errors?.push(`Push error: ${error instanceof Error ? error.message : 'Unknown error'}`)
       // Continue - push failure shouldn't block other channels
     }
   }
@@ -215,11 +213,7 @@ async function sendPushNotification(
  */
 async function getUserEmail(userId: string): Promise<string> {
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('email')
-      .eq('id', userId)
-      .single()
+    const { data, error } = await supabase.from('users').select('email').eq('id', userId).single()
 
     if (error || !data) {
       throw new Error('User not found')

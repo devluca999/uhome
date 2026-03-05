@@ -64,7 +64,9 @@ export interface FinanceFilters {
 
 /** Get expense date - schema may use expense_date (initial) or date (legacy) */
 export function getExpenseDate(e: { expense_date?: string; date?: string }): string {
-  return (e as { expense_date?: string; date?: string }).expense_date ?? (e as { date: string }).date
+  return (
+    (e as { expense_date?: string; date?: string }).expense_date ?? (e as { date: string }).date
+  )
 }
 
 /**
@@ -260,7 +262,9 @@ export function calculateActiveProperties(
   // Count distinct active properties that have tenants
   const activePropertyIds = new Set(activeProperties.map(p => p.id))
   const propertiesWithTenants = new Set(
-    tenants.filter(t => t.property_id && activePropertyIds.has(t.property_id)).map(t => t.property_id!)
+    tenants
+      .filter(t => t.property_id && activePropertyIds.has(t.property_id))
+      .map(t => t.property_id!)
   )
 
   return propertiesWithTenants.size

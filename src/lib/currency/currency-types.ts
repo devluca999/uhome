@@ -2,7 +2,17 @@
  * Currency Types and Definitions
  */
 
-export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'INR' | 'MXN' | 'BRL'
+export type CurrencyCode =
+  | 'USD'
+  | 'EUR'
+  | 'GBP'
+  | 'CAD'
+  | 'AUD'
+  | 'JPY'
+  | 'CNY'
+  | 'INR'
+  | 'MXN'
+  | 'BRL'
 
 export interface CurrencyConfig {
   code: CurrencyCode

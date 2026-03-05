@@ -31,8 +31,7 @@ export async function getLeases(
     }
     return result.sort(
       (a, b) =>
-        new Date(b.lease_start_date || 0).getTime() -
-        new Date(a.lease_start_date || 0).getTime()
+        new Date(b.lease_start_date || 0).getTime() - new Date(a.lease_start_date || 0).getTime()
     )
   }
   if (viewMode === 'tenant-demo') {
@@ -59,10 +58,7 @@ export async function getLeases(
     })) as Lease[]
   }
 
-  let query = supabase
-    .from('leases')
-    .select('*')
-    .order('lease_start_date', { ascending: false })
+  let query = supabase.from('leases').select('*').order('lease_start_date', { ascending: false })
 
   if (filters?.propertyId) {
     query = query.eq('property_id', filters.propertyId)

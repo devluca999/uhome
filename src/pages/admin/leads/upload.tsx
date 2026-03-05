@@ -171,9 +171,7 @@ export function LeadUpload() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-semibold text-foreground">Upload Leads</h1>
-            <p className="text-muted-foreground mt-1">
-              Import leads from CSV or JSON files
-            </p>
+            <p className="text-muted-foreground mt-1">Import leads from CSV or JSON files</p>
           </div>
           <Button variant="outline" onClick={() => navigate('/admin/leads')}>
             <X className="w-4 h-4 mr-2" />
@@ -185,9 +183,7 @@ export function LeadUpload() {
         <Card>
           <CardHeader>
             <CardTitle>Select File</CardTitle>
-            <CardDescription>
-              Upload a CSV or JSON file (max 10MB)
-            </CardDescription>
+            <CardDescription>Upload a CSV or JSON file (max 10MB)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -201,12 +197,8 @@ export function LeadUpload() {
               {!file ? (
                 <div>
                   <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <Button onClick={() => fileInputRef.current?.click()}>
-                    Choose File
-                  </Button>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Supported formats: CSV, JSON
-                  </p>
+                  <Button onClick={() => fileInputRef.current?.click()}>Choose File</Button>
+                  <p className="text-sm text-muted-foreground mt-4">Supported formats: CSV, JSON</p>
                 </div>
               ) : (
                 <div>
@@ -215,12 +207,15 @@ export function LeadUpload() {
                   <p className="text-sm text-muted-foreground mb-4">
                     {(file.size / 1024).toFixed(2)} KB • {parsedData.length} rows detected
                   </p>
-                  <Button variant="outline" onClick={() => {
-                    setFile(null)
-                    setParsedData([])
-                    setPreview([])
-                    setFieldMapping({})
-                  }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFile(null)
+                      setParsedData([])
+                      setPreview([])
+                      setFieldMapping({})
+                    }}
+                  >
                     <X className="w-4 h-4 mr-2" />
                     Remove File
                   </Button>
@@ -235,9 +230,7 @@ export function LeadUpload() {
           <Card>
             <CardHeader>
               <CardTitle>Field Mapping</CardTitle>
-              <CardDescription>
-                Map file columns to system fields
-              </CardDescription>
+              <CardDescription>Map file columns to system fields</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -259,7 +252,9 @@ export function LeadUpload() {
                       ))}
                     </select>
                     {field === 'email' && (
-                      <Badge variant="secondary" className="text-xs">Required</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Required
+                      </Badge>
                     )}
                   </div>
                 ))}
@@ -273,9 +268,7 @@ export function LeadUpload() {
           <Card>
             <CardHeader>
               <CardTitle>Preview (First 10 rows)</CardTitle>
-              <CardDescription>
-                Review parsed data before importing
-              </CardDescription>
+              <CardDescription>Review parsed data before importing</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">

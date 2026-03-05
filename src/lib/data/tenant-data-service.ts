@@ -44,7 +44,7 @@ export async function getTenantData(
     return demoState === 'empty' ? null : { ...tenantDemoData }
   }
 
-  const { data: tenantData, error: tenantError } = await supabase
+  const { data: tenantRows, error: tenantError } = await supabase
     .from('tenants')
     .select(
       `
@@ -56,8 +56,9 @@ export async function getTenantData(
     `
     )
     .eq('user_id', userId)
-    .single()
+    .limit(1)
 
+  const tenantData = tenantRows?.[0]
   if (tenantError || !tenantData) {
     return null
   }
