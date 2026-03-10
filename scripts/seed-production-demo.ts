@@ -49,13 +49,13 @@ if (!isUsingServiceRole || !supabaseAnon) {
  *
  * @param email - User email address
  * @param password - User password (will be properly hashed via signUp)
- * @param role - User role ('landlord' or 'tenant')
+ * @param role - User role ('landlord' | 'tenant' | 'admin')
  * @returns User ID
  */
 async function createAndConfirmDemoUser(
   email: string,
   password: string,
-  role: 'landlord' | 'tenant'
+  role: 'landlord' | 'tenant' | 'admin'
 ): Promise<string> {
   console.log(`[createAndConfirmDemoUser] Creating ${role} user: ${email}`)
 
@@ -512,6 +512,30 @@ async function seedProductionDemoData() {
 
     console.log('\n📋 Demo Credentials:')
     console.log(`   Landlord: ${demoLandlordEmail} / ${demoLandlordPassword}\n`)
+
+    // ========================================================================
+    // Step 1a: Ensure Demo Admin User Exists
+    // ========================================================================
+    const demoAdminEmail = 'admin@uhome.internal'
+    const demoAdminPassword = 'DemoAdmin2024!'
+
+    const { data: existingAdmin } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('email', demoAdminEmail)
+      .single()
+
+    if (existingAdmin) {
+      if (existingAdmin.role !== 'admin') {
+        await supabase.from('users').update({ role: 'admin' }).eq('id', existingAdmin.id)
+      }
+      console.log(`✅ Using existing demo admin: ${demoAdminEmail}`)
+    } else {
+      const demoAdminId = await createAndConfirmDemoUser(demoAdminEmail, demoAdminPassword, 'admin')
+      console.log(`✅ Created demo admin: ${demoAdminEmail} (user_id: ${demoAdminId})`)
+    }
+
+    console.log(`   Admin:    ${demoAdminEmail} / ${demoAdminPassword}\n`)
 
     // ========================================================================
     // Step 0: Clean up previous demo data

@@ -1,18 +1,108 @@
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { AlertCircle, CheckCircle, Info } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
+import { supabase } from '@/lib/supabase/client'
+import { sendUnifiedNotification } from '@/lib/notifications/notification-service'
+import { DEMO_LANDLORD_CREDENTIALS, DEMO_TENANT_CREDENTIALS } from '@/lib/tenant-dev-mode'
 
 export function AdminSystem() {
   // Note: This is a minimal system health view
   // In a real system, you would fetch this data from logs/system tables
   // For now, we show a basic informational view
 
+  const { user } = useAuth()
+  const [testStatus, setTestStatus] = useState<'idle' | 'running' | 'ok' | 'error'>('idle')
+  const [testError, setTestError] = useState<string | null>(null)
+
   const systemWarnings: Array<{ id: string; type: 'info' | 'warning' | 'error'; message: string }> =
     []
   const authErrors: Array<{ id: string; message: string; timestamp: string }> = []
   const jobFailures: Array<{ id: string; message: string; timestamp: string }> = []
+
+  async function handleSendTestNotifications() {
+    if (!import.meta.env.DEV) return
+    if (!user) {
+      setTestStatus('error')
+      setTestError('No authenticated admin user')
+      return
+    }
+
+    setTestStatus('running')
+    setTestError(null)
+
+    try {
+      // Pick a sample lease (for deep-linking from notifications)
+      const { data: leaseRow } = await supabase
+        .from('leases')
+        .select('id')
+        .limit(1)
+        .maybeSingle()
+
+      const leaseId = leaseRow?.id ?? '00000000-0000-0000-0000-000000000000'
+
+      // Try to find demo landlord/tenant users first (matches quick login buttons)
+      const [{ data: demoLandlord }, { data: demoTenant }] = await Promise.all([
+        supabase
+          .from('users')
+          .select('id')
+          .eq('email', DEMO_LANDLORD_CREDENTIALS.email)
+          .maybeSingle(),
+        supabase
+          .from('users')
+          .select('id')
+          .eq('email', DEMO_TENANT_CREDENTIALS.email)
+          .maybeSingle(),
+      ])
+
+      let landlordId = demoLandlord?.id
+      let tenantId = demoTenant?.id
+
+      // Fallback to any landlord/tenant if demo accounts are missing
+      if (!landlordId || !tenantId) {
+        const [{ data: landlords }, { data: tenants }] = await Promise.all([
+          supabase.from('users').select('id').eq('role', 'landlord').limit(1),
+          supabase.from('users').select('id').eq('role', 'tenant').limit(1),
+        ])
+        landlordId = landlordId || landlords?.[0]?.id
+        tenantId = tenantId || tenants?.[0]?.id
+      }
+
+      const targetUserIds = Array.from(
+        new Set([user.id, landlordId, tenantId].filter((id): id is string => Boolean(id)))
+      )
+
+      if (targetUserIds.length === 0) {
+        setTestStatus('error')
+        setTestError('No target users found for test notifications')
+        return
+      }
+
+      await Promise.all(
+        targetUserIds.map(targetId =>
+          sendUnifiedNotification({
+            userId: targetId,
+            leaseId,
+            type: 'system',
+            title: 'Test notification',
+            body: 'This is a dev-only test of the unified notification system.',
+            channels: { inApp: true, email: false, push: false },
+            intent: 'general',
+          })
+        )
+      )
+
+      setTestStatus('ok')
+    } catch (error) {
+      console.error('[AdminSystem] Error sending test notifications:', error)
+      setTestStatus('error')
+      setTestError(error instanceof Error ? error.message : 'Unknown error')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -140,6 +230,46 @@ export function AdminSystem() {
               )}
             </CardContent>
           </Card>
+
+          {/* Dev-only: Unified notification test */}
+          {import.meta.env.DEV && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification System (Dev Only)</CardTitle>
+                <CardDescription>
+                  Send a test in-app notification to admin, one landlord, and one tenant.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  This uses <code>sendUnifiedNotification</code> and writes to the real{' '}
+                  <code>notifications</code> table so the dropdown and badges behave exactly like
+                  production.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSendTestNotifications}
+                  disabled={testStatus === 'running'}
+                >
+                  {testStatus === 'running' ? 'Sending…' : 'Send Test Notifications'}
+                </Button>
+                {testStatus === 'ok' && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    Test notifications sent. Open the notification bell as admin, landlord, and
+                    tenant to verify.
+                  </p>
+                )}
+                {testStatus === 'error' && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    Failed to send test notifications
+                    {testError ? `: ${testError}` : '.'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* System Status Summary */}
           <Card>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useTasks, type TaskInsert, type TaskUpdate } from '@/hooks/use-tasks'
@@ -76,6 +76,7 @@ export function LandlordOperations() {
   const { getFilterParam, clearFilterParam, setFilterParam } = useUrlParams()
   const { properties } = useProperties()
   const propertyIdFilter = getFilterParam('propertyId')
+  const workOrderIdParam = getFilterParam('workOrderId')
   const { requests, loading, updateRequestStatus, getNextValidStatuses, refetch } =
     useMaintenanceRequests(propertyIdFilter || undefined, !!propertyIdFilter)
   const { tasks, createTask, toggleTaskStatus, updateChecklistItem } = useTasks('work_order')
@@ -91,6 +92,26 @@ export function LandlordOperations() {
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
+
+  // Deep link: open a specific work order from elsewhere (e.g. dashboard activity feed).
+  useEffect(() => {
+    if (!workOrderIdParam) return
+    setSelectedRequest(workOrderIdParam)
+    // Ensure the card is visible (avoid filters hiding it).
+    setStatusFilter('all')
+    setUrgencyFilter('all')
+    setRecencyFilter('newest')
+    setCategoryFilter('all')
+  }, [workOrderIdParam])
+
+  useEffect(() => {
+    if (!workOrderIdParam) return
+    // Scroll once requests have likely rendered.
+    const el = document.getElementById(`workorder-${workOrderIdParam}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [workOrderIdParam, requests.length])
 
   const filteredProperty = propertyIdFilter
     ? properties.find((p: { id: string }) => p.id === propertyIdFilter)
@@ -238,6 +259,7 @@ export function LandlordOperations() {
           ease: motionTokens.easing.standard,
         }}
       >
+        <div id={`workorder-${request.id}`} />
         <Card className="glass-card">
           <CardHeader>
             <div className="flex items-start justify-between">

@@ -15,7 +15,12 @@ import { motion as motionTokens, createSpring } from '@/lib/motion'
 export function LandlordDocuments() {
   const { properties } = useProperties()
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
-  const { documents, loading, uploadDocument, deleteDocument } = useDocuments(selectedPropertyId)
+  const [categoryOption, setCategoryOption] = useState<string>('')
+  const [customCategory, setCustomCategory] = useState<string>('')
+  const { documents, loading, uploadDocument, deleteDocument } = useDocuments(
+    undefined,
+    selectedPropertyId
+  )
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expandedDocumentId, setExpandedDocumentId] = useState<string | null>(null)
@@ -28,8 +33,12 @@ export function LandlordDocuments() {
     setUploading(true)
 
     try {
-      await uploadDocument(file, selectedPropertyId)
+      const resolvedCategory =
+        categoryOption === 'other' ? customCategory.trim() : categoryOption.trim()
+      await uploadDocument(file, undefined, selectedPropertyId, resolvedCategory || undefined)
       e.target.value = '' // Reset input
+      setCategoryOption('')
+      setCustomCategory('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload document')
     } finally {
@@ -90,7 +99,9 @@ export function LandlordDocuments() {
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle>Upload Document</CardTitle>
-                  <CardDescription>Upload a document for tenants to access</CardDescription>
+                  <CardDescription>
+                    Upload a document for tenants and admin to access, with an optional category.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {error && (
@@ -98,17 +109,51 @@ export function LandlordDocuments() {
                       {error}
                     </div>
                   )}
-                  <div className="flex items-center gap-4">
-                    <Input
-                      type="file"
-                      onChange={handleFileUpload}
-                      disabled={uploading}
-                      className="flex-1"
-                      accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
-                    />
-                    {uploading && (
-                      <span className="text-sm text-muted-foreground">Uploading...</span>
-                    )}
+                  <div className="space-y-4">
+                    <div className="grid gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-foreground">Category (optional)</p>
+                        <select
+                          value={categoryOption}
+                          onChange={e => setCategoryOption(e.target.value)}
+                          disabled={uploading}
+                          className="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <option value="">Select a category</option>
+                          <option value="Lease">Lease</option>
+                          <option value="Inspection">Inspection</option>
+                          <option value="Move-in / Move-out">Move-in / Move-out</option>
+                          <option value="Notices">Notices</option>
+                          <option value="Insurance">Insurance</option>
+                          <option value="Maintenance">Maintenance</option>
+                          <option value="Financial">Financial</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      {categoryOption === 'other' && (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-foreground">Custom label</p>
+                          <Input
+                            value={customCategory}
+                            onChange={e => setCustomCategory(e.target.value)}
+                            placeholder="e.g., HOA, Legal"
+                            disabled={uploading}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Input
+                        type="file"
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                        className="flex-1"
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                      />
+                      {uploading && (
+                        <span className="text-sm text-muted-foreground">Uploading...</span>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

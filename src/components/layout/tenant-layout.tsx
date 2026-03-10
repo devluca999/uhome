@@ -32,7 +32,7 @@ export function TenantLayout() {
   const prefersReducedMotion = useReducedMotion()
 
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
-  const { user, signOut } = authContext || {}
+  const { user, signOut, role, setViewMode } = authContext || {}
 
   // Reset scroll on route changes
   useScrollReset()
@@ -145,6 +145,18 @@ export function TenantLayout() {
                 <span className="text-sm text-muted-foreground">
                   {devBypass ? 'Dev Mode' : user?.email}
                 </span>
+                {role === 'admin' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setViewMode?.('admin')
+                      navigate('/admin/overview')
+                    }}
+                  >
+                    Admin Panel
+                  </Button>
+                )}
                 <NotificationDropdown />
                 <ThemeToggle />
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
@@ -155,7 +167,7 @@ export function TenantLayout() {
           </div>
         </nav>
         <main
-          className="overscroll-contain pt-16"
+          className="overscroll-contain pt-4"
           style={{
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',

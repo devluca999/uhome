@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch'
 import { useTenants } from '@/hooks/use-tenants'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useProperties } from '@/hooks/use-properties'
+import { useExpenses } from '@/hooks/use-expenses'
 // import { useLeases } from '@/hooks/use-leases' // Unused
 import { OnboardingTemplateEditor } from '@/components/landlord/onboarding-template-editor'
 import { ArrowLeft, Plus, Users, Wrench, Calendar, User, Trash2, MessageSquare } from 'lucide-react'
@@ -26,6 +27,9 @@ import { isFeatureEnabled } from '@/lib/feature-flags'
 import { navigateToTenantMessaging } from '@/lib/messaging-helpers'
 import type { Database } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { Button as UiButton } from '@/components/ui/button'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
+import { ExpenseForm } from '@/components/landlord/expense-form'
 
 type Property = Database['public']['Tables']['properties']['Row'] & {
   is_active?: boolean // Optional in case migration hasn't been run
@@ -43,6 +47,15 @@ export function PropertyDetail() {
   const { updateProperty } = useProperties()
   const { tenants, unlinkTenant: unlinkTenantFromHook } = useTenants()
   const { requests: workOrders, refetch: refetchWorkOrders } = useMaintenanceRequests(id, true) // true = isPropertyId
+  const {
+    expenses,
+    loading: expensesLoading,
+    createExpense,
+    updateExpense,
+    deleteExpense,
+    markExpensePaid,
+    getNextDueDate,
+  } = useExpenses(id)
   // const { leases } = useLeases(id) // Unused
   const [property, setProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,6 +66,9 @@ export function PropertyDetail() {
   const [showWorkOrderForm, setShowWorkOrderForm] = useState(false)
   const [tenantView, setTenantView] = useState<'active' | 'all'>('active')
   const messagingEnabled = isFeatureEnabled('ENABLE_MESSAGING_ENTRY_POINTS')
+  const { format: formatCurrency } = useCurrencyFormatter()
+  const [showExpenseModal, setShowExpenseModal] = useState(false)
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
 
   useEffect(() => {
     if (id) {
@@ -239,6 +255,7 @@ export function PropertyDetail() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="tenants">Tenants</TabsTrigger>
             <TabsTrigger value="work-orders">Work Orders</TabsTrigger>
+            <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           </TabsList>
@@ -421,6 +438,98 @@ export function PropertyDetail() {
                   >
                     View Work Orders
                   </Button>
+                </CardContent>
+              </Card>
+
+              {/* Upcoming Expenses */}
+              <Card className="glass-card">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle>Upcoming Expenses</CardTitle>
+                    <CardDescription>
+                      Next scheduled expenses for this property.
+                    </CardDescription>
+                  </div>
+                  <UiButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (expenses.length === 0) {
+                        setEditingExpenseId(null)
+                        setShowExpenseModal(true)
+                      } else {
+                        setActiveTab('expenses')
+                      }
+                    }}
+                  >
+                    View all expenses →
+                  </UiButton>
+                </CardHeader>
+                <CardContent>
+                  {expensesLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading expenses…</p>
+                  ) : expenses.length === 0 ? (
+                    <div className="flex flex-col items-start gap-3">
+                      <p className="text-sm text-muted-foreground">No upcoming expenses yet.</p>
+                      <UiButton
+                        size="sm"
+                        onClick={() => {
+                          setEditingExpenseId(null)
+                          setShowExpenseModal(true)
+                        }}
+                      >
+                        Add Expense
+                      </UiButton>
+                    </div>
+                  ) : (
+                    (() => {
+                      const todayStr = new Date().toISOString().split('T')[0]
+                      const upcoming = expenses
+                        .map(e => ({
+                          expense: e,
+                          nextDue: getNextDueDate(e),
+                        }))
+                        .filter(item => item.nextDue >= todayStr)
+                        .sort((a, b) => (a.nextDue < b.nextDue ? -1 : a.nextDue > b.nextDue ? 1 : 0))
+                        .slice(0, 5)
+
+                      if (upcoming.length === 0) {
+                        return (
+                          <div className="flex flex-col items-start gap-3">
+                            <p className="text-sm text-muted-foreground">No upcoming expenses yet.</p>
+                            <UiButton
+                              size="sm"
+                              onClick={() => {
+                                setEditingExpenseId(null)
+                                setShowExpenseModal(true)
+                              }}
+                            >
+                              Add Expense
+                            </UiButton>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div className="space-y-2">
+                          {upcoming.map(({ expense, nextDue }) => (
+                            <div
+                              key={expense.id}
+                              className="flex items-center justify-between text-sm py-1"
+                            >
+                              <span className="text-muted-foreground">
+                                {new Date(nextDue).toLocaleDateString()}
+                              </span>
+                              <span className="flex-1 px-3 truncate">{expense.name}</span>
+                              <span className="font-medium">
+                                {formatCurrency ? formatCurrency(expense.amount) : `$${Number(expense.amount).toLocaleString()}`}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })()
+                  )}
                 </CardContent>
               </Card>
 
@@ -718,6 +827,147 @@ export function PropertyDetail() {
             </div>
           </TabsContent>
 
+          {/* Expenses Tab */}
+          <TabsContent value="expenses" className="mt-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-foreground">Expenses</h2>
+                  <p className="text-muted-foreground">
+                    Track and manage expenses for this property.
+                  </p>
+                </div>
+                <UiButton
+                  onClick={() => {
+                    setEditingExpenseId(null)
+                    setShowExpenseModal(true)
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Expense
+                </UiButton>
+              </div>
+
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardDescription>
+                    {expenses.length} expense{expenses.length === 1 ? '' : 's'} for this property
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {expensesLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading expenses…</p>
+                  ) : expenses.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        No expenses recorded yet for this property.
+                      </p>
+                      <UiButton
+                        size="sm"
+                        onClick={() => {
+                          setEditingExpenseId(null)
+                          setShowExpenseModal(true)
+                        }}
+                      >
+                        Add Expense
+                      </UiButton>
+                    </div>
+                  ) : (
+                    <div className="w-full overflow-x-auto">
+                      <div className="min-w-[640px]">
+                        <div className="grid grid-cols-[2fr,1fr,1fr,1.5fr,1fr,0.5fr] gap-3 pb-2 border-b border-border text-xs font-medium text-muted-foreground">
+                          <span>Expense</span>
+                          <span>Category</span>
+                          <span>Amount</span>
+                          <span>Type</span>
+                          <span>Next Due</span>
+                          <span className="text-right">Status</span>
+                        </div>
+                        <div className="divide-y divide-border">
+                          {expenses.map(expense => {
+                            const typeLabel =
+                              expense.type ??
+                              (expense.is_recurring ? 'Recurring' : 'One-time')
+                            const nextDue = getNextDueDate(expense)
+                            const statusLabel =
+                              expense.status ??
+                              (expense.is_recurring ? 'Planned' : 'Planned')
+                            return (
+                              <div
+                                key={expense.id}
+                                className="grid grid-cols-[2fr,1fr,1fr,1.5fr,1fr,0.5fr] gap-3 py-3 items-center text-sm"
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-foreground">
+                                    {expense.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(getExpenseDate(expense as any)).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <span className="text-xs capitalize">
+                                  {expense.category || '—'}
+                                </span>
+                                <span className="font-medium">
+                                  {formatCurrency
+                                    ? formatCurrency(expense.amount)
+                                    : `$${Number(expense.amount).toLocaleString()}`}
+                                </span>
+                                <span className="text-xs">{typeLabel}</span>
+                                <span className="text-xs">
+                                  {nextDue ? new Date(nextDue).toLocaleDateString() : '—'}
+                                </span>
+                                <div className="flex items-center justify-end gap-2">
+                                  <span className="text-xs text-muted-foreground">{statusLabel}</span>
+                                  <UiButton
+                                    variant="ghost"
+                                    size="xs"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => {
+                                      setEditingExpenseId(expense.id)
+                                      setShowExpenseModal(true)
+                                    }}
+                                  >
+                                    Edit
+                                  </UiButton>
+                                  <UiButton
+                                    variant="ghost"
+                                    size="xs"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={async () => {
+                                      await markExpensePaid(expense.id, 'all')
+                                    }}
+                                  >
+                                    Mark Paid
+                                  </UiButton>
+                                  <UiButton
+                                    variant="ghost"
+                                    size="xs"
+                                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                                    onClick={async () => {
+                                      if (
+                                        !confirm('Are you sure you want to delete this expense?')
+                                      ) {
+                                        return
+                                      }
+                                      await deleteExpense(expense.id)
+                                    }}
+                                  >
+                                    Delete
+                                  </UiButton>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Documents Tab */}
           <TabsContent value="documents" className="mt-6">
             {id && <PropertyDocuments propertyId={id} />}
@@ -727,6 +977,81 @@ export function PropertyDetail() {
             {id && <OnboardingTemplateEditor propertyId={id} />}
           </TabsContent>
         </Tabs>
+
+        {/* Add/Edit Expense Modal (shared between Overview widget and Expenses tab) */}
+        {showExpenseModal && id && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+              onClick={() => {
+                setShowExpenseModal(false)
+                setEditingExpenseId(null)
+              }}
+            />
+            <div className="relative z-10 w-full max-w-lg">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {editingExpenseId ? 'Edit Expense' : 'Add Expense'}
+                  </CardTitle>
+                  <CardDescription>For {property.name}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ExpenseForm
+                    defaultPropertyId={id}
+                    lockProperty={true}
+                    initialData={
+                      editingExpenseId
+                        ? (() => {
+                            const expense = expenses.find(e => e.id === editingExpenseId)
+                            if (!expense) return undefined
+                            return {
+                              id: expense.id,
+                              property_id: expense.property_id,
+                              name: expense.name,
+                              amount: expense.amount,
+                              date: getExpenseDate(expense as any),
+                              category: expense.category,
+                              is_recurring: expense.is_recurring,
+                              recurring_frequency: expense.recurring_frequency,
+                              recurring_start_date: expense.recurring_start_date,
+                              recurring_end_date: expense.recurring_end_date,
+                              notes: (expense as any).notes ?? null,
+                            }
+                          })()
+                        : {
+                            property_id: id,
+                            name: '',
+                            amount: 0,
+                            date: new Date().toISOString().split('T')[0],
+                          }
+                    }
+                    onSubmit={async data => {
+                      if (editingExpenseId) {
+                        const result = await updateExpense(editingExpenseId, data as any)
+                        if (!result.error) {
+                          setShowExpenseModal(false)
+                          setEditingExpenseId(null)
+                        }
+                        return { error: result.error }
+                      } else {
+                        const result = await createExpense(data as any)
+                        if (!result.error) {
+                          setShowExpenseModal(false)
+                        }
+                        return { error: result.error }
+                      }
+                    }}
+                    onCancel={() => {
+                      setShowExpenseModal(false)
+                      setEditingExpenseId(null)
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

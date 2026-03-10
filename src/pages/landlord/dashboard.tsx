@@ -381,7 +381,7 @@ export function LandlordDashboard() {
         description: request.property?.name || 'Property',
         timestamp: new Date(request.updated_at).toLocaleDateString(),
         icon: <Wrench className="w-4 h-4" />,
-        onClick: () => navigate('/landlord/operations'),
+        onClick: () => navigate(`/landlord/operations?workOrderId=${request.id}`),
       }))
 
     // Document uploads (last 7 days)
@@ -756,7 +756,7 @@ export function LandlordDashboard() {
               <MetricCard
                 title="Net Income"
                 value={formatCurrency(netIncome)}
-                description={`${metrics.marginPercentage.toFixed(1)}% margin`}
+                description={`Cash-based net cash flow (collected rent minus expenses) • ${metrics.marginPercentage.toFixed(1)}% margin`}
                 onClick={() => setProfitModalOpen(true)}
                 variant={netIncome >= 0 ? 'success' : 'danger'}
                 data-testid="dashboard-net-income"

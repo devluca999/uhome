@@ -232,6 +232,96 @@ test.describe('Finances Comprehensive UAT', () => {
     }
   })
 
+  test('expenses created from property page appear in finances', async ({ page }) => {
+    const seeded = await setupUATScenario({ propertyName: 'Finances Property Expenses Integration' })
+
+    await page.goto(`${baseUrl}/login`)
+    await page.fill('input[type="email"]', seeded.landlord.email)
+    await page.fill('input[type="password"]', 'TestPassword123!')
+    await page.click('button[type="submit"]')
+    await page.waitForURL(/\/landlord\/dashboard/, { timeout: 10000 })
+
+    if (!seeded.property) {
+      await logTestResult(page, {
+        page: 'finances',
+        feature: 'property_expenses_integration',
+        role: 'landlord',
+        action: 'seed_property',
+        status: 'skipped',
+        error: 'Seeded property not found',
+      })
+      return
+    }
+
+    const expenseName = 'Integration Lawn Care'
+
+    try {
+      // 1) Create an expense from the property detail Expenses tab
+      await page.goto(`${baseUrl}/landlord/properties/${seeded.property.id}`)
+      await waitForPageReady(page)
+
+      // Switch to Expenses tab
+      const expensesTab = page
+        .locator('[role="tab"], button')
+        .filter({ hasText: /Expenses/i })
+        .first()
+      await expensesTab.click()
+      await page.waitForTimeout(500)
+
+      // Open Add Expense modal
+      const addExpenseButton = page
+        .locator('button:has-text("Add Expense"), button:has-text("Add expense")')
+        .first()
+      await addExpenseButton.click()
+      await page.waitForTimeout(500)
+
+      // Fill expense form (Expense Name, Amount, Date, Category)
+      await page.fill('input#name', expenseName)
+      await page.fill('input#amount', '120')
+
+      const today = new Date().toISOString().split('T')[0]
+      await page.fill('input#date', today)
+
+      const categorySelect = page.locator('select#category').first()
+      if (await categorySelect.isVisible().catch(() => false)) {
+        await categorySelect.selectOption('maintenance')
+      }
+
+      // Submit the form
+      const submitButton = page
+        .locator('button:has-text("Add Expense"), button:has-text("Update Expense")')
+        .first()
+      await submitButton.click()
+      await page.waitForTimeout(1500)
+
+      // 2) Navigate to Finances and verify the expense appears there
+      await page.goto(`${baseUrl}/landlord/finances`)
+      await waitForPageReady(page)
+
+      // Look for the expense name somewhere in the expenses section / ledger
+      const expenseInFinances = page.locator(`text=/${expenseName}/i`).first()
+      await expect(expenseInFinances).toBeVisible({ timeout: 10000 })
+
+      await logTestResult(page, {
+        page: 'finances',
+        feature: 'property_expenses_integration',
+        role: 'landlord',
+        action: 'verify_property_expense_in_finances',
+        status: 'passed',
+      })
+    } catch (error) {
+      await logTestResult(page, {
+        page: 'finances',
+        feature: 'property_expenses_integration',
+        role: 'landlord',
+        action: 'verify_property_expense_in_finances',
+        status: 'failed',
+        error: error instanceof Error ? error.message : String(error),
+      })
+      throw error
+    }
+  })
+
   test('data consistency between dashboard and finances', async ({ page }) => {
     const seeded = await setupUATScenario({ propertyName: 'Finances Test Property' })
 

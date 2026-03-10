@@ -116,7 +116,7 @@ export function createFinancialAssertions(): FinancialAssertions {
 
   /**
    * Calculate monthly expenses for a landlord
-   * Formula: SUM(amount) WHERE date within month
+   * Formula: SUM(amount) WHERE expense_date within month
    */
   async function calculateMonthlyExpenses(landlordId: string, month: Date): Promise<number> {
     const { start, end } = getMonthRange(month)
@@ -139,10 +139,10 @@ export function createFinancialAssertions(): FinancialAssertions {
     // RLS policies ensure landlords can only see expenses for their properties
     const { data: expenses, error: expenseError } = await supabase
       .from('expenses')
-      .select('amount, date')
+      .select('amount, expense_date')
       .in('property_id', propertyIds)
-      .gte('date', formatDate(start))
-      .lte('date', formatDate(end))
+      .gte('expense_date', formatDate(start))
+      .lte('expense_date', formatDate(end))
 
     if (expenseError) {
       throw new Error(`Failed to fetch expenses: ${expenseError.message}`)
@@ -243,10 +243,10 @@ export function createFinancialAssertions(): FinancialAssertions {
     // Get expenses for this range
     const { data: expenses, error: expenseError } = await supabase
       .from('expenses')
-      .select('amount, date')
+      .select('amount, expense_date')
       .in('property_id', propertyIds)
-      .gte('date', formatDate(start))
-      .lte('date', formatDate(end))
+      .gte('expense_date', formatDate(start))
+      .lte('expense_date', formatDate(end))
 
     if (expenseError) {
       throw new Error(`Failed to fetch expenses: ${expenseError.message}`)
@@ -325,10 +325,10 @@ export function createFinancialAssertions(): FinancialAssertions {
   ): Promise<number> {
     const { data: expenses, error: expenseError } = await supabase
       .from('expenses')
-      .select('amount, date')
+      .select('amount, expense_date')
       .eq('property_id', propertyId)
-      .gte('date', formatDate(start))
-      .lte('date', formatDate(end))
+      .gte('expense_date', formatDate(start))
+      .lte('expense_date', formatDate(end))
 
     if (expenseError) {
       throw new Error(`Failed to fetch expenses: ${expenseError.message}`)

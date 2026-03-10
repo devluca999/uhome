@@ -54,6 +54,15 @@ function formatDateForComparison(date: Date | string): string {
   return date.toISOString().split('T')[0]
 }
 
+/**
+ * Parse a date string as a local date when it's date-only (YYYY-MM-DD).
+ * This avoids UTC date shifting when constructing JS Dates from date-only strings.
+ */
+function parseLocalDate(date: string): Date {
+  if (date.includes('T')) return new Date(date)
+  return new Date(`${date}T00:00:00`)
+}
+
 export interface FinanceFilters {
   propertyId?: string
   dateRange?: {
@@ -213,12 +222,14 @@ export function calculateTotalExpenses(
 }
 
 /**
- * Calculate Net Cash Flow
+ * Calculate Net Cash Flow (App "Net Income")
  *
  * V1 Canon Implementation - Primary profitability metric.
  *
  * Formula: rentCollected - totalExpenses
- * This is the primary profitability metric for v1 canon.
+ * Interpreted throughout the app as cash-based "Net Income" for the selected period:
+ *   - rentCollected: paid rent + late fees (cash accounting, using paid_date)
+ *   - totalExpenses: all expenses whose expense_date falls in the same period
  *
  * V1 Note: This is cash flow, not accounting profit. No tax, depreciation, or accrual adjustments.
  *
@@ -325,6 +336,39 @@ export function calculateUpcomingRent(
 }
 
 /**
+ * Calculate projected (upcoming) rent for the next N days.
+ *
+ * This powers the "Projected Net (Next 30 days)" KPI. It is independent of the
+ * selected historical date range; it always uses the next N days from "now".
+ *
+ * Formula: SUM(amount) WHERE status = 'pending' AND due_date in [today, today + N days]
+ */
+export function calculateProjectedRentIncome(
+  rentRecords: RentRecordWithRelations[],
+  days: number,
+  filters?: Pick<FinanceFilters, 'propertyId'>,
+  activePropertyIds?: Set<string>,
+  nowOverride?: Date
+): number {
+  const now = nowOverride ?? new Date()
+  const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const windowEnd = new Date(windowStart)
+  windowEnd.setDate(windowEnd.getDate() + days)
+  const startStr = formatDateForComparison(windowStart)
+  const endStr = formatDateForComparison(windowEnd)
+
+  return rentRecords
+    .filter(r => {
+      if (activePropertyIds && r.property_id && !activePropertyIds.has(r.property_id)) return false
+      if (filters?.propertyId && r.property_id !== filters.propertyId) return false
+      if (r.status !== 'pending') return false
+      const dueDateStr = formatDateForComparison(r.due_date)
+      return dueDateStr >= startStr && dueDateStr <= endStr
+    })
+    .reduce((sum, r) => sum + Number(r.amount), 0)
+}
+
+/**
  * Calculate date range based on time range type
  *
  * Helper function to convert time range strings to date ranges
@@ -367,39 +411,48 @@ export function calculateProjectedExpenses(
   expenses: Expense[],
   days: number,
   filters?: FinanceFilters,
-  activePropertyIds?: Set<string>
+  activePropertyIds?: Set<string>,
+  nowOverride?: Date
 ): number {
-  const filtered = filterExpenses(expenses, filters, activePropertyIds)
-  const now = new Date()
-  const endDate = new Date(now)
-  endDate.setDate(endDate.getDate() + days)
+  // Projection is always relative to "now" and should not be constrained by historical dateRange filters.
+  const projectionFilters: FinanceFilters = { propertyId: filters?.propertyId }
+  const filtered = filterExpenses(expenses, projectionFilters, activePropertyIds)
+  const now = nowOverride ?? new Date()
+  const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const windowEnd = new Date(windowStart)
+  windowEnd.setDate(windowEnd.getDate() + days)
+  const startStr = formatDateForComparison(windowStart)
+  const endStr = formatDateForComparison(windowEnd)
 
   let projected = 0
 
   for (const expense of filtered) {
-    if (!expense.is_recurring || !expense.recurring_frequency || !expense.recurring_start_date) {
+    // One-off expense: include once if scheduled inside the projection window.
+    if (!expense.is_recurring) {
+      const expenseDateStr = formatDateForComparison(getExpenseDate(expense))
+      if (expenseDateStr >= startStr && expenseDateStr <= endStr) {
+        projected += Number(expense.amount)
+      }
       continue
     }
 
-    const startDate = new Date(expense.recurring_start_date)
-    const endRecurringDate = expense.recurring_end_date
-      ? new Date(expense.recurring_end_date)
-      : null
+    // Recurring expense: count scheduled occurrences within projection window while active.
+    if (!expense.recurring_frequency || !expense.recurring_start_date) continue
 
-    // Check if recurring period is active
-    if (startDate > endDate) continue
-    if (endRecurringDate && endRecurringDate < now) continue
+    const startDate = parseLocalDate(expense.recurring_start_date)
+    const endRecurringDate = expense.recurring_end_date ? parseLocalDate(expense.recurring_end_date) : null
 
-    // Calculate how many occurrences in the projection period
-    const periodStart = startDate > now ? startDate : now
-    const periodEnd = endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
+    // If the recurring schedule never overlaps our projection window, skip.
+    if (startDate > windowEnd) continue
+    if (endRecurringDate && endRecurringDate < windowStart) continue
+
+    const scheduleEnd = endRecurringDate && endRecurringDate < windowEnd ? endRecurringDate : windowEnd
 
     let occurrences = 0
-    const current = new Date(periodStart)
+    let current = new Date(startDate)
 
-    while (current <= periodEnd) {
-      occurrences++
-
+    // Advance to the first occurrence inside the window.
+    while (current < windowStart) {
       switch (expense.recurring_frequency) {
         case 'monthly':
           current.setMonth(current.getMonth() + 1)
@@ -408,6 +461,24 @@ export function calculateProjectedExpenses(
           current.setMonth(current.getMonth() + 3)
           break
         case 'yearly':
+          current.setFullYear(current.getFullYear() + 1)
+          break
+      }
+    }
+
+    while (current <= scheduleEnd) {
+      occurrences++
+      switch (expense.recurring_frequency) {
+        case 'monthly':
+          current = new Date(current)
+          current.setMonth(current.getMonth() + 1)
+          break
+        case 'quarterly':
+          current = new Date(current)
+          current.setMonth(current.getMonth() + 3)
+          break
+        case 'yearly':
+          current = new Date(current)
           current.setFullYear(current.getFullYear() + 1)
           break
       }

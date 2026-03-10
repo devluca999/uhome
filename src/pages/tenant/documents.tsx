@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useDocuments } from '@/hooks/use-documents'
 import { useLeases } from '@/hooks/use-leases'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Download, File } from 'lucide-react'
@@ -20,9 +22,37 @@ export function TenantDocuments() {
   const activeLease = leases?.find(
     l => !l.lease_end_date || new Date(l.lease_end_date) > new Date()
   )
-  const { documents, loading: documentsLoading } = useDocuments(activeLease?.id)
+  const [categoryOption, setCategoryOption] = useState<string>('')
+  const [customCategory, setCustomCategory] = useState<string>('')
+  const { documents, loading: documentsLoading, uploadDocument } = useDocuments(
+    activeLease?.id,
+    tenantData?.property.id
+  )
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const cardSpring = createSpring('card')
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !activeLease?.id || !tenantData?.property.id) return
+
+    setError(null)
+    setUploading(true)
+
+    try {
+      const resolvedCategory =
+        categoryOption === 'other' ? customCategory.trim() : categoryOption.trim()
+      await uploadDocument(file, activeLease.id, tenantData.property.id, resolvedCategory || undefined)
+      e.target.value = ''
+      setCategoryOption('')
+      setCustomCategory('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload document')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   if (tenantLoading || documentsLoading) {
     return (
@@ -57,8 +87,72 @@ export function TenantDocuments() {
       <div className="relative z-10">
         <div className="mb-8">
           <h1 className="text-4xl font-semibold text-foreground mb-2">Documents</h1>
-          <p className="text-muted-foreground">Access property documents</p>
+          <p className="text-muted-foreground">
+            Access property documents and upload files to share with your landlord.
+          </p>
         </div>
+
+        {activeLease && tenantData.property && (
+          <div className="mb-8">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle>Upload a Document</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {error && (
+                  <div className="mb-4 p-3 text-sm text-destructive bg-destructive/20 rounded-md border border-destructive/30">
+                    {error}
+                  </div>
+                )}
+                <div className="space-y-4">
+                  <div className="grid gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">Category (optional)</p>
+                      <select
+                        value={categoryOption}
+                        onChange={e => setCategoryOption(e.target.value)}
+                        disabled={uploading}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Select a category</option>
+                        <option value="Lease">Lease</option>
+                        <option value="Identification">Identification</option>
+                        <option value="Income verification">Income verification</option>
+                        <option value="Pet documentation">Pet documentation</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Financial">Financial</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    {categoryOption === 'other' && (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-foreground">Custom label</p>
+                        <Input
+                          value={customCategory}
+                          onChange={e => setCustomCategory(e.target.value)}
+                          placeholder="e.g., Application, Reference letter"
+                          disabled={uploading}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                      className="flex-1"
+                      accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                    />
+                    {uploading && (
+                      <span className="text-sm text-muted-foreground">Uploading...</span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {documents.length === 0 ? (
           <EmptyState

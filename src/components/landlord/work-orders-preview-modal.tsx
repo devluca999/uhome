@@ -78,6 +78,11 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
     navigate('/landlord/operations')
   }
 
+  const handleOpenWorkOrder = (workOrderId: string) => {
+    onClose()
+    navigate(`/landlord/operations?workOrderId=${workOrderId}`)
+  }
+
   if (!isOpen) return null
 
   return (
@@ -173,7 +178,7 @@ export function WorkOrdersPreviewModal({ isOpen, onClose }: WorkOrdersPreviewMod
                             className={cn(
                               'rounded-lg border-2 p-4 hover:border-primary/50 transition-colors cursor-pointer border-border'
                             )}
-                            onClick={handleViewAll}
+                            onClick={() => handleOpenWorkOrder(order.id)}
                           >
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { withRetry } from '@/lib/retry'
+import { calculateProjectedExpenses, getExpenseDate } from '@/lib/finance-calculations'
 import type { Database } from '@/types/database'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
@@ -11,6 +12,27 @@ export function useExpenses(propertyId?: string) {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+
+  const normalizeExpenseRow = (row: any): Expense => {
+    // DB may expose `expense_date` (canonical) or legacy `date` (UI expects `date`).
+    const expenseDate = row?.expense_date ?? row?.date
+    const name = row?.name ?? row?.description
+    return {
+      ...row,
+      ...(expenseDate ? { date: expenseDate } : null),
+      ...(name ? { name } : null),
+    } as Expense
+  }
+
+  const toDbPayload = (data: ExpenseInsert | ExpenseUpdate): Record<string, any> => {
+    const { date, name, ...rest } = data as any
+    // Canonical columns in DB are `expense_date` + `description`; keep UI API using `date` + `name`.
+    return {
+      ...rest,
+      ...(date !== undefined ? { expense_date: date } : null),
+      ...(name !== undefined ? { description: name } : null),
+    }
+  }
 
   useEffect(() => {
     fetchExpenses()
@@ -28,7 +50,7 @@ export function useExpenses(propertyId?: string) {
         return res
       })
       if (fetchError) throw fetchError
-      setExpenses(data || [])
+      setExpenses((data || []).map(normalizeExpenseRow))
     } catch (err) {
       setError(err as Error)
     } finally {
@@ -38,16 +60,18 @@ export function useExpenses(propertyId?: string) {
 
   async function createExpense(data: ExpenseInsert) {
     try {
+      const payload = toDbPayload(data)
       const { data: newExpense, error: createError } = await supabase
         .from('expenses')
-        .insert(data)
+        .insert(payload)
         .select()
         .single()
 
       if (createError) throw createError
 
-      setExpenses(prev => [newExpense, ...prev])
-      return { data: newExpense, error: null }
+      const normalized = normalizeExpenseRow(newExpense)
+      setExpenses(prev => [normalized, ...prev])
+      return { data: normalized, error: null }
     } catch (err) {
       const error = err as Error
       return { data: null, error }
@@ -69,20 +93,88 @@ export function useExpenses(propertyId?: string) {
         return { data: updatedExpense, error: null }
       }
 
+      const payload = toDbPayload(data)
       const { data: updatedExpense, error: updateError } = await supabase
         .from('expenses')
-        .update(data)
+        .update(payload)
         .eq('id', id)
         .select()
         .single()
 
       if (updateError) throw updateError
 
-      setExpenses(prev => prev.map(exp => (exp.id === id ? updatedExpense : exp)))
-      return { data: updatedExpense, error: null }
+      const normalized = normalizeExpenseRow(updatedExpense)
+      setExpenses(prev => prev.map(exp => (exp.id === id ? normalized : exp)))
+      return { data: normalized, error: null }
     } catch (err) {
       const error = err as Error
       return { data: null, error }
+    }
+  }
+
+  function getNextDueDate(expense: Expense): string {
+    // Prefer explicit next_due_date when present, otherwise fall back to canonical expense date.
+    if (expense.next_due_date) return expense.next_due_date
+    return getExpenseDate(expense)
+  }
+
+  async function markExpensePaid(
+    id: string,
+    scope: 'this' | 'future' | 'all' = 'all'
+  ): Promise<{ data: Expense | null; error: Error | null }> {
+    // Scope is reserved for future, more granular recurrence handling.
+    // For MVP we treat all scopes the same.
+    try {
+      const target = expenses.find(e => e.id === id)
+      if (!target) {
+        return { data: null, error: new Error('Expense not found') }
+      }
+
+      // One-time expenses: simply mark as paid and clear next_due_date.
+      if (!target.is_recurring) {
+        return updateExpense(id, {
+          status: 'paid',
+          next_due_date: null,
+        } as ExpenseUpdate)
+      }
+
+      // Recurring expenses: mark series as effectively advanced by bumping next_due_date.
+      const currentDue = getNextDueDate(target)
+      const baseDate = new Date(currentDue)
+
+      const nextDate = new Date(baseDate)
+      switch (target.recurring_frequency) {
+        case 'monthly':
+          nextDate.setMonth(nextDate.getMonth() + 1)
+          break
+        case 'quarterly':
+          nextDate.setMonth(nextDate.getMonth() + 3)
+          break
+        case 'yearly':
+          nextDate.setFullYear(nextDate.getFullYear() + 1)
+          break
+        default: {
+          // Fallback: if we have a custom interval, advance by that many days.
+          const intervalDays = target.recurring_interval ?? 0
+          if (intervalDays > 0) {
+            nextDate.setDate(nextDate.getDate() + intervalDays)
+          } else {
+            // If we cannot determine a cadence, leave next_due_date unchanged.
+            return updateExpense(id, {
+              status: 'paid',
+            } as ExpenseUpdate)
+          }
+        }
+      }
+
+      const nextDueStr = nextDate.toISOString().split('T')[0]
+
+      return updateExpense(id, {
+        status: 'paid',
+        next_due_date: nextDueStr,
+      } as ExpenseUpdate)
+    } catch (err) {
+      return { data: null, error: err as Error }
     }
   }
 
@@ -117,53 +209,7 @@ export function useExpenses(propertyId?: string) {
 
   // Get projected expenses from recurring (next N days)
   const getProjectedExpenses = (days: number = 30): number => {
-    const now = new Date()
-    const endDate = new Date(now)
-    endDate.setDate(endDate.getDate() + days)
-
-    let projected = 0
-
-    for (const expense of recurringExpenses) {
-      if (!expense.recurring_frequency || !expense.recurring_start_date) {
-        continue
-      }
-
-      const startDate = new Date(expense.recurring_start_date)
-      const endRecurringDate = expense.recurring_end_date
-        ? new Date(expense.recurring_end_date)
-        : null
-
-      // Check if recurring period is active
-      if (startDate > endDate) continue
-      if (endRecurringDate && endRecurringDate < now) continue
-
-      // Calculate how many occurrences in the projection period
-      const periodStart = startDate > now ? startDate : now
-      const periodEnd = endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
-
-      let occurrences = 0
-      const current = new Date(periodStart)
-
-      while (current <= periodEnd) {
-        occurrences++
-
-        switch (expense.recurring_frequency) {
-          case 'monthly':
-            current.setMonth(current.getMonth() + 1)
-            break
-          case 'quarterly':
-            current.setMonth(current.getMonth() + 3)
-            break
-          case 'yearly':
-            current.setFullYear(current.getFullYear() + 1)
-            break
-        }
-      }
-
-      projected += Number(expense.amount) * occurrences
-    }
-
-    return projected
+    return calculateProjectedExpenses(expenses, days, propertyId ? { propertyId } : undefined)
   }
 
   // Get average monthly utility expenses for a property
@@ -213,6 +259,8 @@ export function useExpenses(propertyId?: string) {
     expensesByCategory,
     getProjectedExpenses,
     getAverageMonthlyUtilities,
+    getNextDueDate,
+    markExpensePaid,
     refetch: fetchExpenses,
   }
 }

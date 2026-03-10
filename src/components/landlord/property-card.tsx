@@ -7,10 +7,12 @@ import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
 import { useExpenses } from '@/hooks/use-expenses'
 import { TenantListModal } from '@/components/landlord/tenant-list-modal'
 import { WorkOrderListModal } from '@/components/landlord/work-order-list-modal'
+import { ExpenseForm } from '@/components/landlord/expense-form'
+import { Button } from '@/components/ui/button'
 import type { Database } from '@/types/database'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useMemo, useState } from 'react'
-import { Users, Wrench, ChevronRight } from 'lucide-react'
+import { Users, Wrench, ChevronRight, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Property = Database['public']['Tables']['properties']['Row']
@@ -24,9 +26,10 @@ export function PropertyCard({ property }: PropertyCardProps) {
   const navigate = useNavigate()
   const { tenants } = useTenants()
   const { requests: workOrders } = useMaintenanceRequests(property.id, true) // true = isPropertyId
-  const { getAverageMonthlyUtilities } = useExpenses(property.id)
+  const { getAverageMonthlyUtilities, createExpense } = useExpenses(property.id)
   const [tenantModalOpen, setTenantModalOpen] = useState(false)
   const [workOrderModalOpen, setWorkOrderModalOpen] = useState(false)
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false)
 
   // Calculate occupancy
   const propertyTenants = useMemo(
@@ -97,7 +100,22 @@ export function PropertyCard({ property }: PropertyCardProps) {
                   <CardDescription className="mt-1">{property.address}</CardDescription>
                 )}
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 ml-2 mt-1" />
+              <div className="flex items-center gap-2 flex-shrink-0 ml-2 mt-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={e => {
+                    e.stopPropagation()
+                    setExpenseModalOpen(true)
+                  }}
+                  aria-label="Add expense"
+                  title="Add expense"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -174,6 +192,57 @@ export function PropertyCard({ property }: PropertyCardProps) {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Add Expense Modal */}
+      {expenseModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => setExpenseModalOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-lg">
+            <Card className="glass-card">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                <div className="pr-2">
+                  <CardTitle className="text-lg">Add Expense</CardTitle>
+                  <CardDescription className="mt-1">
+                    For {property.name}
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setExpenseModalOpen(false)}
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <ExpenseForm
+                  defaultPropertyId={property.id}
+                  lockProperty={true}
+                  initialData={{
+                    property_id: property.id,
+                    name: '',
+                    amount: 0,
+                    date: new Date().toISOString().split('T')[0],
+                  }}
+                  onSubmit={async data => {
+                    const result = await createExpense(data as any)
+                    if (!result.error) {
+                      setExpenseModalOpen(false)
+                    }
+                    return { error: result.error }
+                  }}
+                  onCancel={() => setExpenseModalOpen(false)}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Tenant List Modal */}
       <TenantListModal

@@ -14,6 +14,7 @@ import {
   filterRentRecords,
   filterExpenses,
   calculateProjectedExpenses,
+  calculateProjectedRentIncome,
   calculateActiveProperties,
   calculateOccupancyRate,
   type FinanceFilters,
@@ -224,12 +225,36 @@ export function RentSummaryModal({
         }
       }
       case 'projected': {
-        // Projected Income: Upcoming rent (pending rent records)
-        const upcomingRecords = filteredRentRecords.filter(r => r.status === 'pending')
-        const projectedIncome = upcomingRecords.reduce((sum, r) => sum + Number(r.amount), 0)
+        // Projected metrics are always next 30 days (independent of selected historical date range).
+        const projectionFilters: Pick<FinanceFilters, 'propertyId'> = { propertyId }
 
-        // Projected Expenses: Recurring expenses for next 30 days
-        const projectedExpenses = calculateProjectedExpenses(expenses, 30, filters)
+        const now = new Date()
+        const endDate = new Date(now)
+        endDate.setDate(endDate.getDate() + 30)
+
+        // Projected Income: pending rent due in next 30 days
+        const projectedIncome = calculateProjectedRentIncome(
+          rentRecords,
+          30,
+          projectionFilters,
+          activePropertyIds
+        )
+        const upcomingRecords = rentRecords
+          .filter(r => {
+            if (activePropertyIds && r.property_id && !activePropertyIds.has(r.property_id)) return false
+            if (projectionFilters.propertyId && r.property_id !== projectionFilters.propertyId) return false
+            if (r.status !== 'pending') return false
+            const due = new Date(r.due_date)
+            return due >= now && due <= endDate
+          })
+
+        // Projected Expenses: recurring occurrences + one-off expenses dated inside next 30 days
+        const projectedExpenses = calculateProjectedExpenses(
+          expenses,
+          30,
+          projectionFilters,
+          activePropertyIds
+        )
         const projectedNet = projectedIncome - projectedExpenses
 
         // Group projected income by property
@@ -249,111 +274,40 @@ export function RentSummaryModal({
 
         // Group projected expenses by property
         const expensesByProperty = new Map<string, { amount: number; expenses: Expense[] }>()
-        const recurringExpenses = expenses.filter(e => e.is_recurring)
-        const filteredRecurring = filterExpenses(recurringExpenses, filters)
+        const scopedExpenses = filterExpenses(expenses, projectionFilters, activePropertyIds)
 
-        // Calculate projected expenses per property for next 30 days
-        filteredRecurring.forEach(expense => {
+        scopedExpenses.forEach(expense => {
           const propId = expense.property_id
           const existing = expensesByProperty.get(propId) || { amount: 0, expenses: [] }
-          // For each recurring expense, calculate occurrences in next 30 days
-          const now = new Date()
-          const endDate = new Date(now)
-          endDate.setDate(endDate.getDate() + 30)
-
-          if (
-            expense.recurring_start_date &&
-            expense.recurring_frequency &&
-            (!expense.recurring_end_date || new Date(expense.recurring_end_date) >= now)
-          ) {
-            const startDate = new Date(expense.recurring_start_date)
-            const endRecurringDate = expense.recurring_end_date
-              ? new Date(expense.recurring_end_date)
-              : null
-
-            if (startDate <= endDate && (!endRecurringDate || endRecurringDate >= now)) {
-              const periodStart = startDate > now ? startDate : now
-              const periodEnd =
-                endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
-
-              let occurrences = 0
-              const current = new Date(periodStart)
-
-              while (current <= periodEnd) {
-                occurrences++
-
-                switch (expense.recurring_frequency) {
-                  case 'monthly':
-                    current.setMonth(current.getMonth() + 1)
-                    break
-                  case 'quarterly':
-                    current.setMonth(current.getMonth() + 3)
-                    break
-                  case 'yearly':
-                    current.setFullYear(current.getFullYear() + 1)
-                    break
-                }
-              }
-
-              const projectedAmount = Number(expense.amount) * occurrences
-              expensesByProperty.set(propId, {
-                amount: existing.amount + projectedAmount,
-                expenses: [...existing.expenses, expense],
-              })
-            }
-          }
+          const projectedAmount = calculateProjectedExpenses(
+            [expense],
+            30,
+            projectionFilters,
+            activePropertyIds
+          )
+          if (projectedAmount <= 0) return
+          expensesByProperty.set(propId, {
+            amount: existing.amount + projectedAmount,
+            expenses: [...existing.expenses, expense],
+          })
         })
 
         // Group projected expenses by category
         const expensesByCategory = new Map<string, { amount: number; count: number }>()
-        filteredRecurring.forEach(expense => {
+        scopedExpenses.forEach(expense => {
           const category = expense.category || 'uncategorized'
-          const now = new Date()
-          const endDate = new Date(now)
-          endDate.setDate(endDate.getDate() + 30)
-
-          if (
-            expense.recurring_start_date &&
-            expense.recurring_frequency &&
-            (!expense.recurring_end_date || new Date(expense.recurring_end_date) >= now)
-          ) {
-            const startDate = new Date(expense.recurring_start_date)
-            const endRecurringDate = expense.recurring_end_date
-              ? new Date(expense.recurring_end_date)
-              : null
-
-            if (startDate <= endDate && (!endRecurringDate || endRecurringDate >= now)) {
-              const periodStart = startDate > now ? startDate : now
-              const periodEnd =
-                endRecurringDate && endRecurringDate < endDate ? endRecurringDate : endDate
-
-              let occurrences = 0
-              const current = new Date(periodStart)
-
-              while (current <= periodEnd) {
-                occurrences++
-
-                switch (expense.recurring_frequency) {
-                  case 'monthly':
-                    current.setMonth(current.getMonth() + 1)
-                    break
-                  case 'quarterly':
-                    current.setMonth(current.getMonth() + 3)
-                    break
-                  case 'yearly':
-                    current.setFullYear(current.getFullYear() + 1)
-                    break
-                }
-              }
-
-              const projectedAmount = Number(expense.amount) * occurrences
-              const existing = expensesByCategory.get(category) || { amount: 0, count: 0 }
-              expensesByCategory.set(category, {
-                amount: existing.amount + projectedAmount,
-                count: existing.count + 1,
-              })
-            }
-          }
+          const projectedAmount = calculateProjectedExpenses(
+            [expense],
+            30,
+            projectionFilters,
+            activePropertyIds
+          )
+          if (projectedAmount <= 0) return
+          const existing = expensesByCategory.get(category) || { amount: 0, count: 0 }
+          expensesByCategory.set(category, {
+            amount: existing.amount + projectedAmount,
+            count: existing.count + 1,
+          })
         })
 
         return {
@@ -449,7 +403,7 @@ export function RentSummaryModal({
       default:
         return null
     }
-  }, [metricType, filteredRentRecords, filteredExpenses, properties])
+  }, [metricType, filteredRentRecords, filteredExpenses, properties, propertyId, rentRecords, expenses, activePropertyIds])
 
   if (!isOpen) return null
 

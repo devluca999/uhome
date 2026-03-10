@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { useProperties } from '@/hooks/use-properties'
 import { motion as motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import type { Database } from '@/types/database'
+import { Info } from 'lucide-react'
 
 type ExpenseInsert = Database['public']['Tables']['expenses']['Insert']
 type ExpenseUpdate = Database['public']['Tables']['expenses']['Update']
@@ -14,6 +15,8 @@ interface ExpenseFormProps {
   onCancel?: () => void
   initialData?: ExpenseInsert & { id?: string }
   loading?: boolean
+  defaultPropertyId?: string
+  lockProperty?: boolean
 }
 
 export function ExpenseForm({
@@ -21,6 +24,8 @@ export function ExpenseForm({
   onCancel,
   initialData,
   loading = false,
+  defaultPropertyId,
+  lockProperty = false,
 }: ExpenseFormProps) {
   const { properties } = useProperties()
   const isEditMode = !!initialData?.id
@@ -40,10 +45,13 @@ export function ExpenseForm({
 
   const [name, setName] = useState(initialData?.name || '')
   const [amount, setAmount] = useState(initialData?.amount?.toString() || '')
-  const [propertyId, setPropertyId] = useState(initialData?.property_id || '')
+  const [propertyId, setPropertyId] = useState(initialData?.property_id || defaultPropertyId || '')
   const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState<ExpenseInsert['category']>(initialData?.category || null)
-  const [isRecurring, setIsRecurring] = useState(initialData?.is_recurring || false)
+  const [expenseType, setExpenseType] = useState<'one-off' | 'recurring'>(
+    initialData?.is_recurring ? 'recurring' : 'one-off'
+  )
+  const isRecurring = expenseType === 'recurring'
   const [recurringFrequency, setRecurringFrequency] = useState<
     ExpenseInsert['recurring_frequency']
   >(initialData?.recurring_frequency || null)
@@ -51,8 +59,10 @@ export function ExpenseForm({
     initialData?.recurring_start_date || ''
   )
   const [recurringEndDate, setRecurringEndDate] = useState(initialData?.recurring_end_date || '')
+  const [notes, setNotes] = useState((initialData as any)?.notes || '')
   const [reasonForChange, setReasonForChange] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [typeHelpOpen, setTypeHelpOpen] = useState(false)
   const buttonSpring = createSpring('button')
 
   // Check if values have changed
@@ -112,6 +122,8 @@ export function ExpenseForm({
       recurring_frequency: isRecurring ? recurringFrequency : null,
       recurring_start_date: isRecurring ? recurringStartDate : null,
       recurring_end_date: isRecurring && recurringEndDate ? recurringEndDate : null,
+      // Notes are stored on the expense record itself for both property and global views.
+      notes: notes.trim() || null,
     }
 
     // MVP: Reason for change would be stored via notes system separately (no audit trail in MVP)
@@ -127,7 +139,7 @@ export function ExpenseForm({
         setPropertyId('')
         setDate(new Date().toISOString().split('T')[0])
         setCategory(null)
-        setIsRecurring(false)
+        setExpenseType('one-off')
         setRecurringFrequency(null)
         setRecurringStartDate('')
         setRecurringEndDate('')
@@ -286,7 +298,7 @@ export function ExpenseForm({
             value={propertyId}
             onChange={e => setPropertyId(e.target.value)}
             required
-            disabled={loading}
+            disabled={loading || lockProperty}
             className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="" className="text-foreground">
@@ -329,30 +341,69 @@ export function ExpenseForm({
 
       {/* Recurring Expense Section */}
       <div className="space-y-4 p-4 border border-border rounded-md bg-muted/30">
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="is_recurring"
-            checked={isRecurring}
-            onChange={e => {
-              setIsRecurring(e.target.checked)
-              if (!e.target.checked) {
-                setRecurringFrequency(null)
-                setRecurringStartDate('')
-                setRecurringEndDate('')
-              } else {
-                // Set default start date to today if not set
-                if (!recurringStartDate) {
-                  setRecurringStartDate(new Date().toISOString().split('T')[0])
-                }
-              }
-            }}
-            disabled={loading}
-            className="h-4 w-4 rounded border-input"
-          />
-          <label htmlFor="is_recurring" className="text-sm font-medium text-foreground">
-            Recurring expense
-          </label>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground">Type</span>
+            <button
+              type="button"
+              className="relative text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Expense type help"
+              onMouseEnter={() => setTypeHelpOpen(true)}
+              onMouseLeave={() => setTypeHelpOpen(false)}
+              onFocus={() => setTypeHelpOpen(true)}
+              onBlur={() => setTypeHelpOpen(false)}
+            >
+              <Info className="w-4 h-4" />
+              {typeHelpOpen && (
+                <div className="absolute left-1/2 top-6 -translate-x-1/2 z-20 w-72 p-3 text-xs rounded glass-card">
+                  <p className="font-medium mb-1">Recurring vs One-off</p>
+                  <p>
+                    <span className="font-medium">One-off</span> expenses apply once to the month
+                    of their date, and to projections that include that date.
+                  </p>
+                  <p className="mt-2">
+                    <span className="font-medium">Recurring</span> expenses repeat monthly,
+                    quarterly, or yearly while they are active.
+                  </p>
+                </div>
+              )}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="radio"
+                name="expense_type"
+                value="one-off"
+                checked={expenseType === 'one-off'}
+                onChange={() => {
+                  setExpenseType('one-off')
+                  setRecurringFrequency(null)
+                  setRecurringStartDate('')
+                  setRecurringEndDate('')
+                }}
+                disabled={loading}
+                className="h-4 w-4 border-input"
+              />
+              One-off
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="radio"
+                name="expense_type"
+                value="recurring"
+                checked={expenseType === 'recurring'}
+                onChange={() => {
+                  setExpenseType('recurring')
+                  if (!recurringStartDate) setRecurringStartDate(new Date().toISOString().split('T')[0])
+                }}
+                disabled={loading}
+                className="h-4 w-4 border-input"
+              />
+              Recurring
+            </label>
+          </div>
         </div>
 
         {isRecurring && (
@@ -477,6 +528,20 @@ export function ExpenseForm({
             </Button>
           </motion.div>
         )}
+      </div>
+
+      {/* Notes (optional) */}
+      <div className="space-y-2 pt-2">
+        <label htmlFor="notes" className="text-sm font-medium text-foreground">
+          Notes (Optional)
+        </label>
+        <Input
+          id="notes"
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="e.g., Paid via check, includes parts and labor"
+          disabled={loading}
+        />
       </div>
     </motion.form>
   )

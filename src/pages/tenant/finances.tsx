@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -78,6 +78,31 @@ export function TenantFinances() {
     )
   }
 
+  const [clearedRecordIds, setClearedRecordIds] = useState<string[]>([])
+
+  // Load cleared records from localStorage (per-device, per-browser)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('tenant_cleared_rent_records')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed)) {
+          setClearedRecordIds(parsed.filter(id => typeof id === 'string'))
+        }
+      }
+    } catch {
+      // Ignore storage errors and fall back to empty state
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tenant_cleared_rent_records', JSON.stringify(clearedRecordIds))
+    } catch {
+      // Ignore storage errors
+    }
+  }, [clearedRecordIds])
+
   // Sort records: overdue first, then pending, then paid (most recent first)
   const sortedRecords = [...rentRecords].sort((a, b) => {
     const statusOrder = { overdue: 0, pending: 1, paid: 2 }
@@ -85,6 +110,21 @@ export function TenantFinances() {
     if (statusDiff !== 0) return statusDiff
     return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
   })
+
+  const visibleRecords = useMemo(
+    () => sortedRecords.filter(record => !clearedRecordIds.includes(record.id)),
+    [sortedRecords, clearedRecordIds]
+  )
+
+  function handleClearRecord(recordId: string) {
+    setClearedRecordIds(prev =>
+      prev.includes(recordId) ? prev : [...prev, recordId]
+    )
+  }
+
+  function handleResetCleared() {
+    setClearedRecordIds([])
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 relative min-h-screen">
@@ -149,11 +189,19 @@ export function TenantFinances() {
 
         {/* Payment History */}
         <Card className="glass-card">
-          <CardHeader>
-            <CardTitle>Payment History</CardTitle>
-            <CardDescription>
-              {sortedRecords.length} payment record{sortedRecords.length !== 1 ? 's' : ''}
-            </CardDescription>
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Payment History</CardTitle>
+              <CardDescription>
+                {visibleRecords.length} of {sortedRecords.length} payment record
+                {sortedRecords.length !== 1 ? 's' : ''} visible
+              </CardDescription>
+            </div>
+            {clearedRecordIds.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleResetCleared}>
+                Show cleared payments
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {sortedRecords.length === 0 ? (
@@ -162,11 +210,22 @@ export function TenantFinances() {
                 title="No payment records"
                 description="Your payment history will appear here once records are created."
               />
+            ) : visibleRecords.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                All payments have been cleared from this view. Use &quot;Show cleared payments&quot; to
+                restore them.
+              </div>
             ) : (
-              <div className="space-y-4">
-                {sortedRecords.map(record => (
-                  <TenantRentRecordRow key={record.id} record={record} />
-                ))}
+              <div className="max-h-[60vh] md:max-h-[70vh] overflow-y-auto -mr-2 pr-2">
+                <div className="space-y-4 pb-2">
+                  {visibleRecords.map(record => (
+                    <TenantRentRecordRow
+                      key={record.id}
+                      record={record}
+                      onClear={handleClearRecord}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>
@@ -176,7 +235,13 @@ export function TenantFinances() {
   )
 }
 
-function TenantRentRecordRow({ record }: { record: any }) {
+function TenantRentRecordRow({
+  record,
+  onClear,
+}: {
+  record: any
+  onClear?: (id: string) => void
+}) {
   const navigate = useNavigate()
   const { notes } = useNotes('rent_record', record.id)
   const note = notes[0]
@@ -292,6 +357,21 @@ function TenantRentRecordRow({ record }: { record: any }) {
           <div className="text-sm mt-1">
             <MarkdownRenderer content={note.content} />
           </div>
+        </div>
+      )}
+
+      {/* Clear (local-only) */}
+      {record.status === 'paid' && onClear && (
+        <div className="pt-1 flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            onClick={() => onClear(record.id)}
+          >
+            Clear from history
+          </Button>
         </div>
       )}
     </motion.div>

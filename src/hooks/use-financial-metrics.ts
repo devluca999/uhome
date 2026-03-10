@@ -7,6 +7,7 @@ import {
   calculateTotalExpenses,
   calculateNetCashFlow,
   calculateUpcomingRent,
+  calculateProjectedRentIncome,
   calculateProjectedExpenses,
   getExpenseDate,
   type FinanceFilters,
@@ -105,11 +106,11 @@ export function useFinancialMetrics(
     const upcomingRent = calculateUpcomingRent(rentRecords, filters, activePropertyIds)
     const totalExpenses = calculateTotalExpenses(expenses, filters, activePropertyIds)
 
-    // Calculate projected expenses from recurring expenses (next 30 days)
-    const projectedExpenses = calculateProjectedExpenses(expenses, 30, filters, activePropertyIds)
-
-    // Calculate projected income (next 30 days - pending rent)
-    const projectedIncome = upcomingRent
+    // Projections are always relative to "now" (next 30 days) and should not be constrained by
+    // the selected historical date range filter.
+    const projectionFilters: Pick<FinanceFilters, 'propertyId'> = { propertyId }
+    const projectedExpenses = calculateProjectedExpenses(expenses, 30, projectionFilters, activePropertyIds)
+    const projectedIncome = calculateProjectedRentIncome(rentRecords, 30, projectionFilters, activePropertyIds)
 
     // Calculate projected net (next 30 days)
     const projectedNet = projectedIncome - projectedExpenses

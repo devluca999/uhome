@@ -24,7 +24,10 @@ export { ALLOWED_ENVS }
  * Returns true when SUPABASE_ENV=production or URL contains prod/production.
  */
 export function isProduction(): boolean {
-  const env = process.env.SUPABASE_ENV || process.env.VITE_SUPABASE_ENV || ''
+  const env =
+    process.env.SUPABASE_ENV !== undefined
+      ? process.env.SUPABASE_ENV
+      : process.env.VITE_SUPABASE_ENV || ''
   const url = process.env.VITE_SUPABASE_URL || ''
   return isProductionEnv(env, url)
 }
@@ -33,14 +36,28 @@ export function isProduction(): boolean {
  * Check if the current environment is allowed for tests, seeds, and dev mode.
  */
 function isNonProductionEnvironment(): boolean {
-  const env = process.env.SUPABASE_ENV || process.env.VITE_SUPABASE_ENV || ''
+  const env =
+    process.env.SUPABASE_ENV !== undefined
+      ? process.env.SUPABASE_ENV
+      : process.env.VITE_SUPABASE_ENV || ''
   const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 
-  if (!env && (!supabaseUrl || supabaseUrl.trim() === '')) {
-    throw new Error(
-      '❌ SUPABASE_ENV or VITE_SUPABASE_URL must be set. ' +
-        'Tests and seeds require explicit non-production environment configuration.'
-    )
+  if (!supabaseUrl || supabaseUrl.trim() === '') {
+    throw new Error('❌ VITE_SUPABASE_URL is not set. Tests and seeds require explicit configuration.')
+  }
+
+  const normalizedEnv = env.trim().toLowerCase()
+  const normalizedUrl = supabaseUrl.trim().toLowerCase()
+
+  // Fail closed for ambiguous environments (no explicit env and URL doesn't indicate local/staging/test).
+  if (
+    !normalizedEnv &&
+    !normalizedUrl.includes('localhost') &&
+    !normalizedUrl.includes('127.0.0.1') &&
+    !normalizedUrl.includes('staging') &&
+    !normalizedUrl.includes('test')
+  ) {
+    return false
   }
 
   return isNonProductionEnvPure(env, supabaseUrl)
@@ -54,7 +71,10 @@ function isNonProductionEnvironment(): boolean {
 export function enforceNonProduction(): void {
   if (isProduction()) {
     const supabaseUrl = process.env.VITE_SUPABASE_URL || 'NOT SET'
-    const env = process.env.SUPABASE_ENV || process.env.VITE_SUPABASE_ENV || 'NOT SET'
+    const env =
+      process.env.SUPABASE_ENV !== undefined
+        ? process.env.SUPABASE_ENV || 'NOT SET'
+        : process.env.VITE_SUPABASE_ENV || 'NOT SET'
 
     throw new Error(
       `❌ Automated tests, seeds, and dev mode are restricted to non-production only\n\n` +
@@ -103,7 +123,10 @@ export function getEnvironmentStatus(): {
   allowedEnvs: readonly string[]
 } {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || 'NOT SET'
-  const envVar = process.env.SUPABASE_ENV || process.env.VITE_SUPABASE_ENV || 'NOT SET'
+  const envVar =
+    process.env.SUPABASE_ENV !== undefined
+      ? process.env.SUPABASE_ENV || 'NOT SET'
+      : process.env.VITE_SUPABASE_ENV || 'NOT SET'
   const prod = isProduction()
 
   let reason = ''

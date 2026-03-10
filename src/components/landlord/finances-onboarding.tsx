@@ -158,7 +158,7 @@ export function FinancesOnboarding({ className }: FinancesOnboardingProps) {
           ease: motionTokens.easing.standard,
         }}
         className={cn(
-          'fixed z-50 w-64 p-4 bg-popover text-popover-foreground rounded-lg shadow-lg border border-border',
+          'fixed z-50 w-64 p-4 rounded-lg glass-card',
           className
         )}
         style={{

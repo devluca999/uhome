@@ -9,6 +9,7 @@ import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { isFeatureEnabled } from '@/lib/feature-flags'
 import { cn } from '@/lib/utils'
+import { DraggableDemoSelector } from '@/components/admin/draggable-demo-selector'
 
 const ADMIN_NAV_ITEMS = [
   { path: '/admin/overview', label: 'Overview' },
@@ -52,6 +53,7 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background flex">
+      <DraggableDemoSelector />
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card/50 sticky top-0 h-screen overflow-y-auto">
         <div className="flex flex-col h-full">

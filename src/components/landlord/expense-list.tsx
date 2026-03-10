@@ -116,6 +116,8 @@ export function ExpenseList({ expenses, onUpdate, onDelete, properties }: Expens
                         size="sm"
                         onClick={() => setEditingId(expense.id)}
                         disabled={deletingId === expense.id}
+                        aria-label="Edit expense"
+                        title="Edit expense"
                       >
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -125,6 +127,8 @@ export function ExpenseList({ expenses, onUpdate, onDelete, properties }: Expens
                         onClick={() => handleDelete(expense.id)}
                         disabled={deletingId === expense.id}
                         className="text-destructive hover:text-destructive/90"
+                        aria-label="Delete expense"
+                        title="Delete expense"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

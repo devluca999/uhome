@@ -307,6 +307,15 @@ export type Database = {
           recurring_frequency: 'monthly' | 'quarterly' | 'yearly' | null
           recurring_start_date: string | null
           recurring_end_date: string | null
+          type: string | null
+          recurring_type: string | null
+          recurring_interval: number | null
+          start_date: string | null
+          end_date: string | null
+          next_due_date: string | null
+          status: string | null
+          notes: string | null
+          title: string | null
           created_at: string
           updated_at: string
         }
@@ -321,6 +330,15 @@ export type Database = {
           recurring_frequency?: 'monthly' | 'quarterly' | 'yearly' | null
           recurring_start_date?: string | null
           recurring_end_date?: string | null
+          type?: string | null
+          recurring_type?: string | null
+          recurring_interval?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          next_due_date?: string | null
+          status?: string | null
+          notes?: string | null
+          title?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -335,6 +353,15 @@ export type Database = {
           recurring_frequency?: 'monthly' | 'quarterly' | 'yearly' | null
           recurring_start_date?: string | null
           recurring_end_date?: string | null
+          type?: string | null
+          recurring_type?: string | null
+          recurring_interval?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          next_due_date?: string | null
+          status?: string | null
+          notes?: string | null
+          title?: string | null
           created_at?: string
           updated_at?: string
         }

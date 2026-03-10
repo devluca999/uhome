@@ -32,7 +32,7 @@ import {
   generateFallbackExpenses,
 } from '@/lib/fallback-financial-data'
 import { exportLedgerToCSV } from '@/utils/export-csv'
-import { FileText, Plus, Download, X, Edit } from 'lucide-react'
+import { FileText, Plus, Download, X, Edit, Trash2 } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import type { Database } from '@/types/database'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
@@ -45,7 +45,7 @@ export function LandlordFinances() {
 
   const { properties } = useProperties()
   const { tenants } = useTenants()
-  const { expenses, createExpense, updateExpense } = useExpenses()
+  const { expenses, createExpense, updateExpense, deleteExpense } = useExpenses()
   const [searchParams, setSearchParams] = useSearchParams()
   // Page-level filter state
   // These two filters control ALL financial data on the page: KPIs, Ledger, Graph (default state)
@@ -840,6 +840,8 @@ export function LandlordFinances() {
                         }}
                         layout={false}
                         className="border-b border-border last:border-b-0"
+                        data-testid={`finances-expense-row-${expense.id}`}
+                        data-expense-name={expense.name}
                       >
                         <div className="px-4 py-3">
                           <div className="flex items-center justify-between">
@@ -878,8 +880,29 @@ export function LandlordFinances() {
                                 }}
                                 className="h-8 w-8 p-0"
                                 title="Edit expense"
+                                aria-label="Edit expense"
                               >
                                 <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  if (!confirm('Are you sure you want to delete this expense?')) return
+                                  const result = await deleteExpense(expense.id)
+                                  if (!result.error) {
+                                    // If we were editing this expense, close the editor.
+                                    if (editingExpense?.id === expense.id) {
+                                      setEditingExpense(null)
+                                      setShowExpenseForm(false)
+                                    }
+                                  }
+                                }}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
+                                title="Delete expense"
+                                aria-label="Delete expense"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </div>

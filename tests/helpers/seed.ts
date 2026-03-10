@@ -219,6 +219,31 @@ export async function seedTestScenario(options: SeedOptions = {}): Promise<Seede
     seeded.workOrders = workOrders
   }
 
+  // Create a baseline expense for the property so finances and property-level
+  // expenses views have consistent seed data (use admin client to bypass RLS).
+  // This also ensures the Upcoming Expenses widget has at least one item.
+  if (seeded.property) {
+    const today = new Date()
+    const expenseDate = today.toISOString().split('T')[0]
+    const nextDue = new Date(today)
+    nextDue.setDate(nextDue.getDate() + 7)
+    const nextDueStr = nextDue.toISOString().split('T')[0]
+
+    const { error: expenseError } = await supabaseAdmin.from('expenses').insert({
+      property_id: seeded.property.id,
+      amount: 120,
+      category: 'maintenance',
+      description: 'Seeded Test Expense',
+      expense_date: expenseDate,
+      type: 'one_time',
+      status: 'planned',
+      next_due_date: nextDueStr,
+      title: 'Seeded Test Expense',
+    })
+
+    if (expenseError) throw expenseError
+  }
+
   // Create tasks if requested (use admin client to bypass RLS)
   // Tasks table from create_tasks_table.sql (required for production schema)
   if (options.createTasks && seeded.tenant && seeded.property) {

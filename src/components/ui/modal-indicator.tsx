@@ -52,7 +52,7 @@ export function ModalIndicator({ className, onClick }: ModalIndicatorProps) {
       </button>
       {/* Simple tooltip */}
       {isHovered && (
-        <div className="absolute top-10 right-3 z-20 px-2 py-1 text-xs bg-popover text-popover-foreground rounded shadow-lg border border-border pointer-events-none whitespace-nowrap">
+        <div className="absolute top-10 right-3 z-20 px-2 py-1 text-xs rounded pointer-events-none whitespace-nowrap glass-card">
           Expand
         </div>
       )}

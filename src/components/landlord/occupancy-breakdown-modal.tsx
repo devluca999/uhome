@@ -87,6 +87,7 @@ export function OccupancyBreakdownModal({ isOpen, onClose }: OccupancyBreakdownM
       title="Occupancy Breakdown"
       description="Property occupancy status distribution"
       sections={sections}
+      isCurrency={false}
       breakdownComponent={breakdownComponent}
       cta={{
         label: 'View all properties',

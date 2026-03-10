@@ -24,7 +24,8 @@ export function MaintenanceRequestForm({
 }: MaintenanceRequestFormProps) {
   const { user } = useAuth()
   const { uploadImage, uploading: uploadingImages } = useImageUpload('images')
-  const [category, setCategory] = useState('')
+  const [categoryOption, setCategoryOption] = useState('')
+  const [customCategory, setCustomCategory] = useState('')
   const [publicDescription, setPublicDescription] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -44,13 +45,16 @@ export function MaintenanceRequestForm({
       return
     }
 
+    const resolvedCategory =
+      categoryOption === 'other' ? customCategory.trim() : categoryOption.trim()
+
     try {
       setLoading(true)
       const { error } = await supabase.from('maintenance_requests').insert({
         lease_id: leaseId || null,
         property_id: propertyId || null,
         tenant_id: tenantId || null,
-        category: category.trim() || null,
+        category: resolvedCategory || null,
         public_description: publicDescription.trim(),
         description: publicDescription.trim(), // Keep for backward compatibility
         status: 'submitted', // Tenant-created work orders start as submitted
@@ -105,19 +109,42 @@ export function MaintenanceRequestForm({
             </div>
           )}
           <div className="space-y-2">
-            <label htmlFor="category" className="text-sm font-medium text-stone-700">
+            <label htmlFor="category" className="text-sm font-medium text-foreground">
               Category (optional)
             </label>
-            <Input
-              id="category"
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              placeholder="e.g., Plumbing, Electrical, HVAC"
-              disabled={loading}
-            />
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+              <select
+                id="category"
+                value={categoryOption}
+                onChange={e => setCategoryOption(e.target.value)}
+                disabled={loading}
+                className="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select a category</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Heating &amp; Cooling">Heating &amp; Cooling</option>
+                <option value="Appliances">Appliances</option>
+                <option value="Water leak">Water leak</option>
+                <option value="Doors &amp; locks">Doors &amp; locks</option>
+                <option value="Pest control">Pest control</option>
+                <option value="Safety">Safety</option>
+                <option value="Cosmetic">Cosmetic</option>
+                <option value="other">Other</option>
+              </select>
+              {categoryOption === 'other' && (
+                <Input
+                  id="category-other"
+                  value={customCategory}
+                  onChange={e => setCustomCategory(e.target.value)}
+                  placeholder="Custom category label"
+                  disabled={loading}
+                />
+              )}
+            </div>
           </div>
           <div className="space-y-2">
-            <label htmlFor="publicDescription" className="text-sm font-medium text-stone-700">
+            <label htmlFor="publicDescription" className="text-sm font-medium text-foreground">
               Description *
             </label>
             <textarea
@@ -134,7 +161,7 @@ export function MaintenanceRequestForm({
 
           {/* Image Upload */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-stone-700">Photos (optional)</label>
+            <label className="text-sm font-medium text-foreground">Photos (optional)</label>
             <div className="space-y-3">
               {imageUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">

@@ -37,6 +37,10 @@ After running the seed script, you can log in with:
 - Email: `demo-tenant@uhome.internal`
 - Password: `DemoTenant2024!`
 
+**Admin:**
+- Email: `admin@uhome.internal`
+- Password: `DemoAdmin2024!`
+
 ### Requirements
 
 - **Required:** `VITE_SUPABASE_URL` in `.env.local` (must point to staging)

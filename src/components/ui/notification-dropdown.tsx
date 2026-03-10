@@ -83,7 +83,7 @@ export function NotificationDropdown({ className }: { className?: string }) {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-80 max-h-[min(24rem,70vh)] overflow-hidden rounded-lg border border-border bg-card shadow-lg z-50 flex flex-col"
+          className="absolute right-0 top-full mt-2 w-80 max-h-[min(24rem,70vh)] overflow-hidden rounded-lg z-50 flex flex-col glass-card"
           role="menu"
         >
           <div className="flex items-center justify-between p-3 border-b border-border">

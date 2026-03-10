@@ -394,4 +394,79 @@ test.describe('Properties Comprehensive UAT', () => {
       }
     }
   })
+
+  test('expenses tab and upcoming expenses widget are functional', async ({ page }) => {
+    const seeded = await setupUATScenario({ propertyName: 'Properties Test Property With Expenses' })
+
+    await page.goto(`${baseUrl}/login`)
+    await page.fill('input[type="email"]', seeded.landlord.email)
+    await page.fill('input[type="password"]', 'TestPassword123!')
+    await page.click('button[type="submit"]')
+    await page.waitForURL(/\/landlord\/dashboard/, { timeout: 10000 })
+
+    if (seeded.property) {
+      await page.goto(`${baseUrl}/landlord/properties/${seeded.property.id}`)
+      await waitForPageReady(page)
+
+      try {
+        // Verify Upcoming Expenses widget is visible on Overview
+        const upcomingCard = page.locator('text=/Upcoming Expenses/i').first()
+        await expect(upcomingCard).toBeVisible({ timeout: 5000 })
+
+        // Seed helper now creates a baseline expense; verify it appears in widget or empty state is reasonable
+        const seededExpenseVisible = await page
+          .locator('text=/Seeded Test Expense/i')
+          .first()
+          .isVisible()
+          .catch(() => false)
+
+        // Click "View all expenses" to navigate to Expenses tab
+        const viewAllButton = page
+          .locator('button:has-text("View all expenses"), text=/View all expenses/i')
+          .first()
+        await viewAllButton.click()
+        await waitForPageReady(page)
+
+        // Verify Expenses tab content is visible
+        const expensesHeader = page.locator('text=/Expenses/i').first()
+        await expect(expensesHeader).toBeVisible({ timeout: 5000 })
+
+        // In Expenses table, the seeded expense should be visible if it was created successfully
+        if (seededExpenseVisible) {
+          const expensesTableEntry = page.locator('text=/Seeded Test Expense/i').first()
+          await expect(expensesTableEntry).toBeVisible({ timeout: 5000 })
+        }
+
+        await logTestResult(page, {
+          page: 'properties',
+          feature: 'property_expenses',
+          role: 'landlord',
+          action: 'verify_expenses_tab_and_widget',
+          status: 'passed',
+        })
+      } catch (error) {
+        const screenshot = await captureUATScreenshot(
+          page,
+          'properties',
+          'expenses_tab_and_widget',
+          {},
+          'error'
+        )
+        await logFunctionalFailure(page, {
+          page: 'properties',
+          feature: 'property_expenses',
+          workflow: 'expenses_tab_and_widget',
+          error: error instanceof Error ? error.message : String(error),
+          steps: [
+            'Navigate to property detail',
+            'Verify Upcoming Expenses widget',
+            'Click View all expenses',
+            'Verify Expenses tab shows seeded expense',
+          ],
+          screenshot,
+        })
+        throw error
+      }
+    }
+  })
 })

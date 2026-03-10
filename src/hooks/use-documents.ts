@@ -83,7 +83,12 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
     },
   })
 
-  async function uploadDocument(file: File, leaseId?: string, propertyId?: string) {
+  async function uploadDocument(
+    file: File,
+    leaseId?: string,
+    propertyId?: string,
+    categoryLabel?: string
+  ) {
     // Property ID is required for all uploads
     if (!propertyId) {
       throw new Error('Property ID is required for document uploads')
@@ -93,6 +98,7 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
     const pathPrefix = leaseId || propertyId
     const filePath = `${pathPrefix}/${fileName}`
+    const displayName = categoryLabel ? `[${categoryLabel}] ${file.name}` : file.name
 
     // Add dev mode metadata if in dev mode
     const devModeActive = isDevModeActive()
@@ -149,7 +155,7 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
         property_id: propertyId, // Required
         uploaded_by: user.id,
         file_url: publicUrl,
-        file_name: file.name,
+        file_name: displayName,
         file_type: file.type,
       })
       .select('*')
