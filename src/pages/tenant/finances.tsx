@@ -39,6 +39,8 @@ export function TenantFinances() {
   )
   const { records: rentRecords, loading: rentLoading } = useRentRecords(activeLease?.id)
 
+  const [clearedRecordIds, setClearedRecordIds] = useState<string[]>([])
+
   // Calculate summary
   const summary = useMemo(() => {
     const outstanding = rentRecords
@@ -54,31 +56,22 @@ export function TenantFinances() {
     return { outstanding, pending, paid, total: outstanding + pending }
   }, [rentRecords])
 
-  if (tenantLoading || rentLoading) {
-    return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
-        <GrainOverlay />
-        <div className="text-center py-12 relative z-10">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
+  // Sort records: overdue first, then pending, then paid (most recent first)
+  const sortedRecords = useMemo(
+    () =>
+      [...rentRecords].sort((a, b) => {
+        const statusOrder: Record<string, number> = { overdue: 0, pending: 1, paid: 2 }
+        const statusDiff = (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3)
+        if (statusDiff !== 0) return statusDiff
+        return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
+      }),
+    [rentRecords]
+  )
 
-  if (!tenantData) {
-    return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
-        <GrainOverlay />
-        <EmptyState
-          icon={<DollarSign className="h-8 w-8" />}
-          title="No financial information available"
-          description="Contact your landlord if you have questions about your rent payments."
-        />
-      </div>
-    )
-  }
-
-  const [clearedRecordIds, setClearedRecordIds] = useState<string[]>([])
+  const visibleRecords = useMemo(
+    () => sortedRecords.filter(record => !clearedRecordIds.includes(record.id)),
+    [sortedRecords, clearedRecordIds]
+  )
 
   // Load cleared records from localStorage (per-device, per-browser)
   useEffect(() => {
@@ -103,18 +96,29 @@ export function TenantFinances() {
     }
   }, [clearedRecordIds])
 
-  // Sort records: overdue first, then pending, then paid (most recent first)
-  const sortedRecords = [...rentRecords].sort((a, b) => {
-    const statusOrder = { overdue: 0, pending: 1, paid: 2 }
-    const statusDiff = statusOrder[a.status] - statusOrder[b.status]
-    if (statusDiff !== 0) return statusDiff
-    return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
-  })
+  if (tenantLoading || rentLoading) {
+    return (
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+        <GrainOverlay />
+        <div className="text-center py-12 relative z-10">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
-  const visibleRecords = useMemo(
-    () => sortedRecords.filter(record => !clearedRecordIds.includes(record.id)),
-    [sortedRecords, clearedRecordIds]
-  )
+  if (!tenantData) {
+    return (
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+        <GrainOverlay />
+        <EmptyState
+          icon={<DollarSign className="h-8 w-8" />}
+          title="No financial information available"
+          description="Contact your landlord if you have questions about your rent payments."
+        />
+      </div>
+    )
+  }
 
   function handleClearRecord(recordId: string) {
     setClearedRecordIds(prev =>
