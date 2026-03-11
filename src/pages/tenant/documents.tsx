@@ -24,10 +24,11 @@ export function TenantDocuments() {
   )
   const [categoryOption, setCategoryOption] = useState<string>('')
   const [customCategory, setCustomCategory] = useState<string>('')
-  const { documents, loading: documentsLoading, uploadDocument } = useDocuments(
-    activeLease?.id,
-    tenantData?.property.id
-  )
+  const {
+    documents,
+    loading: documentsLoading,
+    uploadDocument,
+  } = useDocuments(activeLease?.id, tenantData?.property.id)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,7 +44,12 @@ export function TenantDocuments() {
     try {
       const resolvedCategory =
         categoryOption === 'other' ? customCategory.trim() : categoryOption.trim()
-      await uploadDocument(file, activeLease.id, tenantData.property.id, resolvedCategory || undefined)
+      await uploadDocument(
+        file,
+        activeLease.id,
+        tenantData.property.id,
+        resolvedCategory || undefined
+      )
       e.target.value = ''
       setCategoryOption('')
       setCustomCategory('')

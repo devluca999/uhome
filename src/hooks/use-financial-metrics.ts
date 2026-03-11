@@ -109,8 +109,18 @@ export function useFinancialMetrics(
     // Projections are always relative to "now" (next 30 days) and should not be constrained by
     // the selected historical date range filter.
     const projectionFilters: Pick<FinanceFilters, 'propertyId'> = { propertyId }
-    const projectedExpenses = calculateProjectedExpenses(expenses, 30, projectionFilters, activePropertyIds)
-    const projectedIncome = calculateProjectedRentIncome(rentRecords, 30, projectionFilters, activePropertyIds)
+    const projectedExpenses = calculateProjectedExpenses(
+      expenses,
+      30,
+      projectionFilters,
+      activePropertyIds
+    )
+    const projectedIncome = calculateProjectedRentIncome(
+      rentRecords,
+      30,
+      projectionFilters,
+      activePropertyIds
+    )
 
     // Calculate projected net (next 30 days)
     const projectedNet = projectedIncome - projectedExpenses

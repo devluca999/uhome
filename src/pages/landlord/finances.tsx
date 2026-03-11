@@ -888,7 +888,8 @@ export function LandlordFinances() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={async () => {
-                                  if (!confirm('Are you sure you want to delete this expense?')) return
+                                  if (!confirm('Are you sure you want to delete this expense?'))
+                                    return
                                   const result = await deleteExpense(expense.id)
                                   if (!result.error) {
                                     // If we were editing this expense, close the editor.

@@ -37,11 +37,7 @@ export function AdminSystem() {
 
     try {
       // Pick a sample lease (for deep-linking from notifications)
-      const { data: leaseRow } = await supabase
-        .from('leases')
-        .select('id')
-        .limit(1)
-        .maybeSingle()
+      const { data: leaseRow } = await supabase.from('leases').select('id').limit(1).maybeSingle()
 
       const leaseId = leaseRow?.id ?? '00000000-0000-0000-0000-000000000000'
 

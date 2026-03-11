@@ -205,9 +205,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
               <CardHeader className="flex flex-row items-start justify-between space-y-0">
                 <div className="pr-2">
                   <CardTitle className="text-lg">Add Expense</CardTitle>
-                  <CardDescription className="mt-1">
-                    For {property.name}
-                  </CardDescription>
+                  <CardDescription className="mt-1">For {property.name}</CardDescription>
                 </div>
                 <Button
                   variant="ghost"

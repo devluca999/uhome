@@ -440,13 +440,16 @@ export function calculateProjectedExpenses(
     if (!expense.recurring_frequency || !expense.recurring_start_date) continue
 
     const startDate = parseLocalDate(expense.recurring_start_date)
-    const endRecurringDate = expense.recurring_end_date ? parseLocalDate(expense.recurring_end_date) : null
+    const endRecurringDate = expense.recurring_end_date
+      ? parseLocalDate(expense.recurring_end_date)
+      : null
 
     // If the recurring schedule never overlaps our projection window, skip.
     if (startDate > windowEnd) continue
     if (endRecurringDate && endRecurringDate < windowStart) continue
 
-    const scheduleEnd = endRecurringDate && endRecurringDate < windowEnd ? endRecurringDate : windowEnd
+    const scheduleEnd =
+      endRecurringDate && endRecurringDate < windowEnd ? endRecurringDate : windowEnd
 
     let occurrences = 0
     let current = new Date(startDate)

@@ -157,10 +157,7 @@ export function FinancesOnboarding({ className }: FinancesOnboardingProps) {
           duration: durationToSeconds(motionTokens.duration.fast),
           ease: motionTokens.easing.standard,
         }}
-        className={cn(
-          'fixed z-50 w-64 p-4 rounded-lg glass-card',
-          className
-        )}
+        className={cn('fixed z-50 w-64 p-4 rounded-lg glass-card', className)}
         style={{
           top: `${top}px`,
           left: `${left}px`,

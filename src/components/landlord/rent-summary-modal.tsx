@@ -239,14 +239,15 @@ export function RentSummaryModal({
           projectionFilters,
           activePropertyIds
         )
-        const upcomingRecords = rentRecords
-          .filter(r => {
-            if (activePropertyIds && r.property_id && !activePropertyIds.has(r.property_id)) return false
-            if (projectionFilters.propertyId && r.property_id !== projectionFilters.propertyId) return false
-            if (r.status !== 'pending') return false
-            const due = new Date(r.due_date)
-            return due >= now && due <= endDate
-          })
+        const upcomingRecords = rentRecords.filter(r => {
+          if (activePropertyIds && r.property_id && !activePropertyIds.has(r.property_id))
+            return false
+          if (projectionFilters.propertyId && r.property_id !== projectionFilters.propertyId)
+            return false
+          if (r.status !== 'pending') return false
+          const due = new Date(r.due_date)
+          return due >= now && due <= endDate
+        })
 
         // Projected Expenses: recurring occurrences + one-off expenses dated inside next 30 days
         const projectedExpenses = calculateProjectedExpenses(
@@ -403,7 +404,16 @@ export function RentSummaryModal({
       default:
         return null
     }
-  }, [metricType, filteredRentRecords, filteredExpenses, properties, propertyId, rentRecords, expenses, activePropertyIds])
+  }, [
+    metricType,
+    filteredRentRecords,
+    filteredExpenses,
+    properties,
+    propertyId,
+    rentRecords,
+    expenses,
+    activePropertyIds,
+  ])
 
   if (!isOpen) return null
 

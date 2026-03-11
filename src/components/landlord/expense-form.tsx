@@ -358,8 +358,8 @@ export function ExpenseForm({
                 <div className="absolute left-1/2 top-6 -translate-x-1/2 z-20 w-72 p-3 text-xs rounded glass-card">
                   <p className="font-medium mb-1">Recurring vs One-off</p>
                   <p>
-                    <span className="font-medium">One-off</span> expenses apply once to the month
-                    of their date, and to projections that include that date.
+                    <span className="font-medium">One-off</span> expenses apply once to the month of
+                    their date, and to projections that include that date.
                   </p>
                   <p className="mt-2">
                     <span className="font-medium">Recurring</span> expenses repeat monthly,
@@ -396,7 +396,8 @@ export function ExpenseForm({
                 checked={expenseType === 'recurring'}
                 onChange={() => {
                   setExpenseType('recurring')
-                  if (!recurringStartDate) setRecurringStartDate(new Date().toISOString().split('T')[0])
+                  if (!recurringStartDate)
+                    setRecurringStartDate(new Date().toISOString().split('T')[0])
                 }}
                 disabled={loading}
                 className="h-4 w-4 border-input"

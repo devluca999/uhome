@@ -446,9 +446,7 @@ export function PropertyDetail() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <div>
                     <CardTitle>Upcoming Expenses</CardTitle>
-                    <CardDescription>
-                      Next scheduled expenses for this property.
-                    </CardDescription>
+                    <CardDescription>Next scheduled expenses for this property.</CardDescription>
                   </div>
                   <UiButton
                     variant="ghost"
@@ -490,13 +488,17 @@ export function PropertyDetail() {
                           nextDue: getNextDueDate(e),
                         }))
                         .filter(item => item.nextDue >= todayStr)
-                        .sort((a, b) => (a.nextDue < b.nextDue ? -1 : a.nextDue > b.nextDue ? 1 : 0))
+                        .sort((a, b) =>
+                          a.nextDue < b.nextDue ? -1 : a.nextDue > b.nextDue ? 1 : 0
+                        )
                         .slice(0, 5)
 
                       if (upcoming.length === 0) {
                         return (
                           <div className="flex flex-col items-start gap-3">
-                            <p className="text-sm text-muted-foreground">No upcoming expenses yet.</p>
+                            <p className="text-sm text-muted-foreground">
+                              No upcoming expenses yet.
+                            </p>
                             <UiButton
                               size="sm"
                               onClick={() => {
@@ -522,7 +524,9 @@ export function PropertyDetail() {
                               </span>
                               <span className="flex-1 px-3 truncate">{expense.name}</span>
                               <span className="font-medium">
-                                {formatCurrency ? formatCurrency(expense.amount) : `$${Number(expense.amount).toLocaleString()}`}
+                                {formatCurrency
+                                  ? formatCurrency(expense.amount)
+                                  : `$${Number(expense.amount).toLocaleString()}`}
                               </span>
                             </div>
                           ))}
@@ -886,12 +890,10 @@ export function PropertyDetail() {
                         <div className="divide-y divide-border">
                           {expenses.map(expense => {
                             const typeLabel =
-                              expense.type ??
-                              (expense.is_recurring ? 'Recurring' : 'One-time')
+                              expense.type ?? (expense.is_recurring ? 'Recurring' : 'One-time')
                             const nextDue = getNextDueDate(expense)
                             const statusLabel =
-                              expense.status ??
-                              (expense.is_recurring ? 'Planned' : 'Planned')
+                              expense.status ?? (expense.is_recurring ? 'Planned' : 'Planned')
                             return (
                               <div
                                 key={expense.id}
@@ -918,7 +920,9 @@ export function PropertyDetail() {
                                   {nextDue ? new Date(nextDue).toLocaleDateString() : '—'}
                                 </span>
                                 <div className="flex items-center justify-end gap-2">
-                                  <span className="text-xs text-muted-foreground">{statusLabel}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {statusLabel}
+                                  </span>
                                   <UiButton
                                     variant="ghost"
                                     size="xs"

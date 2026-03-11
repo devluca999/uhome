@@ -112,7 +112,13 @@ export function NotificationDropdown({ className }: { className?: string }) {
                 {notifications.slice(0, 20).map(n => (
                   <li key={n.id}>
                     <Link
-                      to={n.type === 'message' ? (n.lease_id ? `${messagesPath}/${n.lease_id}` : messagesPath) : linkPath}
+                      to={
+                        n.type === 'message'
+                          ? n.lease_id
+                            ? `${messagesPath}/${n.lease_id}`
+                            : messagesPath
+                          : linkPath
+                      }
                       className={cn(
                         'flex items-start gap-3 p-3 text-left hover:bg-muted/50 transition-colors',
                         !n.read && 'bg-primary/5'
@@ -130,15 +136,16 @@ export function NotificationDropdown({ className }: { className?: string }) {
                         )}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="text-sm text-foreground">
-                          {notificationLabel(n.type)}
-                        </span>
+                        <span className="text-sm text-foreground">{notificationLabel(n.type)}</span>
                         <span className="block text-xs text-muted-foreground mt-0.5">
                           {formatNotificationTime(n.created_at)}
                         </span>
                       </span>
                       {!n.read && (
-                        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" aria-hidden />
+                        <span
+                          className="flex-shrink-0 w-2 h-2 rounded-full bg-primary"
+                          aria-hidden
+                        />
                       )}
                     </Link>
                   </li>

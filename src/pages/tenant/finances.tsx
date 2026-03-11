@@ -121,9 +121,7 @@ export function TenantFinances() {
   }
 
   function handleClearRecord(recordId: string) {
-    setClearedRecordIds(prev =>
-      prev.includes(recordId) ? prev : [...prev, recordId]
-    )
+    setClearedRecordIds(prev => (prev.includes(recordId) ? prev : [...prev, recordId]))
   }
 
   function handleResetCleared() {
@@ -216,8 +214,8 @@ export function TenantFinances() {
               />
             ) : visibleRecords.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                All payments have been cleared from this view. Use &quot;Show cleared payments&quot; to
-                restore them.
+                All payments have been cleared from this view. Use &quot;Show cleared payments&quot;
+                to restore them.
               </div>
             ) : (
               <div className="max-h-[60vh] md:max-h-[70vh] overflow-y-auto -mr-2 pr-2">
@@ -239,13 +237,7 @@ export function TenantFinances() {
   )
 }
 
-function TenantRentRecordRow({
-  record,
-  onClear,
-}: {
-  record: any
-  onClear?: (id: string) => void
-}) {
+function TenantRentRecordRow({ record, onClear }: { record: any; onClear?: (id: string) => void }) {
   const navigate = useNavigate()
   const { notes } = useNotes('rent_record', record.id)
   const note = notes[0]
