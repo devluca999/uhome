@@ -54,12 +54,22 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       
-      - name: Run production smoke tests
+      - name: Verify staging secrets are configured
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ]; then
+            echo "::error::VITE_SUPABASE_STAGING_URL secret is not configured. Pre-deploy E2E tests require staging Supabase credentials."
+            exit 1
+          fi
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
+
+      - name: Run pre-deploy E2E tests against staging
         run: npm run test:e2e:headless
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL || secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
-        # Smoke tests run against staging (env guard blocks production). Verifies build before deploy.
+          SUPABASE_ENV: staging
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
 
   deploy:
     name: Deploy to Production

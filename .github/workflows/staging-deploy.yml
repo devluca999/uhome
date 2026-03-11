@@ -28,8 +28,10 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e:headless
         env:
+          SUPABASE_ENV: staging
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
 
   deploy-staging:
     name: Deploy to Staging

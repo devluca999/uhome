@@ -100,9 +100,10 @@ jobs:
       - name: Run visual tests
         run: npm run test:visual:headless
         env:
+          SUPABASE_ENV: staging
           VISUAL_TEST_BASE_URL: ${{ secrets.VISUAL_TEST_BASE_URL || 'http://localhost:1000' }}
-          VITE_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_STAGING_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/main' && secrets.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
       
       - name: Upload visual test artifacts
         if: failure()
