@@ -101,7 +101,7 @@ jobs:
         run: npm run test:visual:headless
         env:
           SUPABASE_ENV: staging
-          VISUAL_TEST_BASE_URL: ${{ secrets.VISUAL_TEST_BASE_URL || 'http://localhost:1000' }}
+          VISUAL_TEST_BASE_URL: ${{ secrets.VISUAL_TEST_BASE_URL || 'http://localhost:3000' }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
       

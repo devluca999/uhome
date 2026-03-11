@@ -32,7 +32,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 1,
   reporter: [['html'], ['list']],
   use: {
-    baseURL: process.env.VISUAL_TEST_BASE_URL || 'http://localhost:1000',
+    baseURL: process.env.VISUAL_TEST_BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
