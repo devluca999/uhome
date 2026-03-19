@@ -1,61 +1,23 @@
 import { test, expect } from '@playwright/test'
-import {
-  createTestLandlord,
-  generateTestEmail,
-  loginAsLandlord,
-  getSupabaseClient,
-} from '../helpers/auth-helpers'
+import { loginAsLandlord } from '../helpers/auth-helpers'
 import { deleteUserAndData } from '../helpers/db-helpers'
+import { createSharedLandlordForDescribe } from '../fixtures/user-pool'
 
 test.describe('Landlord Login', () => {
-  let testEmail: string
-  let password: string
-  let userId: string | null = null
+  let sharedLandlord: { email: string; password: string; userId: string }
 
-  test.beforeEach(async () => {
-    testEmail = generateTestEmail('landlord')
-    password = 'testpassword123'
-
-    // Create test user
-    const { userId: createdUserId, error } = await createTestLandlord(testEmail, password)
-
-    // Log error details for debugging
-    if (error) {
-      console.error('Failed to create test landlord:', error)
-      throw new Error(`Failed to create test landlord: ${JSON.stringify(error)}`)
-    }
-
-    expect(error).toBeNull()
-    expect(createdUserId).toBeTruthy()
-    userId = createdUserId
-
-    // Verify user was actually created by checking database
-    const supabase = getSupabaseClient()
-    const { data: userRecord, error: fetchError } = await supabase
-      .from('users')
-      .select('id, email, role')
-      .eq('id', userId)
-      .single()
-
-    if (fetchError || !userRecord) {
-      throw new Error(
-        `User was not created in database. Error: ${fetchError?.message || 'User not found'}`
-      )
-    }
-
-    // Small delay to ensure auth state is ready
-    await new Promise(resolve => setTimeout(resolve, 500))
+  test.beforeAll(async () => {
+    sharedLandlord = await createSharedLandlordForDescribe()
   })
 
-  test.afterEach(async () => {
-    if (userId) {
-      await deleteUserAndData(userId)
-      userId = null
+  test.afterAll(async () => {
+    if (sharedLandlord?.userId) {
+      await deleteUserAndData(sharedLandlord.userId)
     }
   })
 
   test('should login with valid credentials and redirect to dashboard', async ({ page }) => {
-    await loginAsLandlord(page, testEmail, password)
+    await loginAsLandlord(page, sharedLandlord.email, sharedLandlord.password)
 
     // Verify we're on the dashboard
     await expect(page.locator('h1')).toContainText(/dashboard/i)
@@ -69,7 +31,7 @@ test.describe('Landlord Login', () => {
     await page.waitForLoadState('networkidle')
 
     // Fill in wrong password
-    await page.fill('input[type="email"]', testEmail)
+    await page.fill('input[type="email"]', sharedLandlord.email)
     await page.fill('input[type="password"]', 'wrongpassword')
 
     // Submit form

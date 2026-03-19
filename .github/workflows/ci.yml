@@ -7,6 +7,34 @@ on:
     branches: [main, develop]
 
 jobs:
+  # Detect which paths changed - used for conditional test runs
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      tests: ${{ steps.filter.outputs.tests }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'src/**'
+              - 'supabase/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'vite.config.*'
+              - 'tsconfig*.json'
+            tests:
+              - 'tests/**'
+              - 'playwright*.ts'
+              - 'vitest.config.*'
+            docs:
+              - 'docs/**'
+              - '*.md'
+
   lint-and-build:
     runs-on: ubuntu-latest
     steps:
@@ -40,10 +68,17 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_STAGING_ANON_KEY || 'placeholder-anon-key' }}
 
   local-e2e:
-    name: E2E (Local Supabase)
+    name: E2E (Local Supabase) Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
     runs-on: ubuntu-latest
-    needs: lint-and-build
-    if: github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+    needs: [lint-and-build, changes]
+    if: |
+      (github.ref == 'refs/heads/develop' || github.event_name == 'pull_request') &&
+      (needs.changes.outputs.app == 'true' || needs.changes.outputs.tests == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/develop'))
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+        shardTotal: [8]
     steps:
       - uses: actions/checkout@v4
 
@@ -76,12 +111,51 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
-        run: npm run test:e2e:headless
+      - name: Run E2E tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}, chromium only)
+        run: npx playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-blob-report-${{ matrix.shardIndex }}
+          path: blob-report
+          retention-days: 1
+
+  merge-e2e-reports:
+    name: Merge E2E reports
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && (github.ref == 'refs/heads/develop' || github.event_name == 'pull_request') }}
+    needs: [local-e2e]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: e2e-blob-report-*
+          merge-multiple: true
+      - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e2e-html-report
+          path: playwright-report
+          retention-days: 14
 
   visual-tests:
+    name: Visual Tests Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
     runs-on: ubuntu-latest
-    needs: lint-and-build
+    needs: [lint-and-build, changes]
+    if: needs.changes.outputs.app == 'true' || needs.changes.outputs.tests == 'true' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - uses: actions/checkout@v4
       
@@ -97,21 +171,53 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       
-      - name: Run visual tests
-        run: npm run test:visual:headless
+      - name: Run visual tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        run: npx playwright test --project=visual --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SUPABASE_ENV: staging
           VISUAL_TEST_BASE_URL: ${{ secrets.VISUAL_TEST_BASE_URL || 'http://localhost:3000' }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
       
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-blob-report-${{ matrix.shardIndex }}
+          path: blob-report
+          retention-days: 1
+      
       - name: Upload visual test artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-test-results
+          name: visual-test-results-${{ matrix.shardIndex }}
           path: |
             test-results/
             playwright-report/
             tests/visual/baselines/
           retention-days: 7
+
+  merge-visual-reports:
+    name: Merge visual test reports
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && (needs.visual-tests.result == 'success' || needs.visual-tests.result == 'failure') }}
+    needs: [visual-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: visual-blob-report-*
+          merge-multiple: true
+      - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - uses: actions/upload-artifact@v4
+        with:
+          name: visual-html-report
+          path: playwright-report
+          retention-days: 14

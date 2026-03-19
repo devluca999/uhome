@@ -122,7 +122,7 @@ export function generateFallbackExpenses(
       recurring_end_date: null,
       created_at: expenseDate.toISOString(),
       updated_at: expenseDate.toISOString(),
-    } as Expense)
+    } as unknown as Expense)
   }
 
   return expenses

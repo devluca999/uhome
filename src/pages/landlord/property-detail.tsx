@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils'
 import { Button as UiButton } from '@/components/ui/button'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { ExpenseForm } from '@/components/landlord/expense-form'
+import { getExpenseDate } from '@/lib/finance-calculations'
 
 type Property = Database['public']['Tables']['properties']['Row'] & {
   is_active?: boolean // Optional in case migration hasn't been run
@@ -904,7 +905,7 @@ export function PropertyDetail() {
                                     {expense.name}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
-                                    {new Date(getExpenseDate(expense as any)).toLocaleDateString()}
+                                    {new Date(getExpenseDate(expense)).toLocaleDateString()}
                                   </span>
                                 </div>
                                 <span className="text-xs capitalize">
@@ -925,7 +926,7 @@ export function PropertyDetail() {
                                   </span>
                                   <UiButton
                                     variant="ghost"
-                                    size="xs"
+                                    size="sm"
                                     className="h-7 px-2 text-xs"
                                     onClick={() => {
                                       setEditingExpenseId(expense.id)
@@ -936,7 +937,7 @@ export function PropertyDetail() {
                                   </UiButton>
                                   <UiButton
                                     variant="ghost"
-                                    size="xs"
+                                    size="sm"
                                     className="h-7 px-2 text-xs"
                                     onClick={async () => {
                                       await markExpensePaid(expense.id, 'all')
@@ -946,7 +947,7 @@ export function PropertyDetail() {
                                   </UiButton>
                                   <UiButton
                                     variant="ghost"
-                                    size="xs"
+                                    size="sm"
                                     className="h-7 px-2 text-xs text-destructive hover:text-destructive"
                                     onClick={async () => {
                                       if (
@@ -1014,7 +1015,7 @@ export function PropertyDetail() {
                               property_id: expense.property_id,
                               name: expense.name,
                               amount: expense.amount,
-                              date: getExpenseDate(expense as any),
+                              date: getExpenseDate(expense),
                               category: expense.category,
                               is_recurring: expense.is_recurring,
                               recurring_frequency: expense.recurring_frequency,

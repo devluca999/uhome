@@ -31,6 +31,19 @@ This directory contains end-to-end tests for uhome using Playwright.
 
 ## Running Tests
 
+**Prerequisite:** If `.env.test` points to local Supabase (`http://127.0.0.1:54321`), you must have local Supabase running first:
+
+```bash
+npx supabase start
+npx supabase db reset
+npm run seed:demo
+```
+
+Or use the **one-command** local test runner (does the above + runs tests):
+```bash
+npm run test:local
+```
+
 - **Run all tests (headed mode):**
   ```bash
   npm run test:e2e
@@ -62,6 +75,7 @@ This directory contains end-to-end tests for uhome using Playwright.
   # or
   npx playwright test --project=chromium
   ```
+  Requires local Supabase running (or staging URL in `.env.test`). See prerequisite above.
 
 ## Test Structure
 
@@ -86,6 +100,33 @@ tests/
 - Each test creates its own test data using unique email addresses (timestamp-based)
 - Tests clean up after themselves using `deleteUserAndData` helper
 - Test data is isolated per test run
+
+### User Reuse (Rate Limit Optimization)
+
+To reduce Supabase auth signups, use shared auth when tests in a describe block can safely share the same user:
+
+```ts
+import { createSharedLandlordForDescribe } from '../fixtures/user-pool'
+
+test.describe('My Tests', () => {
+  let sharedLandlord: { email: string; password: string; userId: string }
+
+  test.beforeAll(async () => {
+    sharedLandlord = await createSharedLandlordForDescribe()
+  })
+
+  test.afterAll(async () => {
+    if (sharedLandlord?.userId) await deleteUserAndData(sharedLandlord.userId)
+  })
+
+  test('test 1', async ({ page }) => {
+    await loginAsLandlord(page, sharedLandlord.email, sharedLandlord.password)
+    // ...
+  })
+})
+```
+
+Use `createSharedAuthForDescribe()` when both landlord and tenant are needed. Only use shared auth when tests don't mutate user-specific state (e.g. login tests, read-only flows).
 
 ## Test Coverage
 

@@ -21,30 +21,39 @@ E2E tests create multiple users in `beforeEach` hooks:
 ## Current Solution
 
 1. **Reduced workers to 1** in `playwright.config.ts`
-   - Tests run sequentially instead of in parallel
-   - Prevents hitting rate limits
+   - Tests run sequentially within each job
+   - Prevents hitting rate limits per IP
 
-2. **Added 500ms delays** between user creations in `auth-helpers.ts`
+2. **CI sharding** (GitHub Actions matrix strategy)
+   - Tests are split across 4 parallel jobs (shards)
+   - Each shard runs on a different runner = different IP = separate rate limit bucket
+   - Staging: 4 shards, chromium-only (~4x faster, ~3x fewer tests)
+   - CI local-e2e: 4 shards across all browsers
+   - CI visual-tests: 2 shards
+
+3. **Added 500ms delays** between user creations in `auth-helpers.ts`
    - Helps spread out requests over time
 
-3. **Email confirmation disabled**
+4. **Email confirmation disabled**
    - Prevents email sending rate limits
    - Users are automatically signed in after signup
 
 ## Impact on Test Performance
 
-- Tests will run slower (sequential instead of parallel)
-- But tests will be more reliable (won't hit rate limits)
-- Expected total test time: ~2-5 minutes (vs ~30 seconds with full parallelism)
+- Sharding achieves parallelism via multiple CI jobs (different IPs)
+- Staging gate: ~4 hrs → ~45-60 min (sharding + chromium-only)
+- CI local-e2e: ~4x faster with 4 shards
+
+## User Reuse Fixtures
+
+`tests/fixtures/user-pool.ts` provides `createSharedLandlordForDescribe()` and `createSharedAuthForDescribe()` for describe-level user reuse. Use in `beforeAll` when tests in the same describe can share credentials (e.g. login tests). See `tests/README.md` for usage.
 
 ## Alternative Solutions (if needed)
 
-If you need faster tests:
+If you need even faster tests:
 
 1. **Increase Supabase rate limits** (requires upgrading Supabase plan)
-2. **Use test fixtures** to reuse users across tests (reduce total user creations)
-3. **Create users via service role key** (bypasses some rate limits, but more complex)
-4. **Use separate test Supabase projects** per test runner (if running in CI with multiple runners)
+2. **Create users via service role key** (bypasses some rate limits, but more complex)
 
 ## Monitoring Rate Limits
 

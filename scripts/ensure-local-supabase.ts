@@ -8,6 +8,7 @@
 
 import './load-dotenv'
 
+// Use URL from env (set by run-local-tests from supabase status) or default
 const API_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321'
 const API_BASE = API_URL.replace(/\/$/, '')
 

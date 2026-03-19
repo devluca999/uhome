@@ -33,7 +33,8 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 1, // Use 1 worker to avoid hitting rate limits
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [['html'], ['list']],
+  /* Blob reporter enables merge-reports when running sharded tests in CI */
+  reporter: process.env.CI ? [['blob'], ['list']] : [['html'], ['list']],
 
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

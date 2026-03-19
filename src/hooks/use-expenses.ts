@@ -120,7 +120,7 @@ export function useExpenses(propertyId?: string) {
 
   async function markExpensePaid(
     id: string,
-    scope: 'this' | 'future' | 'all' = 'all'
+    _scope: 'this' | 'future' | 'all' = 'all'
   ): Promise<{ data: Expense | null; error: Error | null }> {
     // Scope is reserved for future, more granular recurrence handling.
     // For MVP we treat all scopes the same.

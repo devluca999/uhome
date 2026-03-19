@@ -10,30 +10,35 @@ import './load-dotenv'
 
 // Force local Supabase - override .env.local so we never hit cloud
 process.env.SUPABASE_ENV = 'local'
-process.env.VITE_SUPABASE_URL = 'http://127.0.0.1:54321'
 
-// Load local anon key and service role from `supabase status`
+// Load local URL, anon key and service role from `supabase status`
+// Uses actual ports from supabase/config.toml (e.g. 55321 on Windows)
 function loadLocalSupabaseEnv(): void {
-  // Use env format for reliable parsing (key=value), fallback to json
   let output: string
   try {
     output = execSync('npx supabase status -o env', { encoding: 'utf-8' })
   } catch {
     throw new Error('supabase status failed. Is local Supabase running? Run: npx supabase start')
   }
+  let apiUrl = ''
   let anon = ''
   let serviceRole = ''
   for (const line of output.split('\n')) {
-    const m = line.match(/^(PUBLISHABLE_KEY|ANON_KEY|SECRET_KEY|SERVICE_ROLE_KEY)=(.+)$/)
+    const m = line.match(/^(API_URL|PUBLISHABLE_KEY|ANON_KEY|SECRET_KEY|SERVICE_ROLE_KEY)=(.+)$/)
     if (m) {
       const val = m[2].trim().replace(/^["']|["']$/g, '')
+      if (m[1] === 'API_URL') apiUrl = val
       if (m[1] === 'PUBLISHABLE_KEY' || m[1] === 'ANON_KEY') anon = val
       if (m[1] === 'SECRET_KEY' || m[1] === 'SERVICE_ROLE_KEY') serviceRole = val
     }
   }
+  if (!apiUrl) {
+    throw new Error('Could not parse API_URL from supabase status. Is local Supabase running?')
+  }
   if (!anon || !serviceRole) {
     throw new Error('Could not parse PUBLISHABLE_KEY/SECRET_KEY from supabase status. Is local Supabase running?')
   }
+  process.env.VITE_SUPABASE_URL = apiUrl
   process.env.VITE_SUPABASE_ANON_KEY = anon
   process.env.SUPABASE_SERVICE_ROLE_KEY = serviceRole
   process.env.SUPABASE_SERVICE_KEY = serviceRole
@@ -41,6 +46,9 @@ function loadLocalSupabaseEnv(): void {
 }
 
 console.log('Running local test suite...\n')
+
+// Load URL and keys from supabase status first (uses actual ports from config, e.g. 55321)
+loadLocalSupabaseEnv()
 
 execSync('npx tsx scripts/validate-env.ts', {
   stdio: 'inherit',
@@ -51,8 +59,6 @@ execSync('npx tsx scripts/ensure-local-supabase.ts', {
   stdio: 'inherit',
   env: process.env,
 })
-
-loadLocalSupabaseEnv()
 
 // db reset can fail intermittently (container timing on Windows/Docker)
 const maxRetries = 3
