@@ -263,7 +263,12 @@ export function AcceptInvite() {
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 {token && (
-                  <Button type="button" variant="outline" className="w-full" onClick={() => void fetchInvite()}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => void fetchInvite()}
+                  >
                     Try again
                   </Button>
                 )}

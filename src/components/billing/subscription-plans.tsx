@@ -11,14 +11,17 @@ interface PlanCardProps {
 function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
   const plan = PLANS[tier]
   const isCurrent = tier === currentPlan
-  const isUpgrade = tier !== 'free' && currentPlan === 'free'
-    || (tier === 'portfolio' && currentPlan === 'landlord')
+  const isUpgrade =
+    (tier !== 'free' && currentPlan === 'free') ||
+    (tier === 'portfolio' && currentPlan === 'landlord')
 
   return (
-    <div className={`relative rounded-2xl border p-6 flex flex-col gap-4 transition-all
-      ${isCurrent
-        ? 'border-primary bg-primary/5 shadow-md'
-        : 'border-border bg-card hover:border-primary/40 hover:shadow-sm'
+    <div
+      className={`relative rounded-2xl border p-6 flex flex-col gap-4 transition-all
+      ${
+        isCurrent
+          ? 'border-primary bg-primary/5 shadow-md'
+          : 'border-border bg-card hover:border-primary/40 hover:shadow-sm'
       }`}
     >
       {isCurrent && (
@@ -36,16 +39,15 @@ function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
         <span className="text-3xl font-bold text-foreground">
           {plan.monthlyPrice === 0 ? 'Free' : `$${plan.monthlyPrice / 100}`}
         </span>
-        {plan.monthlyPrice > 0 && (
-          <span className="text-sm text-muted-foreground">/month</span>
-        )}
+        {plan.monthlyPrice > 0 && <span className="text-sm text-muted-foreground">/month</span>}
       </div>
 
       <ul className="flex flex-col gap-2 text-sm text-muted-foreground flex-1">
         <li className="flex items-center gap-2">
           <span className="text-foreground font-medium">
             {plan.maxProperties === -1 ? 'Unlimited' : plan.maxProperties}
-          </span> properties
+          </span>{' '}
+          properties
         </li>
         <li className="flex items-center gap-2">
           <span className="text-foreground font-medium">Unlimited</span> tenants
@@ -53,7 +55,8 @@ function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
         <li className="flex items-center gap-2">
           <span className="text-foreground font-medium">
             {plan.maxCollaborators === 0 ? 'No' : plan.maxCollaborators}
-          </span> collaborator{plan.maxCollaborators !== 1 ? 's' : ''}
+          </span>{' '}
+          collaborator{plan.maxCollaborators !== 1 ? 's' : ''}
         </li>
         {plan.features.advancedFinancials && (
           <li className="flex items-center gap-2 text-foreground">✓ Advanced financials</li>
@@ -67,7 +70,8 @@ function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
         <li className="flex items-center gap-2">
           <span className="text-foreground font-medium">
             {plan.storageMb >= 1024 ? `${plan.storageMb / 1024}GB` : `${plan.storageMb}MB`}
-          </span> storage
+          </span>{' '}
+          storage
         </li>
       </ul>
 
@@ -75,11 +79,12 @@ function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
         onClick={() => onSelect(tier)}
         disabled={isCurrent || loading}
         className={`w-full rounded-xl py-2.5 text-sm font-medium transition-all
-          ${isCurrent
-            ? 'bg-muted text-muted-foreground cursor-default'
-            : isUpgrade
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-              : 'border border-border text-foreground hover:bg-muted'
+          ${
+            isCurrent
+              ? 'bg-muted text-muted-foreground cursor-default'
+              : isUpgrade
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'border border-border text-foreground hover:bg-muted'
           }`}
       >
         {isCurrent ? 'Current plan' : isUpgrade ? 'Upgrade' : 'Downgrade'}

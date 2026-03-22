@@ -108,12 +108,7 @@ export function NotificationDropdown({ className }: { className?: string }) {
       <div className="flex items-center justify-between p-3 border-b border-border shrink-0">
         <span className="text-sm font-medium text-foreground">Notifications</span>
         {unreadCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => markAllAsRead()}
-          >
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markAllAsRead()}>
             <CheckCheck className="h-3.5 w-3.5 mr-1" />
             Mark all read
           </Button>
@@ -205,9 +200,7 @@ export function NotificationDropdown({ className }: { className?: string }) {
           )}
         </Button>
       </div>
-      {typeof document !== 'undefined' && panel
-        ? createPortal(panel, document.body)
-        : null}
+      {typeof document !== 'undefined' && panel ? createPortal(panel, document.body) : null}
     </>
   )
 }

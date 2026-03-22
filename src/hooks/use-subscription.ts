@@ -56,7 +56,9 @@ export function useSubscription(): UseSubscriptionReturn {
 
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end')
+        .select(
+          'plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end'
+        )
         .eq('organization_id', organizationId)
         .maybeSingle()
 

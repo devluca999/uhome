@@ -10,19 +10,13 @@ function maskToken(value: string | undefined): string {
   return `${s.slice(0, 4)}…${s.slice(-4)}`
 }
 
-function sanitizeContext(
-  context?: Record<string, unknown>
-): Record<string, unknown> | undefined {
+function sanitizeContext(context?: Record<string, unknown>): Record<string, unknown> | undefined {
   if (!context) return undefined
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(context)) {
     if (v === undefined) continue
     const keyLower = k.toLowerCase()
-    if (
-      keyLower.includes('token') ||
-      keyLower.includes('email') ||
-      keyLower.includes('password')
-    ) {
+    if (keyLower.includes('token') || keyLower.includes('email') || keyLower.includes('password')) {
       out[k] = typeof v === 'string' ? maskToken(v) : '[redacted]'
     } else {
       out[k] = v

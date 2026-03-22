@@ -245,7 +245,7 @@ export function DraggableDemoSelector() {
               duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.base),
               ease: motionTokens.ease.standard,
             }}
-          className="fixed top-4 right-4 z-[9999]"
+            className="fixed top-4 right-4 z-[9999]"
           >
             {sidebarContent}
           </motion.div>

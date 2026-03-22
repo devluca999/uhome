@@ -57,14 +57,9 @@ export function MessageBubble({ message, currentUserId, className }: MessageBubb
 
   return (
     <div
-      className={cn(
-        'flex mb-2 px-2',
-        isCurrentUser ? 'justify-end' : 'justify-start',
-        className
-      )}
+      className={cn('flex mb-2 px-2', isCurrentUser ? 'justify-end' : 'justify-start', className)}
     >
       <div className={cn('flex flex-col max-w-[75%]', isCurrentUser ? 'items-end' : 'items-start')}>
-
         {/* Sender label for received messages */}
         {!isCurrentUser && (
           <div className="flex items-center gap-1.5 mb-0.5 px-1">
@@ -84,7 +79,9 @@ export function MessageBubble({ message, currentUserId, className }: MessageBubb
           <span
             className={cn(
               'text-[10px] font-medium px-2 py-0.5 rounded-full mb-1',
-              isCurrentUser ? 'bg-primary/20 text-primary-foreground/80' : 'bg-muted text-muted-foreground'
+              isCurrentUser
+                ? 'bg-primary/20 text-primary-foreground/80'
+                : 'bg-muted text-muted-foreground'
             )}
           >
             {INTENT_LABELS[message.intent]}
@@ -110,10 +107,12 @@ export function MessageBubble({ message, currentUserId, className }: MessageBubb
             </div>
           )}
 
-          <p className={cn(
-            'text-[10px] mt-1.5 text-right',
-            isCurrentUser ? 'text-primary-foreground/60' : 'text-muted-foreground'
-          )}>
+          <p
+            className={cn(
+              'text-[10px] mt-1.5 text-right',
+              isCurrentUser ? 'text-primary-foreground/60' : 'text-muted-foreground'
+            )}
+          >
             {formattedTime}
           </p>
         </div>

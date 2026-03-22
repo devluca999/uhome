@@ -54,12 +54,21 @@ export function useAdminAuditLogs(
   const [logs, setLogs] = useState<AdminAuditLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const [paginationData, setPaginationData] = useState<PaginatedAuditLogs['pagination'] | null>(null)
+  const [paginationData, setPaginationData] = useState<PaginatedAuditLogs['pagination'] | null>(
+    null
+  )
 
-  useEffect(() => { fetchLogs() }, [
-    filters.adminId, filters.targetUserId, filters.actionType,
-    filters.startDate, filters.endDate, filters.searchEmail,
-    pagination.page, pagination.pageSize,
+  useEffect(() => {
+    fetchLogs()
+  }, [
+    filters.adminId,
+    filters.targetUserId,
+    filters.actionType,
+    filters.startDate,
+    filters.endDate,
+    filters.searchEmail,
+    pagination.page,
+    pagination.pageSize,
   ])
 
   async function fetchLogs() {
@@ -75,12 +84,14 @@ export function useAdminAuditLogs(
       // Query compliance_audit_log (the actual table that exists)
       let q = supabase
         .from('compliance_audit_log')
-        .select('id, action, user_id, actor_id, timestamp, metadata, created_at', { count: 'exact' })
+        .select('id, action, user_id, actor_id, timestamp, metadata, created_at', {
+          count: 'exact',
+        })
         .order('created_at', { ascending: false })
         .range(from, to)
 
       if (filters.startDate) q = q.gte('created_at', filters.startDate)
-      if (filters.endDate)   q = q.lte('created_at', filters.endDate)
+      if (filters.endDate) q = q.lte('created_at', filters.endDate)
 
       const { data, error: qErr, count } = await q
       if (qErr) throw qErr
@@ -106,7 +117,10 @@ export function useAdminAuditLogs(
 
       setLogs(mapped)
       setPaginationData({
-        page, pageSize, total, totalPages,
+        page,
+        pageSize,
+        total,
+        totalPages,
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
       })

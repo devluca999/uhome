@@ -15,16 +15,12 @@ import {
   DEMO_LANDLORD_CREDENTIALS,
 } from '@/lib/tenant-dev-mode'
 import { supabase } from '@/lib/supabase/client'
-import {
-  getPendingInviteToken,
-  buildAcceptInvitePath,
-} from '@/lib/pending-invite'
+import { getPendingInviteToken, buildAcceptInvitePath } from '@/lib/pending-invite'
 import { logFlowError } from '@/lib/flow-log'
 
 export function SignupPage() {
   const [searchParams] = useSearchParams()
-  const inviteFlow =
-    searchParams.get('invite') === 'true' || Boolean(getPendingInviteToken())
+  const inviteFlow = searchParams.get('invite') === 'true' || Boolean(getPendingInviteToken())
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -343,8 +339,8 @@ export function SignupPage() {
               )}
               {emailVerifyBanner && (
                 <div className="p-3 text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
-                  Check your email to verify your account. After you confirm, sign in and you&apos;ll
-                  be taken to complete joining your household.
+                  Check your email to verify your account. After you confirm, sign in and
+                  you&apos;ll be taken to complete joining your household.
                 </div>
               )}
               {magicLinkSent ? (

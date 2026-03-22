@@ -102,10 +102,7 @@ export function NotificationsPage() {
                       </span>
                     </span>
                     {!n.read && (
-                      <span
-                        className="flex-shrink-0 w-2 h-2 rounded-full bg-primary"
-                        aria-hidden
-                      />
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" aria-hidden />
                     )}
                   </Link>
                 </li>

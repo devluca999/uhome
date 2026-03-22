@@ -722,8 +722,8 @@ export function LandlordDashboard() {
         {rpcStats && rpcStats.monthly_rent_due > 0 && (
           <div className="text-xs text-muted-foreground text-center mb-6 -mt-2">
             This month: {formatCurrency(rpcStats.monthly_rent_collected)} collected of{' '}
-            {formatCurrency(rpcStats.monthly_rent_due)} due (
-            {rpcStats.collection_rate.toFixed(1)}% collection rate)
+            {formatCurrency(rpcStats.monthly_rent_due)} due ({rpcStats.collection_rate.toFixed(1)}%
+            collection rate)
             {rpcStats.overdue_amount > 0 && (
               <span className="text-destructive ml-2">
                 · {formatCurrency(rpcStats.overdue_amount)} overdue

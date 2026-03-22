@@ -20,9 +20,9 @@ export interface PlanConfig {
   tier: PlanTier
   name: string
   description: string
-  monthlyPrice: number   // in cents
-  yearlyPrice: number    // in cents
-  maxProperties: number  // -1 = unlimited
+  monthlyPrice: number // in cents
+  yearlyPrice: number // in cents
+  maxProperties: number // -1 = unlimited
   maxCollaborators: number
   storageMb: number
   features: {
@@ -90,11 +90,11 @@ export const PLANS: Record<PlanTier, PlanConfig> = {
  */
 export const STRIPE_PRICE_TO_PLAN: Record<string, PlanTier> = {
   // Monthly
-  'price_1TDgrcHPNU6LjU8JU3KBaA9i': 'landlord',
-  'price_1TDgvbHPNU6LjU8JrqpxpYnU': 'portfolio',
+  price_1TDgrcHPNU6LjU8JU3KBaA9i: 'landlord',
+  price_1TDgvbHPNU6LjU8JrqpxpYnU: 'portfolio',
   // Yearly
-  'price_1TDguDHPNU6LjU8JD4Wa78z4': 'landlord',
-  'price_1TDgzRHPNU6LjU8JpGmKvz9m': 'portfolio',
+  price_1TDguDHPNU6LjU8JD4Wa78z4: 'landlord',
+  price_1TDgzRHPNU6LjU8JpGmKvz9m: 'portfolio',
 }
 
 export function getPlanFromPriceId(priceId: string | null | undefined): PlanTier {

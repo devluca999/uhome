@@ -3,7 +3,11 @@
  * Pure helpers are exported for unit tests.
  */
 
-export type HostingDeploymentLabel = 'local development' | 'preview deployment' | 'production deployment' | 'unknown build'
+export type HostingDeploymentLabel =
+  | 'local development'
+  | 'preview deployment'
+  | 'production deployment'
+  | 'unknown build'
 
 export function resolveSupabaseEnvironmentName(
   viteSupabaseEnv: string | undefined,
@@ -17,7 +21,10 @@ export function resolveSupabaseEnvironmentName(
   return 'unset — set VITE_ENVIRONMENT (development | staging | production)'
 }
 
-export function getHostingDeploymentLabel(isViteDev: boolean, hostingEnv: string | undefined): HostingDeploymentLabel {
+export function getHostingDeploymentLabel(
+  isViteDev: boolean,
+  hostingEnv: string | undefined
+): HostingDeploymentLabel {
   if (isViteDev) return 'local development'
   const h = (hostingEnv || '').trim()
   if (h === 'production') return 'production deployment'
