@@ -849,34 +849,38 @@ export function LandlordDashboard() {
 
         {/* Property Profitability Section */}
         {profitByProperty.length > 0 && (
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: durationToSeconds(motionTokens.duration.base),
-              delay: 0.24, // Reduced from 0.5
-              ease: motionTokens.ease.standard,
-            }}
-            layout={false}
+          <CollapsibleSection
+            id="dashboard-property-profitability"
+            title="Property Profitability"
+            defaultExpanded={true}
             className="mb-8"
           >
-            <div className="mb-4">
-              <h2 className="text-2xl font-semibold text-foreground">Property Profitability</h2>
-              <p className="text-sm text-muted-foreground">Net profit and margins by property</p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {profitByProperty.map((item, index) => (
-                <ProfitMarginCard
-                  key={item.property.id}
-                  propertyName={item.property.name}
-                  rentCollected={item.rentCollected}
-                  expenses={item.expenses}
-                  index={index}
-                />
-              ))}
-            </div>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+              animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+              transition={{
+                duration: durationToSeconds(motionTokens.duration.base),
+                delay: 0.24,
+                ease: motionTokens.ease.standard,
+              }}
+              layout={false}
+            >
+              <p className="text-sm text-muted-foreground mb-4">
+                Net profit and margins by property
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {profitByProperty.map((item, index) => (
+                  <ProfitMarginCard
+                    key={item.property.id}
+                    propertyName={item.property.name}
+                    rentCollected={item.rentCollected}
+                    expenses={item.expenses}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </CollapsibleSection>
         )}
 
         {/* Smart Insights Section */}

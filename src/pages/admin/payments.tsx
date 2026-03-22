@@ -189,8 +189,10 @@ export function AdminPayments() {
                 <CardHeader>
                   <CardTitle>Note</CardTitle>
                   <CardDescription>
-                    Payment data is currently using mock data. Real Stripe integration is planned
-                    for future implementation.
+                    SaaS revenue is estimated from active Pro subscriptions. Failed rent payments
+                    come from <code className="text-xs">rent_records</code> with{' '}
+                    <code className="text-xs">payment_status = failed</code> (last 30 days). Stripe
+                    charges are not shown here until webhooks are integrated.
                   </CardDescription>
                 </CardHeader>
               </Card>

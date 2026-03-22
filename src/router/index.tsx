@@ -24,6 +24,7 @@ import { TenantFinances } from '@/pages/tenant/finances'
 import { TenantMessages } from '@/pages/tenant/messages'
 import { TenantLeaseDetail } from '@/pages/tenant/lease-detail'
 import { TenantPayRent } from '@/pages/tenant/pay-rent'
+import { NotificationsPage } from '@/pages/notifications'
 import { LandlordMessages } from '@/pages/landlord/messages'
 import { LeaseDetail } from '@/pages/landlord/lease-detail'
 import { SettingsPage } from '@/pages/settings'
@@ -139,6 +140,10 @@ export const router = createBrowserRouter(
               element: <LandlordMessages />,
             },
             {
+              path: 'notifications',
+              element: <NotificationsPage />,
+            },
+            {
               path: 'settings',
               element: <SettingsPage />,
             },
@@ -183,6 +188,10 @@ export const router = createBrowserRouter(
             {
               path: 'messages/:leaseId',
               element: <TenantMessages />,
+            },
+            {
+              path: 'notifications',
+              element: <NotificationsPage />,
             },
             {
               path: 'lease',

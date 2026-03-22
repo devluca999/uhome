@@ -21,6 +21,7 @@ const ALL_NAV_ITEMS = [
   { path: '/landlord/operations', label: 'Operations', required: false },
   { path: '/landlord/documents', label: 'Documents', required: false },
   { path: '/landlord/messages', label: 'Messages', required: false },
+  { path: '/landlord/notifications', label: 'Notifications', required: false },
   { path: '/landlord/settings', label: 'Settings', required: false },
 ]
 

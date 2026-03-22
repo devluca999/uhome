@@ -20,6 +20,7 @@ const ALL_NAV_ITEMS = [
   { path: '/tenant/maintenance', label: 'Maintenance', required: false },
   { path: '/tenant/documents', label: 'Documents', required: false },
   { path: '/tenant/messages', label: 'Messages', required: false },
+  { path: '/tenant/notifications', label: 'Notifications', required: false },
   { path: '/tenant/settings', label: 'Settings', required: false },
 ]
 

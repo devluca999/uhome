@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Link2, Loader2 } from 'lucide-react'
+import { extractTokenFromInviteInput } from '@/lib/invite-token'
+import { logFlowError, logFlowWarn } from '@/lib/flow-log'
 
 interface JoinHouseholdFormProps {
   onCancel?: () => void
@@ -23,54 +25,25 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
     }
   }, [role, navigate])
 
-  function extractTokenFromUrl(url: string): string | null {
-    const trimmed = url.trim()
-    try {
-      const urlObj = trimmed.includes('://')
-        ? new URL(trimmed)
-        : new URL(trimmed.startsWith('/') ? `http://local${trimmed}` : `http://local/${trimmed}`)
-      const fromQuery = urlObj.searchParams.get('token')
-      if (fromQuery) return fromQuery.trim()
-      const pathParts = urlObj.pathname.split('/').filter(Boolean)
-      const tokenIndex = pathParts.indexOf('accept-invite')
-      if (tokenIndex !== -1 && pathParts[tokenIndex + 1]) {
-        return pathParts[tokenIndex + 1]
-      }
-    } catch {
-      // ignore
-    }
-    const queryMatch = trimmed.match(/[?&]token=([^&]+)/)
-    if (queryMatch?.[1]) {
-      try {
-        return decodeURIComponent(queryMatch[1].trim())
-      } catch {
-        return queryMatch[1].trim()
-      }
-    }
-    const pathMatch = trimmed.match(/accept-invite\/([a-zA-Z0-9\-_]+)/)
-    if (pathMatch?.[1]) return pathMatch[1]
-    if (/^[a-zA-Z0-9\-_]+$/.test(trimmed)) {
-      return trimmed
-    }
-    return null
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
-      const token = extractTokenFromUrl(inviteLink.trim())
+      const token = extractTokenFromInviteInput(inviteLink.trim())
 
       if (!token) {
+        logFlowWarn('JoinHousehold', 'parseInviteInput', 'Could not extract token from input')
         setError('Invalid invite link. Please enter a valid invite URL or token.')
         setLoading(false)
         return
       }
 
+      setLoading(false)
       navigate(`/accept-invite?token=${encodeURIComponent(token)}`)
     } catch (err) {
+      logFlowError('JoinHousehold', 'handleSubmit', err)
       setError(err instanceof Error ? err.message : 'Failed to process invite link')
       setLoading(false)
     }

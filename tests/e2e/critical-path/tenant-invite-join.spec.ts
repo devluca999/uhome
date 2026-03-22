@@ -66,7 +66,7 @@ test.describe('Tenant Invite & Join', () => {
     // --- Landlord: navigate to property detail → tenants tab → invite ---
     await loginAsLandlord(page, landlordEmail, PASSWORD)
     await page.goto(`/landlord/properties/${propertyId}?tab=tenants`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Click "Invite Tenant"
     await page.click('button:has-text("Invite Tenant")')
@@ -118,7 +118,7 @@ test.describe('Tenant Invite & Join', () => {
 
     // Navigate to accept-invite URL
     await tenantPage.goto(`/accept-invite?token=${invite!.token}`)
-    await tenantPage.waitForLoadState('networkidle')
+    await tenantPage.waitForLoadState('domcontentloaded')
 
     // Click "Accept Invitation"
     const acceptBtn = tenantPage.locator('button:has-text("Accept Invitation")')
@@ -160,14 +160,14 @@ test.describe('Tenant Invite & Join', () => {
     expect(tenantRow).toBeTruthy()
 
     // 4. Tenant dashboard should show the property name
-    await tenantPage.waitForLoadState('networkidle')
+    await tenantPage.waitForLoadState('domcontentloaded')
     await expect(
       tenantPage.locator('text=Invite Test Property')
     ).toBeVisible({ timeout: 10000 })
 
     // --- Refresh and verify state persists ---
     await tenantPage.reload()
-    await tenantPage.waitForLoadState('networkidle')
+    await tenantPage.waitForLoadState('domcontentloaded')
 
     await expect(
       tenantPage.locator('text=Invite Test Property')

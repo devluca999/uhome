@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Eye, EyeOff, User, Building } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -15,6 +15,8 @@ import {
 } from '@/lib/tenant-dev-mode'
 import { logFailedLogin } from '@/lib/security/security-scanner'
 import { getPostLoginRedirectPath } from '@/lib/post-login-routing'
+import { getPendingInviteToken, buildAcceptInvitePath } from '@/lib/pending-invite'
+import { logFlowError } from '@/lib/flow-log'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -36,8 +38,34 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const locationState = location.state as { from?: { pathname?: string }; roleError?: boolean }
+  const locationState = location.state as {
+    from?: { pathname?: string }
+    roleError?: boolean
+    authCallbackError?: string
+  } | null
   const roleError = locationState?.roleError
+  const authCallbackMessageApplied = useRef(false)
+
+  // Surface OAuth / callback failures (see AuthCallback)
+  useEffect(() => {
+    if (authCallbackMessageApplied.current) return
+    const s = location.state as {
+      authCallbackError?: string
+      from?: { pathname?: string }
+      roleError?: boolean
+    } | null
+    if (!s?.authCallbackError) return
+    authCallbackMessageApplied.current = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot flash from OAuth callback into form error
+    setError(s.authCallbackError)
+    const next: { from?: { pathname?: string }; roleError?: boolean } = {}
+    if (s.from) next.from = s.from
+    if (s.roleError !== undefined) next.roleError = s.roleError
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: Object.keys(next).length > 0 ? next : null,
+    })
+  }, [location.state, location.pathname, location.search, navigate])
 
   // Clear orphaned session when redirected due to roleError (e.g. after db reset)
   useEffect(() => {
@@ -46,10 +74,15 @@ export function LoginPage() {
     }
   }, [roleError]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Redirect authenticated users to their role-appropriate dashboard
+  // Redirect authenticated users to pending invite or role-appropriate dashboard
   useEffect(() => {
     if (!authLoading && user && role) {
-      navigate(getPostLoginRedirectPath(role), { replace: true })
+      const pending = getPendingInviteToken()
+      if (pending) {
+        navigate(buildAcceptInvitePath(pending), { replace: true })
+      } else {
+        navigate(getPostLoginRedirectPath(role), { replace: true })
+      }
     }
   }, [user, role, authLoading, navigate])
 
@@ -85,6 +118,7 @@ export function LoginPage() {
     const { error } = await signIn(email, password)
 
     if (error) {
+      logFlowError('Login', 'signIn', error, { email })
       setError(error.message)
       // Log failed login attempt
       await logFailedLogin(email, error.message)
@@ -100,6 +134,7 @@ export function LoginPage() {
     const { error } = await signInWithGoogle()
 
     if (error) {
+      logFlowError('Login', 'signInWithGoogle', error)
       setError(error.message)
       setLoading(false)
     }
@@ -121,6 +156,7 @@ export function LoginPage() {
     const { error } = await signInWithMagicLink(email)
 
     if (error) {
+      logFlowError('Login', 'signInWithMagicLink', error, { email })
       // Handle rate limit errors specifically
       if (
         (error as { status?: number }).status === 429 ||

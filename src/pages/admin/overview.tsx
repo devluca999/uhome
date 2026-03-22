@@ -278,8 +278,10 @@ export function AdminOverview() {
                   <CardHeader>
                     <CardTitle>Note</CardTitle>
                     <CardDescription>
-                      Transaction data is currently using mock data. Real Stripe integration is
-                      planned for future implementation.
+                      Platform revenue figures are estimated from active Pro subscriptions. Failed
+                      payments reflect <code className="text-xs">rent_records</code> with{' '}
+                      <code className="text-xs">payment_status = failed</code> in the last 30 days.
+                      Refunds are not tracked in-app yet (shown as 0).
                     </CardDescription>
                   </CardHeader>
                 </Card>

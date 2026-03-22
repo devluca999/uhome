@@ -60,12 +60,20 @@ export default defineConfig({
 
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        actionTimeout: 15_000,
+        navigationTimeout: 30_000,
+      },
     },
 
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        actionTimeout: 15_000,
+        navigationTimeout: 30_000,
+      },
     },
 
     /* Visual tests project */
