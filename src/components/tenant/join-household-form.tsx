@@ -24,24 +24,33 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
   }, [role, navigate])
 
   function extractTokenFromUrl(url: string): string | null {
+    const trimmed = url.trim()
     try {
-      // Try parsing as full URL
-      const urlObj = new URL(url)
-      const pathParts = urlObj.pathname.split('/')
+      const urlObj = trimmed.includes('://')
+        ? new URL(trimmed)
+        : new URL(trimmed.startsWith('/') ? `http://local${trimmed}` : `http://local/${trimmed}`)
+      const fromQuery = urlObj.searchParams.get('token')
+      if (fromQuery) return fromQuery.trim()
+      const pathParts = urlObj.pathname.split('/').filter(Boolean)
       const tokenIndex = pathParts.indexOf('accept-invite')
       if (tokenIndex !== -1 && pathParts[tokenIndex + 1]) {
         return pathParts[tokenIndex + 1]
       }
     } catch {
-      // If it's not a full URL, try extracting token from path-like string
-      const match = url.match(/accept-invite\/?([a-zA-Z0-9\-_]+)/)
-      if (match && match[1]) {
-        return match[1]
+      // ignore
+    }
+    const queryMatch = trimmed.match(/[?&]token=([^&]+)/)
+    if (queryMatch?.[1]) {
+      try {
+        return decodeURIComponent(queryMatch[1].trim())
+      } catch {
+        return queryMatch[1].trim()
       }
-      // If it's just a token (alphanumeric + dashes/underscores), use it directly
-      if (/^[a-zA-Z0-9\-_]+$/.test(url.trim())) {
-        return url.trim()
-      }
+    }
+    const pathMatch = trimmed.match(/accept-invite\/([a-zA-Z0-9\-_]+)/)
+    if (pathMatch?.[1]) return pathMatch[1]
+    if (/^[a-zA-Z0-9\-_]+$/.test(trimmed)) {
+      return trimmed
     }
     return null
   }
@@ -60,8 +69,7 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
         return
       }
 
-      // Navigate to accept invite page
-      navigate(`/accept-invite/${token}`)
+      navigate(`/accept-invite?token=${encodeURIComponent(token)}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process invite link')
       setLoading(false)
@@ -84,7 +92,7 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
           <Input
             id="invite-link"
             type="text"
-            placeholder="https://example.com/accept-invite/abc123 or abc123"
+            placeholder="https://example.com/accept-invite?token=… or legacy /accept-invite/…"
             value={inviteLink}
             onChange={e => setInviteLink(e.target.value)}
             className="pl-10"

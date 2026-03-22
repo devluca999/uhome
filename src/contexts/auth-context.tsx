@@ -39,6 +39,8 @@ function clearDemoStorage() {
 interface AuthContextType {
   user: User | null
   session: Session | null
+  /** Landlord workspace id for org-scoped billing; null until org context is wired */
+  organizationId: string | null
   role: UserRole
   loading: boolean
   viewMode: ViewMode
@@ -332,6 +334,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     user,
     session,
+    organizationId: null,
     role,
     loading,
     viewMode,

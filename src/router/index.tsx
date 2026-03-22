@@ -75,7 +75,7 @@ export const router = createBrowserRouter(
           element: <AuthCallback />,
         },
         {
-          path: 'accept-invite/:token',
+          path: 'accept-invite',
           element: <AcceptInvite />,
         },
         {

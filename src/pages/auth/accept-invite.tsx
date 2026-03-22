@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTenantInvites } from '@/hooks/use-tenant-invites'
 import { useAuth } from '@/contexts/auth-context'
@@ -12,7 +12,8 @@ import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { motionTokens } from '@/lib/motion'
 
 export function AcceptInvite() {
-  const { token } = useParams<{ token: string }>()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
   const navigate = useNavigate()
   const { user } = useAuth()
   const { getInviteByToken } = useTenantInvites()
@@ -23,9 +24,12 @@ export function AcceptInvite() {
   const [invite, setInvite] = useState<any>(null)
 
   useEffect(() => {
-    if (token) {
-      fetchInvite()
+    if (!token) {
+      setLoading(false)
+      setError('Missing invite token')
+      return
     }
+    void fetchInvite()
   }, [token])
 
   async function fetchInvite() {

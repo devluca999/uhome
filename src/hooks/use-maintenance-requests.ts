@@ -262,9 +262,20 @@ export function useMaintenanceRequests(
       )
 
       // Filter tenant-visible work orders if requested
+      // P2 FIX 4: Tenants see their own submissions + landlord-created orders where visibility_to_tenants=true
       let filteredRequests = requestsWithRelations
       if (filterTenantVisible) {
-        filteredRequests = requestsWithRelations.filter(r => r.visibility_to_tenants === true)
+        filteredRequests = requestsWithRelations.filter(r => {
+          // Tenant's own submissions are always visible
+          if (r.created_by_role === 'tenant') return true
+          // Landlord-created: only if flagged visible
+          return r.visibility_to_tenants === true
+        })
+        // Always use public_description for tenant-facing display
+        filteredRequests = filteredRequests.map(r => ({
+          ...r,
+          description: r.public_description || r.description,
+        }))
       }
 
       setRequests(filteredRequests)

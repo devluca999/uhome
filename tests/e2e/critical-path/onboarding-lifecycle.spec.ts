@@ -128,7 +128,7 @@ test.describe('Onboarding Lifecycle', () => {
     const tenantPage = await tenantContext.newPage()
 
     await loginAsTenant(tenantPage, tenantEmail, PASSWORD)
-    await tenantPage.goto(`/accept-invite/${invite!.token}`)
+    await tenantPage.goto(`/accept-invite?token=${invite!.token}`)
     await tenantPage.waitForLoadState('networkidle')
 
     const acceptBtn = tenantPage.locator('button:has-text("Accept Invitation")')

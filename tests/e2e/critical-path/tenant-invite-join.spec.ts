@@ -117,7 +117,7 @@ test.describe('Tenant Invite & Join', () => {
     await loginAsTenant(tenantPage, tenantEmail, PASSWORD)
 
     // Navigate to accept-invite URL
-    await tenantPage.goto(`/accept-invite/${invite!.token}`)
+    await tenantPage.goto(`/accept-invite?token=${invite!.token}`)
     await tenantPage.waitForLoadState('networkidle')
 
     // Click "Accept Invitation"

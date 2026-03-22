@@ -105,6 +105,7 @@ jobs:
           VITE_ENVIRONMENT: staging
           VITE_SUPABASE_ENV: staging
           VITE_HOSTING_ENV: preview
+          SUPABASE_ENV: staging
       
       - name: Record staging deployment
         run: |

@@ -181,7 +181,7 @@ test.describe('Tenant Production Flows', () => {
     await tenantPage.waitForTimeout(3000)
 
     // Accept invite
-    await tenantPage.goto(`${baseUrl}/accept-invite/${invite.token}`)
+    await tenantPage.goto(`${baseUrl}/accept-invite?token=${invite.token}`)
     await tenantPage.waitForTimeout(2000)
     await tenantPage.click('button:has-text("Accept")')
     await tenantPage.waitForTimeout(3000)

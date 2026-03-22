@@ -1,3 +1,7 @@
+// P2 PATCH — FIX 3: Proper chat bubble layout with sender/receiver alignment.
+// Sent messages: right-aligned green bubble. Received: left-aligned muted bubble.
+// System messages: centered. Intent badges preserved.
+
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
@@ -17,9 +21,9 @@ interface MessageBubbleProps {
 
 const INTENT_LABELS: Record<Message['intent'], string> = {
   general: 'General',
-  maintenance: 'Maintenance',
-  billing: 'Billing',
-  notice: 'Notice',
+  maintenance: '🔧 Maintenance',
+  billing: '💳 Billing',
+  notice: '📋 Notice',
 }
 
 const STATUS_LABELS: Record<NonNullable<Message['status']>, string> = {
@@ -34,72 +38,86 @@ export function MessageBubble({ message, currentUserId, className }: MessageBubb
   const isLandlord = message.sender_role === 'landlord' && !isSystem
   const isTenant = message.sender_role === 'tenant' && !isSystem
 
-  const formattedDate = new Date(message.created_at).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
+  const formattedTime = new Date(message.created_at).toLocaleTimeString(undefined, {
+    hour: '2-digit',
     minute: '2-digit',
   })
+
+  // System messages: centered pill
+  if (isSystem) {
+    return (
+      <div className={cn('flex justify-center my-3', className)}>
+        <div className="flex items-center gap-1.5 bg-muted/60 border border-border rounded-full px-3 py-1">
+          <Bot className="w-3 h-3 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">{message.body}</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
       className={cn(
-        'flex flex-col gap-1',
-        isCurrentUser ? 'items-end' : isSystem ? 'items-center' : 'items-start',
+        'flex mb-2 px-2',
+        isCurrentUser ? 'justify-end' : 'justify-start',
         className
       )}
     >
-      {!isSystem && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground px-2">
-          <span>{message.sender?.email || 'Unknown'}</span>
-          {isLandlord && (
-            <Badge variant="default" className="text-xs">
-              Landlord
-            </Badge>
+      <div className={cn('flex flex-col max-w-[75%]', isCurrentUser ? 'items-end' : 'items-start')}>
+
+        {/* Sender label for received messages */}
+        {!isCurrentUser && (
+          <div className="flex items-center gap-1.5 mb-0.5 px-1">
+            <span className="text-xs font-semibold text-muted-foreground">
+              {isLandlord ? 'Landlord' : isTenant ? 'Tenant' : message.sender?.email || 'Unknown'}
+            </span>
+            {isLandlord && (
+              <Badge variant="default" className="text-[10px] h-4 px-1 py-0">
+                Landlord
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Intent badge (non-general only) */}
+        {message.intent !== 'general' && (
+          <span
+            className={cn(
+              'text-[10px] font-medium px-2 py-0.5 rounded-full mb-1',
+              isCurrentUser ? 'bg-primary/20 text-primary-foreground/80' : 'bg-muted text-muted-foreground'
+            )}
+          >
+            {INTENT_LABELS[message.intent]}
+          </span>
+        )}
+
+        {/* Bubble */}
+        <div
+          className={cn(
+            'rounded-2xl px-4 py-2.5 text-sm break-words',
+            isCurrentUser
+              ? 'bg-primary text-primary-foreground rounded-br-sm'
+              : 'bg-muted text-foreground rounded-bl-sm'
           )}
-          {isTenant && (
-            <Badge variant="secondary" className="text-xs">
-              Tenant
-            </Badge>
+        >
+          <p className="whitespace-pre-wrap leading-relaxed">{message.body}</p>
+
+          {message.status && (
+            <div className="mt-2 pt-2 border-t border-border/30">
+              <Badge variant="secondary" className="text-[10px]">
+                {STATUS_LABELS[message.status]}
+              </Badge>
+            </div>
           )}
-          {message.intent !== 'general' && (
-            <Badge variant="outline" className="text-xs">
-              {INTENT_LABELS[message.intent]}
-            </Badge>
-          )}
+
+          <p className={cn(
+            'text-[10px] mt-1.5 text-right',
+            isCurrentUser ? 'text-primary-foreground/60' : 'text-muted-foreground'
+          )}>
+            {formattedTime}
+          </p>
         </div>
-      )}
-
-      <div
-        className={cn(
-          'rounded-lg px-4 py-2 max-w-[80%] break-words',
-          isSystem
-            ? 'bg-muted/50 border border-border text-foreground'
-            : isCurrentUser
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-foreground'
-        )}
-      >
-        {isSystem && (
-          <div className="flex items-center gap-2 mb-1">
-            <Bot className="w-4 h-4" />
-            <span className="text-xs font-semibold">System</span>
-          </div>
-        )}
-
-        <p className="text-sm whitespace-pre-wrap">{message.body}</p>
-
-        {message.status && (
-          <div className="mt-2 pt-2 border-t border-border/50">
-            <Badge variant="secondary" className="text-xs">
-              {STATUS_LABELS[message.status]}
-            </Badge>
-          </div>
-        )}
       </div>
-
-      <span className="text-xs text-muted-foreground px-2">{formattedDate}</span>
     </div>
   )
 }
