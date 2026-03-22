@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
 import { withRetry } from '@/lib/retry'
 import { calculateProjectedExpenses, getExpenseDate } from '@/lib/finance-calculations'
 import type { Database } from '@/types/database'
@@ -9,6 +10,7 @@ type ExpenseInsert = Database['public']['Tables']['expenses']['Insert']
 type ExpenseUpdate = Database['public']['Tables']['expenses']['Update']
 
 export function useExpenses(propertyId?: string) {
+  const { user } = useAuth()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -36,7 +38,8 @@ export function useExpenses(propertyId?: string) {
 
   useEffect(() => {
     fetchExpenses()
-  }, [propertyId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId, user?.id])
 
   async function fetchExpenses() {
     try {
@@ -44,6 +47,22 @@ export function useExpenses(propertyId?: string) {
       let query = supabase.from('expenses').select('*').order('expense_date', { ascending: false })
       if (propertyId) {
         query = query.eq('property_id', propertyId)
+      } else {
+        if (!user?.id) {
+          setExpenses([])
+          return
+        }
+        const { data: ownedProperties, error: propError } = await supabase
+          .from('properties')
+          .select('id')
+          .eq('owner_id', user.id)
+        if (propError) throw propError
+        const ownerPropertyIds = (ownedProperties ?? []).map(p => p.id)
+        if (ownerPropertyIds.length === 0) {
+          setExpenses([])
+          return
+        }
+        query = query.in('property_id', ownerPropertyIds)
       }
       const { data, error: fetchError } = await withRetry(async () => {
         const res = await query

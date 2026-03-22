@@ -20,10 +20,17 @@ export async function getProperties(viewMode: ViewMode, demoState: DemoState): P
   if (viewMode === 'landlord-demo' && demoState === 'empty') {
     return []
   }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return []
+  }
   const { data, error } = await withRetry(async () => {
     const res = await supabase
       .from('properties')
       .select('*')
+      .eq('owner_id', user.id)
       .order('created_at', { ascending: false })
     return res
   })

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
-import { getTenants } from '@/lib/data/tenant-service'
-import { landlordDemoProperties } from '@/demo-data/landlordDemoData'
+import { fetchTenantsForOwner } from '@/lib/data/tenant-service'
 
 export type Tenant = {
   id: string
@@ -37,68 +36,25 @@ export function useTenants() {
   const fetchTenants = useCallback(async () => {
     try {
       setLoading(true)
-      if (isDemoMode(viewMode, role)) {
-        const rawTenants = await getTenants(viewMode, demoState)
-        const enriched = rawTenants.map(t => {
-          const prop = landlordDemoProperties.find(p => p.id === t.property_id)
-          return {
-            ...t,
-            property_id: t.property_id || '',
-            user: { email: 'demo@example.com', role: 'tenant' },
-            property: prop ? { name: prop.name, address: prop.address ?? undefined } : undefined,
-          }
-        })
-        setTenants(enriched)
+      if (role === 'admin' && viewMode === 'tenant-demo') {
+        setTenants([])
+        return
+      }
+      if (role === 'admin' && viewMode === 'landlord-demo' && demoState === 'empty') {
+        setTenants([])
         return
       }
 
-      const { data, error: fetchError } = await supabase
-        .from('tenants')
-        .select(
-          `
-          *,
-          users!tenants_user_id_fkey(email, role),
-          properties!tenants_property_id_fkey(name, address)
-        `
-        )
-        .order('created_at', { ascending: false })
-
-      if (fetchError) {
-        console.warn('Nested query failed, trying simple query:', fetchError)
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('tenants')
-          .select('*')
-          .order('created_at', { ascending: false })
-        if (simpleError) throw simpleError
-        const tenantsWithRelations = await Promise.all(
-          (simpleData || []).map(async tenant => {
-            const [userData, propertyData] = await Promise.all([
-              supabase.from('users').select('email, role').eq('id', tenant.user_id).single(),
-              tenant.property_id
-                ? supabase
-                    .from('properties')
-                    .select('name, address')
-                    .eq('id', tenant.property_id)
-                    .single()
-                : Promise.resolve({ data: null }),
-            ])
-            return {
-              ...tenant,
-              user: userData.data || undefined,
-              property: propertyData.data || undefined,
-            }
-          })
-        )
-        setTenants(tenantsWithRelations)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setTenants([])
         return
       }
 
-      const mappedData = (data || []).map((item: any) => ({
-        ...item,
-        user: item.users,
-        property: item.properties,
-      }))
-      setTenants(mappedData)
+      const mappedData = await fetchTenantsForOwner(user.id)
+      setTenants(mappedData as Tenant[])
     } catch (err) {
       setError(err as Error)
       console.error('Error fetching tenants:', err)
