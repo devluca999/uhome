@@ -1,11 +1,9 @@
 /**
- * Admin Audit Logs Hook
- *
- * React hook for fetching admin audit logs with filtering capabilities.
+ * Admin Audit Logs Hook — reads from compliance_audit_log table directly.
+ * Replaced edge-function call (fetch-audit-logs) which doesn't exist in this environment.
  */
 
 import { useState, useEffect } from 'react'
-import { appEnvironment } from '@/config/environment'
 import { supabase } from '@/lib/supabase/client'
 
 export interface AdminAuditLog {
@@ -56,21 +54,12 @@ export function useAdminAuditLogs(
   const [logs, setLogs] = useState<AdminAuditLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const [paginationData, setPaginationData] = useState<PaginatedAuditLogs['pagination'] | null>(
-    null
-  )
+  const [paginationData, setPaginationData] = useState<PaginatedAuditLogs['pagination'] | null>(null)
 
-  useEffect(() => {
-    fetchLogs()
-  }, [
-    filters.adminId,
-    filters.targetUserId,
-    filters.actionType,
-    filters.startDate,
-    filters.endDate,
-    filters.searchEmail,
-    pagination.page,
-    pagination.pageSize,
+  useEffect(() => { fetchLogs() }, [
+    filters.adminId, filters.targetUserId, filters.actionType,
+    filters.startDate, filters.endDate, filters.searchEmail,
+    pagination.page, pagination.pageSize,
   ])
 
   async function fetchLogs() {
@@ -78,60 +67,57 @@ export function useAdminAuditLogs(
       setLoading(true)
       setError(null)
 
-      // Get session for auth token
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!session) {
-        throw new Error('Not authenticated')
-      }
+      const page = pagination.page || 1
+      const pageSize = pagination.pageSize || 50
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
 
-      // Build query parameters
-      const params = new URLSearchParams()
+      // Query compliance_audit_log (the actual table that exists)
+      let q = supabase
+        .from('compliance_audit_log')
+        .select('id, action, user_id, actor_id, timestamp, metadata, created_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to)
 
-      if (filters.adminId) params.set('adminId', filters.adminId)
-      if (filters.targetUserId) params.set('targetUserId', filters.targetUserId)
-      if (filters.actionType) params.set('actionType', filters.actionType)
-      if (filters.startDate) params.set('startDate', filters.startDate)
-      if (filters.endDate) params.set('endDate', filters.endDate)
-      if (filters.searchEmail) params.set('searchEmail', filters.searchEmail)
+      if (filters.startDate) q = q.gte('created_at', filters.startDate)
+      if (filters.endDate)   q = q.lte('created_at', filters.endDate)
 
-      params.set('page', String(pagination.page || 1))
-      params.set('pageSize', String(pagination.pageSize || 50))
+      const { data, error: qErr, count } = await q
+      if (qErr) throw qErr
 
-      // Construct function URL with query params
-      const functionUrl = `${appEnvironment.supabaseUrl}/functions/v1/fetch-audit-logs?${params.toString()}`
+      // Map compliance_audit_log shape to AdminAuditLog shape
+      const mapped: AdminAuditLog[] = (data || []).map((row: any) => ({
+        id: row.id,
+        admin_id: row.actor_id || '',
+        admin_email: row.metadata?.actor_email || null,
+        action_type: row.action || 'unknown',
+        target_user_id: row.user_id || '',
+        target_user_email: row.metadata?.target_email || null,
+        target_user_role: row.metadata?.target_role || null,
+        reason: row.metadata?.reason || null,
+        metadata: row.metadata || {},
+        ip_address: row.metadata?.ip_address || null,
+        user_agent: row.metadata?.user_agent || null,
+        created_at: row.created_at,
+      }))
 
-      const response = await fetch(functionUrl, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: appEnvironment.supabaseAnonKey,
-        },
+      const total = count || 0
+      const totalPages = Math.ceil(total / pageSize)
+
+      setLogs(mapped)
+      setPaginationData({
+        page, pageSize, total, totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to fetch audit logs')
-      }
-
-      const result: PaginatedAuditLogs = await response.json()
-
-      setLogs(result.data)
-      setPaginationData(result.pagination)
     } catch (err) {
       console.error('Error fetching audit logs:', err)
       setError(err as Error)
+      setLogs([])
     } finally {
       setLoading(false)
     }
   }
 
-  return {
-    logs,
-    loading,
-    error,
-    pagination: paginationData,
-    refetch: fetchLogs,
-  }
+  return { logs, loading, error, pagination: paginationData, refetch: fetchLogs }
 }

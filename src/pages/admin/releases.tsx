@@ -29,7 +29,10 @@ export function AdminReleases() {
   const { user } = useAuth()
   const [releases, setReleases] = useState<AppRelease[]>([])
   const [loading, setLoading] = useState(true)
-  const [environment, setEnvironment] = useState<'staging' | 'production'>('production')
+  const [environment, setEnvironment] = useState<'staging' | 'production'>(
+    // Default to staging on staging env, production otherwise
+    (import.meta.env.VITE_ENVIRONMENT === 'staging' ? 'staging' : 'production') as 'staging' | 'production'
+  )
 
   const enabled = isFeatureEnabled('ENABLE_RELEASE_TRACKING')
 

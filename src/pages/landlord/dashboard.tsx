@@ -221,9 +221,12 @@ export function LandlordDashboard() {
   )
 
   // Use historical metrics for charts, kpiMetrics for KPI cards
+  // NOTE: rentCollected from kpiMetrics uses paid_date scoped to dateRange (same as Finances page)
+  // This ensures Dashboard and Finances page show the same numbers for the same period.
   const metrics = {
     ...historicalMetrics,
     rentCollected: kpiMetrics.rentCollected,
+    rentOutstanding: kpiMetrics.rentOutstanding,
     totalExpenses: kpiMetrics.totalExpenses,
     netProfit: kpiMetrics.netProfit,
     marginPercentage: kpiMetrics.marginPercentage,
