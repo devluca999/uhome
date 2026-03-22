@@ -1,35 +1,30 @@
-# Supabase Schema Setup
+# Supabase (uhome / haume)
 
-This folder contains the database schema for uhome.
+## Current workflow (CLI)
 
-## Quick Setup
+Use the Supabase CLI for **migrations** and local **Docker** development. See **[docs/database-migrations.md](../docs/database-migrations.md)** for:
 
-1. Open your Supabase project dashboard
-2. Go to **SQL Editor**
-3. Run `schema.sql` first (creates tables and initial policies)
-4. Run `fix_rls_policies.sql` (fixes user signup issues)
-5. Run `fix_rls_recursion.sql` (fixes circular RLS policy issues that cause 500 errors)
-6. Click **Run** (or press Ctrl+Enter) for each file
+- `npm run db:start` / `db:reset` / `db:migrate` / `db:seed`
+- Promoting schema changes **local → uhome-staging → uhome-app**
+- Production push confirmation (`CONFIRM_PRODUCTION_DB_PUSH`)
+- Staging demo reseed (`CONFIRM_STAGING_RESEED`)
 
-## What This Creates
+## Layout
 
-- **users** - Extended user profiles with roles (landlord/tenant)
-- **properties** - Property listings with rent info
-- **tenants** - Tenant-property relationships
-- **maintenance_requests** - Maintenance request tracking
-- **documents** - Document storage (leases, notices, etc.)
-- **rent_records** - Rent payment tracking
+| Path | Role |
+|------|------|
+| `migrations/` | Ordered SQL migrations |
+| `seed.sql` | SQL seed after migrations (`db reset`) |
+| `config.toml` | Local ports (this repo uses **55xxx** API port), Auth, seed path |
+| `functions/` | Edge Functions |
+| `schema.sql` | Historical / reference; prefer migrations for new work |
 
-## Security Features
+## Quick local start
 
-All tables have Row Level Security (RLS) enabled with policies that:
-- Landlords can only access their own properties and related data
-- Tenants can only access their own data and properties they're assigned to
-- Automatic user record creation on signup (via trigger)
+```bash
+npm run db:start
+npm run db:reset
+npm run db:seed:demo
+```
 
-## Important Notes
-
-- The `handle_new_user()` trigger automatically creates a user record in `public.users` when someone signs up via Supabase Auth
-- By default, new users are created with role 'tenant' - this should be updated in your signup flow
-- All foreign keys use CASCADE delete for data integrity
-
+Copy `VITE_SUPABASE_*` from `npm run db:status` or `npx tsx scripts/get-local-supabase-env.ts`.

@@ -100,8 +100,8 @@ jobs:
       - name: Start local Supabase
         run: supabase start
 
-      - name: Apply migrations
-        run: supabase db reset
+      - name: Apply migrations and SQL seed
+        run: npm run db:reset
 
       - name: Get local Supabase credentials
         run: npx tsx scripts/get-local-supabase-env.ts >> $GITHUB_ENV

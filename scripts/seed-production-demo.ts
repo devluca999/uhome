@@ -8,7 +8,7 @@ import './load-dotenv'
 import { createClient } from '@supabase/supabase-js'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
-import { enforceNonProduction } from '../tests/helpers/env-guard'
+import { enforceNonProduction, isLocalSupabaseUrl } from '../tests/helpers/env-guard'
 import { assertEnvironmentCapabilities } from '../src/lib/env-safety'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -38,6 +38,17 @@ const supabaseAnon = supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey
 
 if (!isUsingServiceRole || !supabaseAnon) {
   console.error('❌ This script requires SUPABASE_SERVICE_ROLE_KEY and VITE_SUPABASE_ANON_KEY')
+  process.exit(1)
+}
+
+// Cloud (e.g. staging) reseed: explicit opt-in so a mis-pointed .env cannot wipe staging silently.
+if (!isLocalSupabaseUrl(supabaseUrl) && process.env.CONFIRM_STAGING_RESEED !== 'yes') {
+  console.error(
+    '❌ Refusing to seed a remote database without explicit confirmation.\n\n' +
+      'Set CONFIRM_STAGING_RESEED=yes if you intend to run demo seed against this URL:\n' +
+      `  ${supabaseUrl}\n\n` +
+      'Production URLs are still blocked by enforceNonProduction().'
+  )
   process.exit(1)
 }
 

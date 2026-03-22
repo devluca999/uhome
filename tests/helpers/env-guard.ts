@@ -20,6 +20,14 @@ import {
 export { ALLOWED_ENVS }
 
 /**
+ * True when the Supabase API URL points at local CLI (Docker), including non-default ports.
+ */
+export function isLocalSupabaseUrl(url: string): boolean {
+  const u = (url || '').toLowerCase()
+  return u.includes('127.0.0.1') || u.includes('localhost')
+}
+
+/**
  * Check if the current environment is production.
  * Returns true when SUPABASE_ENV=production or URL contains prod/production.
  */

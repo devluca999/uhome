@@ -129,6 +129,7 @@ uhome/
 - [Deployment Guide](docs/deployment.md)
 - [PWA Setup](docs/pwa_setup.md)
 - [CI/CD](docs/ci_cd.md)
+- [Database migrations & seeds (Supabase CLI)](docs/database-migrations.md)
 
 ## Deployment
 

@@ -24,7 +24,8 @@ schema_paths = []
 
 [db.seed]
 enabled = true
-sql_paths = []
+# Applied after migrations on `supabase db reset` and `supabase db seed`
+sql_paths = ["./seed.sql"]
 
 [realtime]
 enabled = true

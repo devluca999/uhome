@@ -95,3 +95,7 @@ flowchart TB
 ## 7. Known in-repo references (not secrets)
 
 - Internal docs and reports sometimes mention a specific `*.supabase.co` host as an example; **treat the dashboard + secrets as source of truth** for the live project mapping.
+
+## 8. Schema changes and seeds
+
+For migrations, `seed.sql`, and how local / **uhome-staging** / **uhome-app** stay in sync, see **[database-migrations.md](./database-migrations.md)**.

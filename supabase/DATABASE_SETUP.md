@@ -1,6 +1,8 @@
 # Database Setup Guide
 
-This guide explains how to set up and synchronize database schemas between staging and production environments.
+> **Primary workflow:** Use the Supabase CLI and versioned migrations — see **[docs/database-migrations.md](../docs/database-migrations.md)** for `db:reset`, `db:migrate`, staging/production promotion, and safety guards.
+
+This guide explains how to set up and synchronize database schemas between staging and production environments (including legacy SQL Editor flows).
 
 ## Overview
 

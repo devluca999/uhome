@@ -17,7 +17,7 @@ uhome uses GitHub Actions for continuous integration and deployment. The setup s
 2. **Formatting**: Prettier validation (no auto-fix)
 3. **Type Checking**: TypeScript compiler check
 4. **Build**: Production build verification
-5. **E2E (Local Supabase)**: Primary - runs `supabase start`, `db reset`, seed, then Playwright E2E
+5. **E2E (Local Supabase)**: Primary - runs `npm run db:start`, `npm run db:reset`, `seed:demo`, then Playwright E2E
 6. **E2E (Cloud Staging)**: Legacy - temporary parallel run during transition; remove after 2 consecutive green local runs
 7. **Visual Tests**: Visual regression testing
 

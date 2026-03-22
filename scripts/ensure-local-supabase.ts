@@ -8,8 +8,8 @@
 
 import './load-dotenv'
 
-// Use URL from env (set by run-local-tests from supabase status) or default
-const API_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321'
+// Use URL from env (set by get-local-supabase-env / supabase status) or default from supabase/config.toml [api].port
+const API_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:55321'
 const API_BASE = API_URL.replace(/\/$/, '')
 
 async function checkHealth(): Promise<boolean> {
@@ -35,12 +35,12 @@ async function main(): Promise<void> {
 
 Ensure:
   1. Docker is running
-  2. Run: npx supabase start
-  3. Wait for services to be ready (check with: npx supabase status)
+  2. Run: npm run db:start
+  3. Wait for services to be ready (check with: npm run db:status)
 
-Then run migrations and seed:
-  npx supabase db reset
-  npm run seed:demo
+Then reset DB (migrations + seed.sql) and optional demo fixtures:
+  npm run db:reset
+  npm run db:seed:demo
 `)
     process.exit(1)
   }
