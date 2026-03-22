@@ -177,6 +177,7 @@ jobs:
         run: npx playwright test --project=visual --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SUPABASE_ENV: staging
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
           VISUAL_TEST_BASE_URL: ${{ secrets.VISUAL_TEST_BASE_URL || 'http://localhost:3000' }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
