@@ -17,7 +17,6 @@ function tryLoad(name: string, override: boolean): void {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __uhomeTestEnvLoaded: boolean | undefined
 }
 
