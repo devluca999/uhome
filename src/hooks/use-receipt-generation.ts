@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { appEnvironment } from '@/config/environment'
 import { supabase } from '@/lib/supabase/client'
 
 export function useReceiptGeneration() {
@@ -20,8 +21,7 @@ export function useReceiptGeneration() {
       }
 
       // Call the edge function
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const functionUrl = `${supabaseUrl}/functions/v1/generate-receipt`
+      const functionUrl = `${appEnvironment.supabaseUrl}/functions/v1/generate-receipt`
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {

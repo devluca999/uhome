@@ -30,6 +30,7 @@ if (!apiUrl || !anon || !serviceRole) {
 
 console.log(`VITE_SUPABASE_URL=${apiUrl}`)
 console.log('SUPABASE_ENV=local')
+console.log('VITE_ENVIRONMENT=development')
 console.log(`VITE_SUPABASE_ANON_KEY=${anon}`)
 console.log(`SUPABASE_SERVICE_KEY=${serviceRole}`)
 console.log(`SUPABASE_SERVICE_ROLE_KEY=${serviceRole}`)

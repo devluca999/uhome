@@ -5,6 +5,7 @@
  * Helps identify why data might be missing or not persisting.
  */
 
+import { appEnvironment } from '@/config/environment'
 import { supabase } from '@/lib/supabase/client'
 
 export interface DataHealthIssue {
@@ -233,7 +234,7 @@ export async function checkDataHealth(
 
     // Check environment (dev mode only)
     if (import.meta.env.DEV) {
-      const appUrl = import.meta.env.VITE_SUPABASE_URL
+      const appUrl = appEnvironment.supabaseUrl
       if (!appUrl) {
         issues.push({
           type: 'env_mismatch',
@@ -273,7 +274,7 @@ export function checkEnvCongruence(): {
 
   // In browser, we can only check app env vars
   // Full congruence check should be done via verify-env-congruence.ts script
-  const appUrl = import.meta.env.VITE_SUPABASE_URL
+  const appUrl = appEnvironment.supabaseUrl
 
   if (!appUrl) {
     issues.push('VITE_SUPABASE_URL is not set in app environment')

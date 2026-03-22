@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { appEnvironment } from '@/config/environment'
 import { supabase } from '@/lib/supabase/client'
 
 export interface AdminAuditLog {
@@ -99,14 +100,13 @@ export function useAdminAuditLogs(
       params.set('pageSize', String(pagination.pageSize || 50))
 
       // Construct function URL with query params
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const functionUrl = `${supabaseUrl}/functions/v1/fetch-audit-logs?${params.toString()}`
+      const functionUrl = `${appEnvironment.supabaseUrl}/functions/v1/fetch-audit-logs?${params.toString()}`
 
       const response = await fetch(functionUrl, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          apikey: appEnvironment.supabaseAnonKey,
         },
       })
 

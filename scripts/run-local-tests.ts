@@ -40,6 +40,7 @@ function loadLocalSupabaseEnv(): void {
   }
   process.env.VITE_SUPABASE_URL = apiUrl
   process.env.VITE_SUPABASE_ANON_KEY = anon
+  process.env.VITE_ENVIRONMENT = 'development'
   process.env.SUPABASE_SERVICE_ROLE_KEY = serviceRole
   process.env.SUPABASE_SERVICE_KEY = serviceRole
   process.env.TEST_SUPABASE_SERVICE_KEY = serviceRole

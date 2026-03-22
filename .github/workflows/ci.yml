@@ -66,6 +66,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_STAGING_URL || 'https://placeholder.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_STAGING_ANON_KEY || 'placeholder-anon-key' }}
+          VITE_ENVIRONMENT: development
 
   local-e2e:
     name: E2E (Local Supabase) Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
@@ -178,6 +179,7 @@ jobs:
           VISUAL_TEST_BASE_URL: ${{ secrets.VISUAL_TEST_BASE_URL || 'http://localhost:3000' }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
+          VITE_ENVIRONMENT: staging
       
       - name: Upload blob report
         if: ${{ !cancelled() }}

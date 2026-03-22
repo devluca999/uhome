@@ -55,10 +55,19 @@ import { DataHealthCard } from '@/components/data-health/data-health-card'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useSettings } from '@/contexts/settings-context'
 import type { DashboardTimeline } from '@/contexts/settings-context'
+import { supabase } from '@/lib/supabase/client'
 
 export function LandlordDashboard() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordDashboard' })
+
+  // TEMP: remove after verifying environment_test / Supabase connectivity
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase.from('environment_test').select('*').limit(1)
+      console.log('Environment test row:', data)
+    })()
+  }, [])
   const navigate = useNavigate()
   const { settings, updateSettings } = useSettings()
   const dashboardTimeline = settings.dashboardTimeline ?? 'monthly'

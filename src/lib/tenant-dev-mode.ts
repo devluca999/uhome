@@ -33,6 +33,7 @@ export const DEMO_LANDLORD_CREDENTIALS = {
   password: 'DemoLandlord2024!',
 } as const
 
+import { appEnvironment } from '@/config/environment'
 import { isNonProductionEnv } from './env-safety'
 
 /**
@@ -40,9 +41,13 @@ import { isNonProductionEnv } from './env-safety'
  * Uses shared env-safety logic; no import.meta.env.DEV fallback - requires explicit env or URL heuristics
  */
 function isStagingEnvironment(): boolean {
-  const env = String(import.meta.env.VITE_SUPABASE_ENV || '')
-  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '')
-  return isNonProductionEnv(env, supabaseUrl)
+  const env =
+    appEnvironment.kind === 'production'
+      ? 'production'
+      : appEnvironment.kind === 'staging'
+        ? 'staging'
+        : 'local'
+  return isNonProductionEnv(env, appEnvironment.supabaseUrl)
 }
 
 /**
@@ -64,7 +69,7 @@ export function isTenantDevModeActive(): boolean {
     if (typeof window !== 'undefined') {
       console.error(
         '❌ Dev Mode is not allowed outside staging environment. ' + 'Current Supabase URL:',
-        import.meta.env.VITE_SUPABASE_URL
+        appEnvironment.supabaseUrl
       )
     }
     return false
@@ -155,7 +160,7 @@ export function isLandlordDevModeActive(): boolean {
     if (typeof window !== 'undefined') {
       console.error(
         '❌ Dev Mode is not allowed outside staging environment. ' + 'Current Supabase URL:',
-        import.meta.env.VITE_SUPABASE_URL
+        appEnvironment.supabaseUrl
       )
     }
     return false

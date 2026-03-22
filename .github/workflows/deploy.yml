@@ -69,6 +69,7 @@ jobs:
           SUPABASE_ENV: staging
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
+          VITE_ENVIRONMENT: staging
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
 
   deploy:
@@ -86,12 +87,40 @@ jobs:
       
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
+
+      - name: Verify production and staging Supabase URLs differ
+        run: |
+          prod='${{ secrets.VITE_SUPABASE_URL }}'
+          staging='${{ secrets.VITE_SUPABASE_STAGING_URL }}'
+          if [ -z "$prod" ] || [ -z "$staging" ]; then
+            echo "::error::VITE_SUPABASE_URL and VITE_SUPABASE_STAGING_URL must both be set for production deploy guardrails."
+            exit 1
+          fi
+          if [ "$prod" = "$staging" ]; then
+            echo "::error::VITE_SUPABASE_URL must not equal VITE_SUPABASE_STAGING_URL (production would point at the staging database)."
+            exit 1
+          fi
+
+      - name: Derive staging Supabase project ref for client guard
+        id: supabase_guard
+        run: |
+          u='${{ secrets.VITE_SUPABASE_STAGING_URL }}'
+          if [[ "$u" =~ https?://([a-zA-Z0-9]+)\.supabase\.co ]]; then
+            echo "staging_ref=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Could not parse staging project ref from VITE_SUPABASE_STAGING_URL (expected https://<ref>.supabase.co)."
+            exit 1
+          fi
       
       - name: Build project
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_ENVIRONMENT: production
+          VITE_SUPABASE_ENV: production
+          VITE_HOSTING_ENV: production
+          VITE_STAGING_SUPABASE_PROJECT_REF: ${{ steps.supabase_guard.outputs.staging_ref }}
       
       - name: Record deployment
         if: github.ref == 'refs/heads/main'

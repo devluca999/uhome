@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { appEnvironment } from '@/config/environment'
 import { motion } from 'framer-motion'
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card' // Unused
 import { Input } from '@/components/ui/input'
@@ -133,7 +134,7 @@ export function SettingsPage() {
 
     setDeleting(true)
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseUrl = appEnvironment.supabaseUrl
       const {
         data: { session },
       } = await supabase.auth.getSession()

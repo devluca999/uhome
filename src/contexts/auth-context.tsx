@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
+import { appEnvironment } from '@/config/environment'
 import { supabase } from '@/lib/supabase/client'
 import { isDevModeAvailable, shouldActivateDevMode } from '@/lib/tenant-dev-mode'
 
@@ -192,8 +193,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     try {
       // Log client configuration
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      const supabaseUrl = appEnvironment.supabaseUrl
+      const supabaseAnonKey = appEnvironment.supabaseAnonKey
 
       // Only log in verbose debug mode
       if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_AUTH === 'true') {

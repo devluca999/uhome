@@ -1,15 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { appEnvironment } from '@/config/environment'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  const errorMessage = 'Missing Supabase environment variables. Please check your .env.local file.'
-  console.error('❌', errorMessage)
-  console.error('   Required: VITE_SUPABASE_URL')
-  console.error('   Required: VITE_SUPABASE_ANON_KEY')
-  throw new Error(errorMessage)
-}
+const { supabaseUrl, supabaseAnonKey } = appEnvironment
 
 // Validate connection in dev mode
 if (import.meta.env.DEV) {

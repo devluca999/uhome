@@ -37,6 +37,7 @@ jobs:
           SUPABASE_ENV: staging
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
+          VITE_ENVIRONMENT: staging
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
       
       - name: Upload blob report
@@ -101,6 +102,9 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_STAGING_ANON_KEY }}
+          VITE_ENVIRONMENT: staging
+          VITE_SUPABASE_ENV: staging
+          VITE_HOSTING_ENV: preview
       
       - name: Record staging deployment
         run: |
@@ -108,7 +112,7 @@ jobs:
           # TODO: Call record-deployment Edge Function with commit hash, version, and environment='staging'
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_STAGING_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

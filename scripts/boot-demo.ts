@@ -12,6 +12,7 @@ import './load-dotenv'
 
 // Force local Supabase
 process.env.SUPABASE_ENV = 'local'
+process.env.VITE_ENVIRONMENT = 'development'
 process.env.VITE_SUPABASE_URL = 'http://127.0.0.1:55321'
 
 function loadLocalSupabaseEnv(): void {

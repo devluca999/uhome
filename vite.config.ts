@@ -6,8 +6,14 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+const hostingEnvForClient =
+  process.env.VITE_HOSTING_ENV || process.env.VERCEL_ENV || ''
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_HOSTING_ENV': JSON.stringify(hostingEnvForClient),
+  },
   server: {
     port: 3000,
     strictPort: false,
