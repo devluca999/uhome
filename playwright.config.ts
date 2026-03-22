@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-import dotenv from 'dotenv'
-import path from 'path'
-
-// Load test environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env.test') })
+import './tests/helpers/load-test-env'
 
 // HARD ENVIRONMENT GUARD - Must be imported before any test execution
 // This ensures tests NEVER run against production
