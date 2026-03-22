@@ -5,7 +5,6 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { withRetry } from '@/lib/retry'
-import { landlordDemoProperties } from '@/demo-data/landlordDemoData'
 import type { ViewMode, DemoState } from '@/contexts/auth-context'
 import type { Database } from '@/types/database'
 

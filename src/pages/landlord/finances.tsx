@@ -27,10 +27,6 @@ import {
   calculateOccupancyRate,
   getExpenseDate,
 } from '@/lib/finance-calculations'
-import {
-  generateFallbackRentRecords,
-  generateFallbackExpenses,
-} from '@/lib/fallback-financial-data'
 import { exportLedgerToCSV } from '@/utils/export-csv'
 import { FileText, Plus, Download, X, Edit, Trash2 } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
