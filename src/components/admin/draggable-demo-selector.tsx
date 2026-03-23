@@ -192,13 +192,13 @@ export function DraggableDemoSelector() {
     </div>
   )
 
-  // Floating icon
+  // Floating icon — z-[9999] ensures it renders above modals, drawers, dropdowns
   const floatingIcon = (
     <motion.div
       ref={floatingRef}
       className={cn(
-        'fixed z-50 bg-card border border-border rounded-lg shadow-lg cursor-move hover:shadow-xl transition-shadow',
-        isDragging ? 'shadow-xl ring-2 ring-primary/20' : ''
+        'fixed z-[9999] bg-card border border-amber-400/50 rounded-lg shadow-lg cursor-move hover:shadow-xl transition-shadow',
+        isDragging ? 'shadow-xl ring-2 ring-amber-400/40' : ''
       )}
       style={{
         left: position.x,
@@ -245,7 +245,7 @@ export function DraggableDemoSelector() {
               duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.base),
               ease: motionTokens.ease.standard,
             }}
-            className="fixed top-4 right-4 z-50"
+            className="fixed top-4 right-4 z-[9999]"
           >
             {sidebarContent}
           </motion.div>
@@ -260,7 +260,7 @@ export function DraggableDemoSelector() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-            className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-background/50 backdrop-blur-sm z-[9998]"
             onClick={toggleSidebar}
           />
         )}

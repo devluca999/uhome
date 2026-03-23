@@ -27,10 +27,6 @@ import {
   calculateOccupancyRate,
   getExpenseDate,
 } from '@/lib/finance-calculations'
-import {
-  generateFallbackRentRecords,
-  generateFallbackExpenses,
-} from '@/lib/fallback-financial-data'
 import { exportLedgerToCSV } from '@/utils/export-csv'
 import { FileText, Plus, Download, X, Edit, Trash2 } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
@@ -186,31 +182,12 @@ export function LandlordFinances() {
   }, [dateGranularity])
 
   // Use ALL records for charts (no dateRange filter) - ensures charts show full historical data
-  // Use fallback data if no real data exists (for mock mode / power-user simulation)
-  // IMPORTANT: Pass properties so fallback data uses real property IDs
-  const recordsForCharts = useMemo(() => {
-    if (allRecords.length === 0 && !loading) {
-      return generateFallbackRentRecords(properties)
-    }
-    return allRecords
-  }, [allRecords, loading, properties])
+  // Use real records only — no fallback data (causes flicker and inconsistency with dashboard)
+  const recordsForCharts = useMemo(() => allRecords, [allRecords])
+  const recordsForKPIs = useMemo(() => allRecords, [allRecords])
 
-  // Use same records for KPIs as charts - dateRange is applied in useFinancialMetrics (paid_date for revenue)
-  const recordsForKPIs = useMemo(() => {
-    if (allRecords.length === 0 && !loading) {
-      return generateFallbackRentRecords(properties)
-    }
-    return allRecords
-  }, [allRecords, loading, properties])
-
-  // Use fallback expenses if no real expenses exist
-  // IMPORTANT: Pass properties so fallback data uses real property IDs
-  const expensesWithFallback = useMemo(() => {
-    if (expenses.length === 0) {
-      return generateFallbackExpenses(properties)
-    }
-    return expenses
-  }, [expenses, properties])
+  // Use real expenses only — no fallback
+  const expensesWithFallback = useMemo(() => expenses, [expenses])
 
   // Property filter: empty string or 'all' means all properties
   const propertyFilter =

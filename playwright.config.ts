@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-import dotenv from 'dotenv'
-import path from 'path'
-
-// Load test environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env.test') })
+import './tests/helpers/load-test-env'
 
 // HARD ENVIRONMENT GUARD - Must be imported before any test execution
 // This ensures tests NEVER run against production
@@ -60,12 +56,20 @@ export default defineConfig({
 
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        actionTimeout: 15_000,
+        navigationTimeout: 30_000,
+      },
     },
 
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        actionTimeout: 15_000,
+        navigationTimeout: 30_000,
+      },
     },
 
     /* Visual tests project */

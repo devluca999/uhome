@@ -46,28 +46,30 @@ import {
 import { Link, useNavigate } from 'react-router-dom'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { calculateOccupancyRate, getExpenseDate } from '@/lib/finance-calculations'
-import {
-  generateFallbackRentRecords,
-  generateFallbackExpenses,
-} from '@/lib/fallback-financial-data'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 import { DataHealthCard } from '@/components/data-health/data-health-card'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useSettings } from '@/contexts/settings-context'
 import type { DashboardTimeline } from '@/contexts/settings-context'
-import { supabase } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client' // used by child components via context
+import { useAuth } from '@/contexts/auth-context'
+
+type LandlordDashboardRpcRow = {
+  total_properties: unknown
+  active_leases: unknown
+  total_tenants: unknown
+  open_work_orders: unknown
+  monthly_rent_due: unknown
+  monthly_rent_collected: unknown
+  collection_rate: unknown
+  overdue_amount: unknown
+}
 
 export function LandlordDashboard() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordDashboard' })
 
-  // TEMP: remove after verifying environment_test / Supabase connectivity
-  useEffect(() => {
-    void (async () => {
-      const { data } = await supabase.from('environment_test').select('*').limit(1)
-      console.log('Environment test row:', data)
-    })()
-  }, [])
+  // P2: removed ad-hoc DB probe; connectivity verified via users table
   const navigate = useNavigate()
   const { settings, updateSettings } = useSettings()
   const dashboardTimeline = settings.dashboardTimeline ?? 'monthly'
@@ -79,6 +81,46 @@ export function LandlordDashboard() {
   const { tasks } = useTasks()
   const { documents } = useDocuments() // Get all documents for activity feed
   const { format: formatCurrency } = useCurrencyFormatter()
+  const { user } = useAuth()
+  const [rpcStats, setRpcStats] = useState<{
+    total_properties: number
+    active_leases: number
+    total_tenants: number
+    open_work_orders: number
+    monthly_rent_due: number
+    monthly_rent_collected: number
+    collection_rate: number
+    overdue_amount: number
+  } | null>(null)
+
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    void supabase
+      .rpc('get_landlord_dashboard_stats', { p_owner_id: user.id })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.warn('[Dashboard RPC] get_landlord_dashboard_stats failed:', error)
+          return
+        }
+        const row = data?.[0] as LandlordDashboardRpcRow | undefined
+        if (!row) return
+        setRpcStats({
+          total_properties: Number(row.total_properties),
+          active_leases: Number(row.active_leases),
+          total_tenants: Number(row.total_tenants),
+          open_work_orders: Number(row.open_work_orders),
+          monthly_rent_due: Number(row.monthly_rent_due),
+          monthly_rent_collected: Number(row.monthly_rent_collected),
+          collection_rate: Number(row.collection_rate),
+          overdue_amount: Number(row.overdue_amount),
+        })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   // Date range and chart config based on dashboard timeline setting
   const { dateRange, timeRange, chartMonths, kpiMonths, timelineLabel } = useMemo(() => {
@@ -145,22 +187,15 @@ export function LandlordDashboard() {
   // Wait for critical data to load before calculating metrics
   const isDataReady = !propertiesLoading && !rentRecordsLoading && !expensesLoading
 
-  // Use fallback data when no real data (ensures charts render after demo reset, etc.)
   const rentRecordsForMetrics = useMemo(() => {
     if (!isDataReady) return []
-    if (rentRecords.length === 0 && properties.length > 0) {
-      return generateFallbackRentRecords(properties)
-    }
     return rentRecords
-  }, [isDataReady, rentRecords, properties])
+  }, [isDataReady, rentRecords])
 
   const expensesForMetrics = useMemo(() => {
     if (!isDataReady) return []
-    if (expenses.length === 0 && properties.length > 0) {
-      return generateFallbackExpenses(properties)
-    }
     return expenses
-  }, [isDataReady, expenses, properties])
+  }, [isDataReady, expenses])
 
   // Use financial metrics for dashboard
   // For chart data - all historical data in the selected granularity
@@ -186,9 +221,12 @@ export function LandlordDashboard() {
   )
 
   // Use historical metrics for charts, kpiMetrics for KPI cards
+  // NOTE: rentCollected from kpiMetrics uses paid_date scoped to dateRange (same as Finances page)
+  // This ensures Dashboard and Finances page show the same numbers for the same period.
   const metrics = {
     ...historicalMetrics,
     rentCollected: kpiMetrics.rentCollected,
+    rentOutstanding: kpiMetrics.rentOutstanding,
     totalExpenses: kpiMetrics.totalExpenses,
     netProfit: kpiMetrics.netProfit,
     marginPercentage: kpiMetrics.marginPercentage,
@@ -681,6 +719,19 @@ export function LandlordDashboard() {
           </div>
         </div>
 
+        {rpcStats && rpcStats.monthly_rent_due > 0 && (
+          <div className="text-xs text-muted-foreground text-center mb-6 -mt-2">
+            This month: {formatCurrency(rpcStats.monthly_rent_collected)} collected of{' '}
+            {formatCurrency(rpcStats.monthly_rent_due)} due ({rpcStats.collection_rate.toFixed(1)}%
+            collection rate)
+            {rpcStats.overdue_amount > 0 && (
+              <span className="text-destructive ml-2">
+                · {formatCurrency(rpcStats.overdue_amount)} overdue
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Financial Summary Section */}
         <motion.div
           initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
@@ -798,34 +849,38 @@ export function LandlordDashboard() {
 
         {/* Property Profitability Section */}
         {profitByProperty.length > 0 && (
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: durationToSeconds(motionTokens.duration.base),
-              delay: 0.24, // Reduced from 0.5
-              ease: motionTokens.ease.standard,
-            }}
-            layout={false}
+          <CollapsibleSection
+            id="dashboard-property-profitability"
+            title="Property Profitability"
+            defaultExpanded={true}
             className="mb-8"
           >
-            <div className="mb-4">
-              <h2 className="text-2xl font-semibold text-foreground">Property Profitability</h2>
-              <p className="text-sm text-muted-foreground">Net profit and margins by property</p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {profitByProperty.map((item, index) => (
-                <ProfitMarginCard
-                  key={item.property.id}
-                  propertyName={item.property.name}
-                  rentCollected={item.rentCollected}
-                  expenses={item.expenses}
-                  index={index}
-                />
-              ))}
-            </div>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+              animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+              transition={{
+                duration: durationToSeconds(motionTokens.duration.base),
+                delay: 0.24,
+                ease: motionTokens.ease.standard,
+              }}
+              layout={false}
+            >
+              <p className="text-sm text-muted-foreground mb-4">
+                Net profit and margins by property
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {profitByProperty.map((item, index) => (
+                  <ProfitMarginCard
+                    key={item.property.id}
+                    propertyName={item.property.name}
+                    rentCollected={item.rentCollected}
+                    expenses={item.expenses}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </CollapsibleSection>
         )}
 
         {/* Smart Insights Section */}

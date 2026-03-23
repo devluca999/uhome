@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTenantInvites } from '@/hooks/use-tenant-invites'
 import { useAuth } from '@/contexts/auth-context'
@@ -10,9 +10,21 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { motionTokens } from '@/lib/motion'
+import {
+  setPendingInviteToken,
+  clearPendingInviteToken,
+  getPendingInviteToken,
+  buildAcceptInvitePath,
+} from '@/lib/pending-invite'
+import { logFlowError } from '@/lib/flow-log'
+
+function inviteErrorShouldClearPending(message: string): boolean {
+  return /not found|expired|already been accepted/i.test(message)
+}
 
 export function AcceptInvite() {
-  const { token } = useParams<{ token: string }>()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
   const navigate = useNavigate()
   const { user } = useAuth()
   const { getInviteByToken } = useTenantInvites()
@@ -22,30 +34,51 @@ export function AcceptInvite() {
   const [success, setSuccess] = useState(false)
   const [invite, setInvite] = useState<any>(null)
 
-  useEffect(() => {
-    if (token) {
-      fetchInvite()
-    }
-  }, [token])
-
-  async function fetchInvite() {
+  const fetchInvite = useCallback(async () => {
     if (!token) return
 
     try {
       setLoading(true)
+      setError(null)
       const result = await getInviteByToken(token)
 
       if (result.error) {
+        logFlowError('AcceptInvite', 'fetchInvite', result.error, { token })
+        if (inviteErrorShouldClearPending(result.error.message)) {
+          clearPendingInviteToken()
+        }
         setError(result.error.message)
       } else if (result.data) {
         setInvite(result.data)
       }
     } catch (err) {
+      logFlowError('AcceptInvite', 'fetchInvite', err, { token })
       setError(err instanceof Error ? err.message : 'Failed to load invite')
     } finally {
       setLoading(false)
     }
-  }
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps -- getInviteByToken identity changes each render
+
+  useEffect(() => {
+    if (!token) {
+      const pending = getPendingInviteToken()
+      if (pending) {
+        navigate(buildAcceptInvitePath(pending), { replace: true })
+        return
+      }
+      setLoading(false)
+      setError('Missing invite token')
+      return
+    }
+    void fetchInvite()
+  }, [token, navigate, fetchInvite])
+
+  // Preserve invite through signup when user is not logged in (valid invite only)
+  useEffect(() => {
+    if (token && invite && !user) {
+      setPendingInviteToken(token)
+    }
+  }, [token, invite, user])
 
   async function handleAccept() {
     if (!token || !invite) return
@@ -56,8 +89,7 @@ export function AcceptInvite() {
     try {
       // If user is not logged in, redirect to signup/login
       if (!user) {
-        // Store token in sessionStorage for after auth
-        sessionStorage.setItem('pending_invite_token', token)
+        setPendingInviteToken(token)
         navigate('/signup?invite=true')
         return
       }
@@ -180,6 +212,7 @@ export function AcceptInvite() {
         // Non-critical: template may not exist, or submission may already exist (unique constraint)
       }
 
+      clearPendingInviteToken()
       setSuccess(true)
 
       // Redirect to tenant dashboard after a moment
@@ -187,6 +220,7 @@ export function AcceptInvite() {
         navigate('/tenant/dashboard')
       }, 2000)
     } catch (err) {
+      logFlowError('AcceptInvite', 'handleAccept', err, { token })
       setError(err instanceof Error ? err.message : 'Failed to accept invite')
     } finally {
       setAccepting(false)
@@ -227,7 +261,17 @@ export function AcceptInvite() {
                 </div>
                 <CardDescription>{error}</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-col gap-2">
+                {token && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => void fetchInvite()}
+                  >
+                    Try again
+                  </Button>
+                )}
                 <Button asChild className="w-full">
                   <Link to="/login">Go to Login</Link>
                 </Button>
@@ -331,7 +375,7 @@ export function AcceptInvite() {
                 </Button>
                 {!user && (
                   <Button variant="outline" asChild>
-                    <Link to="/signup">Sign Up First</Link>
+                    <Link to="/signup?invite=true">Sign Up First</Link>
                   </Button>
                 )}
               </div>

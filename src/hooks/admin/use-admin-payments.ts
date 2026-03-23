@@ -1,8 +1,6 @@
 /**
- * Admin Payments Hook
- *
- * React hook for fetching payment and subscription data for admin dashboard.
- * Uses mock Stripe data structure until Stripe is integrated.
+ * Admin Payments Hook — subscription data from DB; rent payment failures from rent_records.
+ * SaaS revenue figures are estimated from Pro seats until Stripe billing is wired.
  */
 
 import { useState, useEffect } from 'react'
@@ -89,6 +87,13 @@ export function useAdminPayments() {
 
       setSubscriptions(subscriptionsData || [])
 
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const { data: failedRentRows } = await supabase
+        .from('rent_records')
+        .select('id, amount, updated_at, notes')
+        .eq('payment_status', 'failed')
+        .gte('updated_at', thirtyDaysAgo)
+
       // Calculate subscription metrics
       const subscriptionMetrics: SubscriptionMetrics = {
         totalActive: subscriptionsData?.filter(s => s.status === 'active').length || 0,
@@ -102,17 +107,16 @@ export function useAdminPayments() {
         },
       }
 
-      // Generate mock revenue metrics (until Stripe is integrated)
       const revenueMetrics: RevenueMetrics = {
-        totalRevenue: subscriptionMetrics.byPlan.pro * 15 * 12, // $15/month * 12 months * pro users
-        monthlyRevenue: subscriptionMetrics.byPlan.pro * 15, // $15/month * pro users
-        failedTransactions: Math.floor(Math.random() * 5), // Mock: 0-4 failed transactions
-        refunds: Math.floor(Math.random() * 3), // Mock: 0-2 refunds
+        totalRevenue: subscriptionMetrics.byPlan.pro * 15 * 12,
+        monthlyRevenue: subscriptionMetrics.byPlan.pro * 15,
+        failedTransactions: failedRentRows?.length || 0,
+        refunds: 0,
       }
 
-      // Generate mock transaction data (until Stripe is integrated)
-      const recentTransactions: MockTransaction[] = generateMockTransactions(
-        subscriptionsData || []
+      const recentTransactions: MockTransaction[] = generateRecentTransactions(
+        subscriptionsData || [],
+        failedRentRows || []
       )
 
       // Generate subscription trends (last 6 months)
@@ -132,18 +136,19 @@ export function useAdminPayments() {
     }
   }
 
-  // Generate mock transaction data (until Stripe is integrated)
-  function generateMockTransactions(subs: SubscriptionData[]): MockTransaction[] {
+  function generateRecentTransactions(
+    subs: SubscriptionData[],
+    failedRent: Array<{ id: string; amount: number; updated_at: string; notes: string | null }>
+  ): MockTransaction[] {
     const transactions: MockTransaction[] = []
 
-    // Generate mock transactions for recent subscriptions
     subs.slice(0, 10).forEach(sub => {
       if (sub.status === 'active' || sub.status === 'trialing') {
         transactions.push({
           id: `txn_mock_${sub.id.substring(0, 8)}`,
           type: 'subscription',
           status: 'succeeded',
-          amount: sub.plan === 'pro' ? 1500 : 0, // $15.00 in cents
+          amount: sub.plan === 'pro' ? 1500 : 0,
           currency: 'usd',
           customer_id: sub.stripe_customer_id,
           subscription_id: sub.stripe_subscription_id,
@@ -151,25 +156,23 @@ export function useAdminPayments() {
           created_at: sub.updated_at || sub.created_at,
         })
       }
-
-      // Add occasional failed transactions
-      if (Math.random() > 0.8) {
-        transactions.push({
-          id: `txn_failed_${sub.id.substring(0, 8)}`,
-          type: 'subscription',
-          status: 'failed',
-          amount: sub.plan === 'pro' ? 1500 : 0,
-          currency: 'usd',
-          customer_id: sub.stripe_customer_id,
-          subscription_id: sub.stripe_subscription_id,
-          description: `Failed subscription payment - ${sub.plan} plan`,
-          failure_reason: 'Insufficient funds',
-          created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-        })
-      }
     })
 
-    // Sort by date descending
+    failedRent.forEach(row => {
+      transactions.push({
+        id: row.id,
+        type: 'dispute',
+        status: 'failed',
+        amount: Math.max(0, Math.round(Number(row.amount) * 100)),
+        currency: 'usd',
+        customer_id: null,
+        subscription_id: null,
+        description: 'Rent payment failed',
+        failure_reason: row.notes || 'Payment failed',
+        created_at: row.updated_at,
+      })
+    })
+
     return transactions.sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )

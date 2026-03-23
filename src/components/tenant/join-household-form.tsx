@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Link2, Loader2 } from 'lucide-react'
+import { extractTokenFromInviteInput } from '@/lib/invite-token'
+import { logFlowError, logFlowWarn } from '@/lib/flow-log'
 
 interface JoinHouseholdFormProps {
   onCancel?: () => void
@@ -23,46 +25,25 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
     }
   }, [role, navigate])
 
-  function extractTokenFromUrl(url: string): string | null {
-    try {
-      // Try parsing as full URL
-      const urlObj = new URL(url)
-      const pathParts = urlObj.pathname.split('/')
-      const tokenIndex = pathParts.indexOf('accept-invite')
-      if (tokenIndex !== -1 && pathParts[tokenIndex + 1]) {
-        return pathParts[tokenIndex + 1]
-      }
-    } catch {
-      // If it's not a full URL, try extracting token from path-like string
-      const match = url.match(/accept-invite\/?([a-zA-Z0-9\-_]+)/)
-      if (match && match[1]) {
-        return match[1]
-      }
-      // If it's just a token (alphanumeric + dashes/underscores), use it directly
-      if (/^[a-zA-Z0-9\-_]+$/.test(url.trim())) {
-        return url.trim()
-      }
-    }
-    return null
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
-      const token = extractTokenFromUrl(inviteLink.trim())
+      const token = extractTokenFromInviteInput(inviteLink.trim())
 
       if (!token) {
+        logFlowWarn('JoinHousehold', 'parseInviteInput', 'Could not extract token from input')
         setError('Invalid invite link. Please enter a valid invite URL or token.')
         setLoading(false)
         return
       }
 
-      // Navigate to accept invite page
-      navigate(`/accept-invite/${token}`)
+      setLoading(false)
+      navigate(`/accept-invite?token=${encodeURIComponent(token)}`)
     } catch (err) {
+      logFlowError('JoinHousehold', 'handleSubmit', err)
       setError(err instanceof Error ? err.message : 'Failed to process invite link')
       setLoading(false)
     }
@@ -84,7 +65,7 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
           <Input
             id="invite-link"
             type="text"
-            placeholder="https://example.com/accept-invite/abc123 or abc123"
+            placeholder="https://example.com/accept-invite?token=… or legacy /accept-invite/…"
             value={inviteLink}
             onChange={e => setInviteLink(e.target.value)}
             className="pl-10"

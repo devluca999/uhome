@@ -57,7 +57,7 @@ test.describe('Abuse Guard Tests', () => {
 
     // Try to accept same invite in all tabs
     for (const p of pages) {
-      await p.goto(`${baseUrl}/accept-invite/test-token`)
+      await p.goto(`${baseUrl}/accept-invite?token=test-token`)
       await p.waitForLoadState('networkidle')
     }
 

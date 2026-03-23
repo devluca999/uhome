@@ -216,12 +216,12 @@ export function useTenantInvites() {
 
       if (leaseError) throw leaseError
 
-      // Generate unique token
-      const token = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+      // Generate secure UUID token (crypto.randomUUID is available in all modern browsers)
+      const token = crypto.randomUUID()
 
-      // Set expiration to 30 days from now if not provided
+      // Set expiration to 7 days from now if not provided (tighter window = more secure)
       const expiresAt =
-        invite.expires_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        invite.expires_at || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
       const { data: newInvite, error: createError } = await supabase
         .from('tenant_invites')
@@ -255,8 +255,8 @@ export function useTenantInvites() {
 
       setInvites(prev => [mappedInvite as TenantInvite, ...prev])
 
-      // Generate invite URL
-      const inviteUrl = `${window.location.origin}/accept-invite/${token}`
+      // Generate invite URL — /accept-invite?token= (query param, not path segment)
+      const inviteUrl = `${window.location.origin}/accept-invite?token=${token}`
 
       return {
         data: {

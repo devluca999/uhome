@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useContext } from 'react'
 import { AuthContext, type ViewMode } from '@/contexts/auth-context'
+import { logFlowWarn } from '@/lib/flow-log'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -71,6 +72,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   // Admin demo: admin can access landlord/tenant routes when viewMode is landlord-demo/tenant-demo
   if (allowedRoles && role) {
     if (!isRoleAllowed(allowedRoles, role, viewMode)) {
+      logFlowWarn('ProtectedRoute', 'roleMismatch', 'Redirecting to role-appropriate route', {
+        path: location.pathname,
+        role,
+        viewMode,
+        allowed: allowedRoles.join(','),
+      })
       // Redirect to appropriate dashboard based on role (or admin's current view)
       if (role === 'admin') {
         const target =

@@ -170,17 +170,32 @@ export function useAdminStats() {
         averageResponseTime = Math.round(totalDuration / apiMetrics.length)
       }
 
-      // Calculate mock transaction metrics (until Stripe is integrated)
-      const platformRevenue = (proCount || 0) * 15 * 12 // $15/month * 12 months * pro users
-      const monthlyRevenue = (proCount || 0) * 15 // $15/month * pro users
-      const failedTransactions = Math.floor(Math.random() * 5) // Mock: 0-4
-      const refunds = Math.floor(Math.random() * 3) // Mock: 0-2
+      // Estimated SaaS MRR from active Pro seats (replace with billing provider when wired)
+      const platformRevenue = (proCount || 0) * 15 * 12
+      const monthlyRevenue = (proCount || 0) * 15
 
-      // Estimate active sessions (users who signed in within last hour)
-      // oneHourAgo removed - not used
-      // Note: We don't have last_sign_in_at in public.users, so we'll estimate based on recent activity
-      // In production, this would come from session tracking
-      const activeSessions = Math.floor((totalUsers || 0) * 0.1) // Mock: ~10% of users
+      let failedTransactions = 0
+      let refunds = 0
+      try {
+        const { count: failedCount, error: failedErr } = await supabase
+          .from('rent_records')
+          .select('*', { count: 'exact', head: true })
+          .eq('payment_status', 'failed')
+          .gte('updated_at', thirtyDaysAgo)
+        if (!failedErr) failedTransactions = failedCount || 0
+      } catch {
+        /* table or column missing in some envs */
+      }
+
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+      let activeSessions = 0
+      const { count: recentUsers, error: recentUsersError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .gte('updated_at', oneHourAgo)
+      if (!recentUsersError) {
+        activeSessions = recentUsers || 0
+      }
 
       setStats({
         totalUsers: totalUsers || 0,

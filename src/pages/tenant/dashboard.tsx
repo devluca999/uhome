@@ -17,6 +17,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Home, CheckSquare } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { supabase } from '@/lib/supabase/client'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
@@ -25,6 +26,18 @@ import { DataHealthCard } from '@/components/data-health/data-health-card'
 import { usePendingOnboarding } from '@/hooks/use-onboarding'
 import { OnboardingModal } from '@/components/tenant/onboarding-modal'
 import { OnboardingReminderBanner } from '@/components/tenant/onboarding-reminder-banner'
+
+type TenantDashboardRpcRow = {
+  property_name: unknown
+  unit_name: unknown
+  monthly_rent: unknown
+  lease_status: unknown
+  lease_end_date: unknown
+  days_until_end: unknown
+  open_work_orders: unknown
+  pending_rent: unknown
+  onboarding_status: unknown
+}
 
 export function TenantDashboard() {
   // Track performance metrics
@@ -47,6 +60,17 @@ export function TenantDashboard() {
   } = useTenantTasks(tenantData?.tenant.id)
   const { user, role, viewMode } = useAuth()
   const navigate = useNavigate()
+  const [tenantRpcStats, setTenantRpcStats] = useState<{
+    property_name: string
+    unit_name: string
+    monthly_rent: number
+    lease_status: string
+    lease_end_date: string | null
+    days_until_end: number | null
+    open_work_orders: number
+    pending_rent: number
+    onboarding_status: string
+  } | null>(null)
   // const [announcementsOpen, setAnnouncementsOpen] = useState(false) // Unused
   const [showTaskReminder, setShowTaskReminder] = useState<string | null>(null)
   const [showJoinHousehold, setShowJoinHousehold] = useState(false)
@@ -54,6 +78,42 @@ export function TenantDashboard() {
   const cardSpring = createSpring('card')
 
   const pendingOnboarding = usePendingOnboarding(tenantData?.tenant.id, tenantData?.property.id)
+
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    void supabase
+      .rpc('get_tenant_dashboard_stats', { p_user_id: user.id })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.warn('[Tenant Dashboard RPC] failed:', error)
+          return
+        }
+        const row = data?.[0] as TenantDashboardRpcRow | undefined
+        if (!row) return
+        setTenantRpcStats({
+          property_name: String(row.property_name ?? ''),
+          unit_name: String(row.unit_name ?? ''),
+          monthly_rent: Number(row.monthly_rent),
+          lease_status: String(row.lease_status ?? ''),
+          lease_end_date:
+            row.lease_end_date == null || row.lease_end_date === ''
+              ? null
+              : String(row.lease_end_date),
+          days_until_end:
+            row.days_until_end != null && row.days_until_end !== ''
+              ? Number(row.days_until_end)
+              : null,
+          open_work_orders: Number(row.open_work_orders),
+          pending_rent: Number(row.pending_rent),
+          onboarding_status: String(row.onboarding_status ?? ''),
+        })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   // Auto-open onboarding modal on first visit when pending and not_started
   useEffect(() => {
@@ -189,6 +249,18 @@ export function TenantDashboard() {
           <HeroGreeting
             name={viewMode === 'tenant-demo' ? 'Demo Tenant' : user.email?.split('@')[0] || 'User'}
           />
+        )}
+
+        {tenantRpcStats?.days_until_end != null && (
+          <p className="text-sm text-muted-foreground mb-4">
+            {tenantRpcStats.days_until_end} day{tenantRpcStats.days_until_end === 1 ? '' : 's'}{' '}
+            remaining on your lease
+            {tenantRpcStats.lease_end_date && (
+              <span className="ml-1">
+                (ends {new Date(tenantRpcStats.lease_end_date).toLocaleDateString()})
+              </span>
+            )}
+          </p>
         )}
 
         {nextRentRecord && (

@@ -11,6 +11,7 @@
  * - This is a hard-fail - tests and seeds will not run if production is detected
  */
 
+import './load-test-env'
 import {
   ALLOWED_ENVS,
   isProductionEnv,

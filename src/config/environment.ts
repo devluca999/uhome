@@ -17,6 +17,27 @@ function trimOrEmpty(v: unknown): string {
   return typeof v === 'string' ? v.trim() : ''
 }
 
+/**
+ * Vite injects `import.meta.env` in the browser build. Playwright test workers and other
+ * Node contexts load this module without Vite, so fall back to `process.env` (CI sets VITE_*).
+ */
+function readViteVar(name: string): string {
+  try {
+    const im = import.meta.env
+    if (im && typeof (im as Record<string, unknown>)[name] === 'string') {
+      return trimOrEmpty((im as Record<string, string>)[name])
+    }
+  } catch {
+    /* import.meta.env unavailable */
+  }
+  if (typeof globalThis !== 'undefined' && 'process' in globalThis) {
+    const proc = (globalThis as unknown as { process?: { env?: Record<string, unknown> } }).process
+    const v = proc?.env?.[name]
+    return trimOrEmpty(v)
+  }
+  return ''
+}
+
 function parseKind(raw: string): AppEnvironmentKind {
   const s = raw.trim().toLowerCase()
   if (['development', 'dev', 'local'].includes(s)) return 'development'
@@ -28,8 +49,8 @@ function parseKind(raw: string): AppEnvironmentKind {
 }
 
 function loadAppEnvironment(): AppEnvironment {
-  const supabaseUrl = trimOrEmpty(import.meta.env.VITE_SUPABASE_URL)
-  const supabaseAnonKey = trimOrEmpty(import.meta.env.VITE_SUPABASE_ANON_KEY)
+  const supabaseUrl = readViteVar('VITE_SUPABASE_URL')
+  const supabaseAnonKey = readViteVar('VITE_SUPABASE_ANON_KEY')
 
   if (!supabaseUrl) {
     throw new Error(
@@ -42,8 +63,8 @@ function loadAppEnvironment(): AppEnvironment {
     )
   }
 
-  const primary = trimOrEmpty(import.meta.env.VITE_ENVIRONMENT)
-  const legacy = trimOrEmpty(import.meta.env.VITE_SUPABASE_ENV)
+  const primary = readViteVar('VITE_ENVIRONMENT')
+  const legacy = readViteVar('VITE_SUPABASE_ENV')
   const raw = primary || legacy
 
   if (!raw) {

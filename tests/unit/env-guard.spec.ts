@@ -43,7 +43,14 @@ describe('env-guard', () => {
     })
 
     it('returns true when VITE_SUPABASE_ENV=production', () => {
-      setEnv({ VITE_SUPABASE_ENV: 'production', VITE_SUPABASE_URL: 'https://x.supabase.co' })
+      // When SUPABASE_ENV is undefined, code checks VITE_SUPABASE_ENV
+      // But setEnv helper may not be clearing SUPABASE_ENV properly
+      // Set both to ensure test works as expected
+      setEnv({ 
+        SUPABASE_ENV: undefined as any,  // Explicitly undefined
+        VITE_SUPABASE_ENV: 'production', 
+        VITE_SUPABASE_URL: 'https://x.supabase.co' 
+      })
       expect(isProduction()).toBe(true)
     })
 

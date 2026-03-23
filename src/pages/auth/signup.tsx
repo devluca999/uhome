@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, User, Building } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
@@ -14,8 +14,14 @@ import {
   DEMO_TENANT_CREDENTIALS,
   DEMO_LANDLORD_CREDENTIALS,
 } from '@/lib/tenant-dev-mode'
+import { supabase } from '@/lib/supabase/client'
+import { getPendingInviteToken, buildAcceptInvitePath } from '@/lib/pending-invite'
+import { logFlowError } from '@/lib/flow-log'
 
 export function SignupPage() {
+  const [searchParams] = useSearchParams()
+  const inviteFlow = searchParams.get('invite') === 'true' || Boolean(getPendingInviteToken())
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -24,8 +30,15 @@ export function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [useMagicLink, setUseMagicLink] = useState(false)
+  const [emailVerifyBanner, setEmailVerifyBanner] = useState(false)
   const { signUp, signIn, signInWithGoogle, signInWithMagicLink } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (inviteFlow) {
+      setRole('tenant')
+    }
+  }, [inviteFlow])
 
   async function handleQuickLogin(loginRole: 'tenant' | 'landlord') {
     setError(null)
@@ -120,12 +133,29 @@ export function SignupPage() {
     const { error } = await signUp(email, password, role)
 
     if (error) {
+      if (inviteFlow) {
+        logFlowError('Signup', 'signUp', error, { email, role })
+      }
       setError(error.message)
       setLoading(false)
     } else {
-      // Redirect to appropriate dashboard based on role
+      const pending = getPendingInviteToken()
+      if (pending) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (session) {
+          navigate(buildAcceptInvitePath(pending), { replace: true })
+          setLoading(false)
+          return
+        }
+        setEmailVerifyBanner(true)
+        setLoading(false)
+        return
+      }
       const redirectPath = role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'
       navigate(redirectPath)
+      setLoading(false)
     }
   }
 
@@ -148,12 +178,18 @@ export function SignupPage() {
             />
           </div>
           <h1 className="text-4xl font-semibold text-foreground mb-2">uhome</h1>
-          <p className="text-muted-foreground">Create your account</p>
+          <p className="text-muted-foreground">
+            {inviteFlow ? 'Finish joining your household' : 'Create your account'}
+          </p>
         </div>
         <Card className="glass-card !max-h-none overflow-visible">
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
-            <CardDescription>Create an account to get started</CardDescription>
+            <CardDescription>
+              {inviteFlow
+                ? 'Create a tenant account with the email your landlord invited. After signing up you can accept the invite.'
+                : 'Create an account to get started'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pb-8">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,7 +230,7 @@ export function SignupPage() {
                         role === 'landlord' && 'ring-2 ring-primary ring-offset-2'
                       )}
                       onClick={() => setRole('landlord')}
-                      disabled={loading}
+                      disabled={loading || inviteFlow}
                     >
                       Landlord
                     </Button>
@@ -206,11 +242,16 @@ export function SignupPage() {
                         role === 'tenant' && 'ring-2 ring-primary ring-offset-2'
                       )}
                       onClick={() => setRole('tenant')}
-                      disabled={loading}
+                      disabled={loading || inviteFlow}
                     >
                       Tenant
                     </Button>
                   </div>
+                  {inviteFlow && (
+                    <p className="text-xs text-muted-foreground">
+                      Account type is set to tenant for this invite.
+                    </p>
+                  )}
                 </div>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
@@ -294,6 +335,12 @@ export function SignupPage() {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
+                </div>
+              )}
+              {emailVerifyBanner && (
+                <div className="p-3 text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
+                  Check your email to verify your account. After you confirm, sign in and
+                  you&apos;ll be taken to complete joining your household.
                 </div>
               )}
               {magicLinkSent ? (

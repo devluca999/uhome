@@ -1,3 +1,4 @@
+import './load-test-env'
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isProduction } from './env-guard'
@@ -13,7 +14,9 @@ const supabaseServiceKey =
  */
 export function getSupabaseClient(): SupabaseClient {
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables in .env.test')
+    throw new Error(
+      'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env / .env.local / .env.test'
+    )
   }
   return createClient(supabaseUrl, supabaseAnonKey)
 }
@@ -32,7 +35,9 @@ export function getSupabaseAdminClient(): SupabaseClient {
     )
   }
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase service key (SUPABASE_SERVICE_KEY) in .env.test')
+    throw new Error(
+      'Missing SUPABASE_SERVICE_KEY (or TEST_SUPABASE_SERVICE_KEY) in .env / .env.local / .env.test'
+    )
   }
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: {

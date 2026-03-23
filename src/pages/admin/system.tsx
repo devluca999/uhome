@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
@@ -11,18 +11,63 @@ import { sendUnifiedNotification } from '@/lib/notifications/notification-servic
 import { DEMO_LANDLORD_CREDENTIALS, DEMO_TENANT_CREDENTIALS } from '@/lib/tenant-dev-mode'
 
 export function AdminSystem() {
-  // Note: This is a minimal system health view
-  // In a real system, you would fetch this data from logs/system tables
-  // For now, we show a basic informational view
-
   const { user } = useAuth()
   const [testStatus, setTestStatus] = useState<'idle' | 'running' | 'ok' | 'error'>('idle')
   const [testError, setTestError] = useState<string | null>(null)
+  const [systemWarnings, setSystemWarnings] = useState<
+    Array<{ id: string; type: 'info' | 'warning' | 'error'; message: string }>
+  >([])
+  const [authErrors, setAuthErrors] = useState<
+    Array<{ id: string; message: string; timestamp: string }>
+  >([])
+  const [jobFailures] = useState<Array<{ id: string; message: string; timestamp: string }>>([])
+  const [dbReachable, setDbReachable] = useState<boolean | null>(null)
 
-  const systemWarnings: Array<{ id: string; type: 'info' | 'warning' | 'error'; message: string }> =
-    []
-  const authErrors: Array<{ id: string; message: string; timestamp: string }> = []
-  const jobFailures: Array<{ id: string; message: string; timestamp: string }> = []
+  useEffect(() => {
+    let cancelled = false
+    async function loadHealth() {
+      const { error: pingError } = await supabase.from('users').select('id').limit(1).maybeSingle()
+      if (cancelled) return
+      if (pingError) {
+        setDbReachable(false)
+        setSystemWarnings([
+          {
+            id: 'db-ping',
+            type: 'error',
+            message: `Database check failed: ${pingError.message}`,
+          },
+        ])
+        return
+      }
+      setDbReachable(true)
+      setSystemWarnings([])
+
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      const { data: secRows, error: secErr } = await supabase
+        .from('admin_security_logs')
+        .select('id, event_type, details, created_at')
+        .eq('event_type', 'failed_login')
+        .gte('created_at', dayAgo)
+        .order('created_at', { ascending: false })
+        .limit(25)
+
+      if (cancelled || secErr) return
+      setAuthErrors(
+        (secRows || []).map(row => ({
+          id: row.id,
+          message:
+            typeof row.details === 'object' && row.details && 'message' in row.details
+              ? String((row.details as { message?: string }).message || 'Failed login')
+              : 'Failed login attempt',
+          timestamp: new Date(row.created_at).toLocaleString(),
+        }))
+      )
+    }
+    void loadHealth()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function handleSendTestNotifications() {
     if (!import.meta.env.DEV) return
@@ -279,10 +324,23 @@ export function AdminSystem() {
                   <span className="text-sm">System Status</span>
                   <Badge
                     variant="outline"
-                    className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                    className={
+                      dbReachable === false
+                        ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'
+                        : 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800'
+                    }
                   >
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Operational
+                    {dbReachable === false ? (
+                      <>
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Degraded
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Operational
+                      </>
+                    )}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">

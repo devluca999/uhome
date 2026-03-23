@@ -2,100 +2,85 @@
 
 ## Overview
 
-Subscriptions in uhome are **organization-level**, not user-level. Each organization (landlord workspace) has one subscription that determines plan features and limits.
-
-## Subscription Ownership
-
-- **Subscriptions belong to organizations**, not individual users
-- Each organization has exactly one subscription
-- Subscription determines what features the organization can access
-- Billing is tied to the organization
+uhome uses **organization-level** subscriptions. Each organization has one subscription that determines plan features, property limits, and collaborator access.
 
 ## Plan Tiers
 
-### Free Plan
-- Default plan for all new organizations
-- Basic property management features
-- **No collaborator invites** (owner only)
-- Suitable for individual landlords
+### Free — $0/month
+- 1 property, unlimited tenants
+- 0 collaborators (owner only)
+- 500MB storage
+- uhome-branded receipts
+- Core features: rent tracking, maintenance, documents, tasks
 
-### Pro Plan
-- All Free plan features
-- **Enables collaborator invites** (1 collaborator max)
-- Hard cap: 2 landlord-side users (owner + 1 collaborator)
-- Intended for partners, spouses, family members, or trusted assistants
+### Landlord — $29/month ($290/year)
+- 10 properties, unlimited tenants
+- 1 collaborator (family member, partner, assistant)
+- 5GB storage
+- Branded receipts (no uhome branding)
+- Advanced financial dashboards
+- All Free features
 
-## Subscription Features
+### Portfolio — $59/month ($590/year)
+- 30 properties, unlimited tenants
+- 3 collaborators
+- 20GB storage
+- CSV export
+- Priority support
+- All Landlord features
 
-### What Pro Plan Enables
+## Feature Gate Matrix
 
-1. **Collaborator Invites**
-   - Can invite one additional landlord-side user
-   - Collaborator can manage properties, tenants, maintenance
-   - Collaborator cannot manage billing or delete organization
-
-2. **What Pro Plan Does NOT Enable**
-   - Unlimited collaborators (hard cap of 2)
-   - Tenant invites (always free and unlimited)
-   - Per-seat billing (not in MVP)
-   - Role matrix UI (not in MVP)
-
-### What's Always Free
-
-- **Tenant invites** - Always allowed, unlimited
-- **Tenant accounts** - Never count toward plan limits
-- **Tenant collaboration** - Multiple tenant users per household (always allowed)
-
-## Billing Access
-
-### Who Can Manage Billing
-
-- **Only owners** can view and manage subscriptions
-- **Collaborators cannot** access billing settings
-- This is enforced via RLS policies
-
-### Billing Features (Future)
-
-- Stripe integration for payment processing
-- Subscription management (upgrade/downgrade)
-- Billing history
-- Payment method management
-
-## Subscription Status
-
-Subscriptions can have the following statuses:
-
-- `active` - Subscription is active and paid
-- `canceled` - Subscription has been canceled
-- `past_due` - Payment failed, subscription in grace period
-- `trialing` - In trial period (future feature)
-- `incomplete` - Payment setup incomplete
-- `incomplete_expired` - Payment setup expired
-
-## Plan Limits
-
-### Free Plan Limits
-- Properties: No hard limit (application-level limits may apply)
-- Tenants: No limit (tenants don't count)
-- Collaborators: 0 (owner only)
-
-### Pro Plan Limits
-- Properties: No hard limit (application-level limits may apply)
-- Tenants: No limit (tenants don't count)
-- Collaborators: 1 (owner + 1 collaborator = 2 max landlord-side users)
+| Feature | Free | Landlord | Portfolio |
+|---------|------|----------|-----------|
+| Properties | 1 | 10 | 30 |
+| Tenants | Unlimited | Unlimited | Unlimited |
+| Collaborators | 0 | 1 | 3 |
+| Branded receipts | ❌ | ✅ | ✅ |
+| Advanced financials | ❌ | ✅ | ✅ |
+| CSV export | ❌ | ❌ | ✅ |
+| Storage | 500MB | 5GB | 20GB |
 
 ## Key Principles
 
-1. **Subscriptions are organization-level** - One subscription per organization
-2. **Pro gates collaborator invites** - Not tenant features
-3. **Tenant accounts never count** - Unlimited tenant users
-4. **Hard cap on collaborators** - 2 landlord-side users max (Pro plan)
-5. **Billing is owner-only** - Collaborators cannot access billing
+- Subscriptions belong to **organizations**, not users
+- Tenants never count toward limits and are always free
+- Only **owners** can manage billing — collaborators cannot
+- Annual billing = 2 months free (~17% discount)
+- Stripe is the source of truth for subscription status — Supabase mirrors it via webhook
 
-## Future Considerations
+## Subscription Status Values
 
-- Per-seat billing for larger teams
-- Enterprise plans with custom limits
-- Annual billing discounts
-- Team plans with role matrix UI
+- `active` — paid and current
+- `trialing` — in trial period (future)
+- `past_due` — payment failed, Stripe retrying
+- `canceled` — subscription ended, org reverts to free
+- `incomplete` — payment setup incomplete
+- `incomplete_expired` — payment setup expired
+- `unpaid` — final state after all retries failed
 
+## Implementation Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/stripe/plans.ts` | Single source of truth for plan config, limits, helpers |
+| `src/hooks/use-subscription.ts` | React hook for current org subscription state |
+| `src/components/billing/subscription-plans.tsx` | Plan selection UI |
+| `supabase/functions/stripe-subscription-webhook/` | Webhook handler for lifecycle events |
+| `supabase/migrations/20260322000003_update_subscription_tiers.sql` | DB migration |
+
+## Stripe Setup (Required Before Launch)
+
+1. Create products in Stripe Dashboard:
+   - **uhome Landlord** — $29/month + $290/year prices
+   - **uhome Portfolio** — $59/month + $590/year prices
+2. Copy price IDs into `src/lib/stripe/plans.ts` → `STRIPE_PRICE_TO_PLAN`
+3. Copy same price IDs into `supabase/functions/stripe-subscription-webhook/index.ts` → `PRICE_TO_PLAN`
+4. Register webhook endpoint in Stripe Dashboard:
+   - URL: `https://vtucrtvajbmtedroevlz.supabase.co/functions/v1/stripe-subscription-webhook`
+   - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
+5. Add `STRIPE_SUBSCRIPTION_WEBHOOK_SECRET` to Supabase secrets
+
+## Related Docs
+- [docs/stripe-integration-plan.md](./stripe-integration-plan.md)
+- [forClaude/decisions_log.md](../forClaude/decisions_log.md)

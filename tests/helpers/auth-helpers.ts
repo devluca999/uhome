@@ -7,7 +7,9 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables in .env.test')
+  throw new Error(
+    'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Set them in .env, .env.local, or .env.test (see .env.test.example).'
+  )
 }
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -68,9 +70,16 @@ export async function createAndConfirmUser(
 
   if (signUpError || !data.user) {
     console.error(`[createAndConfirmUser] SignUp failed:`, signUpError)
-    throw new Error(
-      `Failed to sign up user: ${signUpError?.message || 'No user returned from signup'}`
-    )
+    const base = signUpError?.message || 'No user returned from signup'
+    const cause =
+      signUpError && typeof signUpError === 'object' && 'cause' in signUpError && signUpError.cause
+        ? ` | cause: ${signUpError.cause}`
+        : ''
+    const hint =
+      /fetch failed|network/i.test(base)
+        ? ' (Check .env/.env.test VITE_SUPABASE_URL, VPN/firewall, and local Supabase: `npx supabase status`.)'
+        : ''
+    throw new Error(`Failed to sign up user: ${base}${cause}${hint}`)
   }
 
   console.log(`[createAndConfirmUser] SignUp successful. User ID: ${data.user.id}`)

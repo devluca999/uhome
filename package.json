@@ -22,11 +22,14 @@
     "verify:env": "tsx scripts/verify-env-congruence.ts",
     "verify:launch": "tsx scripts/launch-verification.ts",
     "screenshot:marketing": "tsx scripts/screenshot-marketing-demo.ts",
+    "test:smoke": "playwright test tests/smoke --project=chromium",
+    "test:critical": "playwright test tests/e2e/critical-path --project=chromium",
     "test:e2e": "playwright test --headed",
     "test:e2e:headless": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:quick": "playwright test --project=chromium",
+    "test:e2e:full": "playwright test",
     "test:visual": "playwright test --project=visual --headed",
     "test:visual:headless": "playwright test --project=visual",
     "test:visual:update": "playwright test --project=visual --update-snapshots",
@@ -50,6 +53,7 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
+    "@sentry/react": "^10.45.0",
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/supabase-js": "^2.39.0",
     "class-variance-authority": "^0.7.1",
@@ -80,12 +84,12 @@
     "eslint-plugin-react-refresh": "^0.4.7",
     "postcss": "^8.5.6",
     "prettier": "^3.3.2",
+    "supabase": "^2.14.0",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
-    "vite-plugin-pwa": "^1.2.0",
-    "supabase": "^2.14.0",
+    "vite-plugin-pwa": "^0.19.8",
     "vitest": "^4.0.18"
   }
 }
