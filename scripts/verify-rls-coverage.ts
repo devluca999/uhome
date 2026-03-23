@@ -47,6 +47,9 @@ const REQUIRED_TABLES = new Set([
   'admin_security_logs',
   'admin_audit_logs',
   'subscription_limits',
+  'stripe_connect_accounts',
+  'payments',
+  'payment_settings',
 ])
 
 function extractRlsEnabledTables(content: string): Set<string> {

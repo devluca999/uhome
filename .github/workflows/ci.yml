@@ -94,7 +94,18 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Start local Supabase
-        run: npx supabase start
+        shell: bash
+        run: |
+          set -e
+          for attempt in 1 2 3 4; do
+            npx supabase stop --no-backup 2>/dev/null || true
+            if npx supabase start; then
+              exit 0
+            fi
+            echo "supabase start failed (attempt $attempt), retrying in 60s..."
+            sleep 60
+          done
+          exit 1
 
       - name: Apply migrations and SQL seed
         run: npm run db:reset
