@@ -133,7 +133,7 @@ jobs:
   merge-e2e-reports:
     name: Merge E2E reports
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() && (github.ref == 'refs/heads/develop' || github.event_name == 'pull_request') }}
+    if: ${{ !cancelled() && (github.ref == 'refs/heads/develop' || github.event_name == 'pull_request') && needs.local-e2e.result == 'success' }}
     needs: [local-e2e]
     steps:
       - uses: actions/checkout@v4
