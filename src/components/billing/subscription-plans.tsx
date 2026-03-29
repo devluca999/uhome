@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { PLANS, type PlanTier } from '@/lib/stripe/plans'
 import { useSubscription } from '@/hooks/use-subscription'
+import { supabase } from '@/lib/supabase/client'
 
 interface PlanCardProps {
   tier: PlanTier
@@ -95,11 +97,32 @@ function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
 
 export function SubscriptionPlans() {
   const { plan: currentPlan, loading } = useSubscription()
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
 
-  const handleSelect = (tier: PlanTier) => {
-    // TODO: Initiate Stripe Checkout for selected tier
-    // Will call a create-checkout-session Edge Function
-    console.log('Selected tier:', tier)
+  const handleSelect = async (tier: PlanTier) => {
+    if (tier === currentPlan || tier === 'free') return
+    setCheckoutLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ tier }),
+        }
+      )
+      const { url, error } = await response.json()
+      if (error) throw new Error(error)
+      window.location.href = url
+    } catch (err) {
+      console.error('[Checkout] Failed to start checkout:', err)
+    } finally {
+      setCheckoutLoading(false)
+    }
   }
 
   if (loading) {
@@ -127,7 +150,7 @@ export function SubscriptionPlans() {
             tier={tier}
             currentPlan={currentPlan}
             onSelect={handleSelect}
-            loading={loading}
+            loading={loading || checkoutLoading}
           />
         ))}
       </div>

@@ -254,11 +254,11 @@ async function resolveOrgByCustomer(
  */
 const PRICE_TO_PLAN: Record<string, string> = {
   // Monthly
-  'price_1TDgrcHPNU6LjU8JU3KBaA9i': 'landlord',
-  'price_1TDgvbHPNU6LjU8JrqpxpYnU': 'portfolio',
+  'price_1TFftVQmn5YLaXLqqVaazjQW': 'landlord',
+  'price_1TFfuzQmn5YLaXLqdoVRBqjn': 'portfolio',
   // Yearly
-  'price_1TDguDHPNU6LjU8JD4Wa78z4': 'landlord',
-  'price_1TDgzRHPNU6LjU8JpGmKvz9m': 'portfolio',
+  'price_1TG6gUQmn5YLaXLqOnKqWzs5': 'landlord',
+  'price_1TG6jNQmn5YLaXLqNMdEOdk6': 'portfolio',
 }
 
 function resolvePlan(priceId: string | null | undefined): string {

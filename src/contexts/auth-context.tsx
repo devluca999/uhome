@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [role, setRole] = useState<UserRole>(null)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewModeState] = useState<ViewMode>(loadViewMode)
   const [demoState, setDemoStateState] = useState<DemoState>(loadDemoState)
@@ -154,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchUserRole(session.user.id)
       } else {
         setRole(null)
+        setOrganizationId(null)
         setLoading(false)
       }
     })
@@ -166,6 +168,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe()
     }
   }, [])
+
+  async function fetchOrganizationId(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (error) {
+        console.warn('[AuthContext] Failed to fetch organization id:', error)
+        setOrganizationId(null)
+        return
+      }
+
+      setOrganizationId(data?.organization_id ?? null)
+    } catch (err) {
+      console.warn('[AuthContext] Failed to fetch organization id:', err)
+      setOrganizationId(null)
+    }
+  }
 
   async function fetchUserRole(userId: string) {
     try {
@@ -180,14 +203,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('[AuthContext] Error fetching user role:', error)
         setRole(null)
+        setOrganizationId(null)
         setLoading(false)
       } else {
         setRole(data?.role as UserRole)
+        await fetchOrganizationId(userId)
         setLoading(false)
       }
     } catch (error) {
       console.error('[AuthContext] Error fetching user role:', error)
       setRole(null)
+      setOrganizationId(null)
       setLoading(false)
     }
   }
@@ -334,7 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     user,
     session,
-    organizationId: null,
+    organizationId,
     role,
     loading,
     viewMode,

@@ -3,6 +3,7 @@ import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/auth/login'
 import { SignupPage } from '@/pages/auth/signup'
 import { AuthCallback } from '@/pages/auth/callback'
+import { RoleSelection } from '@/pages/auth/role-selection'
 import { AcceptInvite } from '@/pages/auth/accept-invite'
 import { PrivacyPolicy } from '@/pages/legal/privacy'
 import { TermsOfService } from '@/pages/legal/terms'
@@ -74,6 +75,10 @@ export const router = createBrowserRouter(
         {
           path: 'auth/callback',
           element: <AuthCallback />,
+        },
+        {
+          path: 'auth/role-selection',
+          element: <RoleSelection />,
         },
         {
           path: 'accept-invite',

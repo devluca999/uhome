@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase/client'
@@ -9,14 +9,19 @@ import { logFlowError, logFlowWarn } from '@/lib/flow-log'
 export function AuthCallback() {
   const navigate = useNavigate()
   const { role, loading } = useAuth()
+  const handled = useRef(false)
 
+  // Phase 1: verify session exists immediately after OAuth redirect
   useEffect(() => {
-    async function handleCallback() {
+    if (handled.current) return
+
+    async function verifySession() {
       try {
         const { data, error } = await supabase.auth.getSession()
 
         if (error) {
           logFlowError('AuthCallback', 'getSession', error)
+          handled.current = true
           navigate('/login', {
             replace: true,
             state: {
@@ -29,6 +34,7 @@ export function AuthCallback() {
 
         if (!data.session) {
           logFlowWarn('AuthCallback', 'getSession', 'No session after OAuth redirect')
+          handled.current = true
           navigate('/login', {
             replace: true,
             state: {
@@ -38,26 +44,10 @@ export function AuthCallback() {
           return
         }
 
-        // Wait for role to be fetched by auth context
-        if (!loading && role) {
-          const pending = getPendingInviteToken()
-          if (pending) {
-            navigate(buildAcceptInvitePath(pending), { replace: true })
-          } else {
-            navigate(getPostLoginRedirectPath(role))
-          }
-        } else if (!loading && !role) {
-          logFlowError('AuthCallback', 'resolveRole', new Error('Authenticated but role missing'))
-          navigate('/login', {
-            replace: true,
-            state: {
-              authCallbackError:
-                'Your profile could not be loaded. Try signing in again or contact support if this continues.',
-            },
-          })
-        }
+        // Session confirmed — Phase 2 will handle redirect once role resolves
       } catch (error) {
-        logFlowError('AuthCallback', 'handleCallback', error)
+        logFlowError('AuthCallback', 'verifySession', error)
+        handled.current = true
         navigate('/login', {
           replace: true,
           state: {
@@ -67,12 +57,35 @@ export function AuthCallback() {
       }
     }
 
-    handleCallback()
+    verifySession()
+  }, [navigate])
+
+  // Phase 2: redirect once auth context has resolved role
+  useEffect(() => {
+    if (handled.current) return
+    if (loading) return // still fetching — wait
+
+    if (role) {
+      handled.current = true
+      const pending = getPendingInviteToken()
+      if (pending) {
+        navigate(buildAcceptInvitePath(pending), { replace: true })
+      } else {
+        navigate(getPostLoginRedirectPath(role), { replace: true })
+      }
+      return
+    }
+
+    // loading is false but role is null — new Google/OAuth user with no role set
+    if (!loading) {
+      handled.current = true
+      navigate('/auth/role-selection', { replace: true })
+    }
   }, [navigate, role, loading])
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-      <div className="text-stone-600">Completing sign in...</div>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-muted-foreground">Completing sign in...</div>
     </div>
   )
 }

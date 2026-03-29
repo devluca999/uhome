@@ -54,7 +54,7 @@ export const PLANS: Record<PlanTier, PlanConfig> = {
     tier: 'landlord',
     name: 'Landlord',
     description: 'For independent landlords managing multiple properties',
-    monthlyPrice: 2900,
+    monthlyPrice: 2999,
     yearlyPrice: 29000,
     maxProperties: 10,
     maxCollaborators: 1,
@@ -70,7 +70,7 @@ export const PLANS: Record<PlanTier, PlanConfig> = {
     tier: 'portfolio',
     name: 'Portfolio',
     description: 'For serious landlords managing a property portfolio',
-    monthlyPrice: 5900,
+    monthlyPrice: 5999,
     yearlyPrice: 59000,
     maxProperties: 30,
     maxCollaborators: 3,
@@ -90,11 +90,11 @@ export const PLANS: Record<PlanTier, PlanConfig> = {
  */
 export const STRIPE_PRICE_TO_PLAN: Record<string, PlanTier> = {
   // Monthly
-  price_1TDgrcHPNU6LjU8JU3KBaA9i: 'landlord',
-  price_1TDgvbHPNU6LjU8JrqpxpYnU: 'portfolio',
+  price_1TFftVQmn5YLaXLqqVaazjQW: 'landlord',
+  price_1TFfuzQmn5YLaXLqdoVRBqjn: 'portfolio',
   // Yearly
-  price_1TDguDHPNU6LjU8JD4Wa78z4: 'landlord',
-  price_1TDgzRHPNU6LjU8JpGmKvz9m: 'portfolio',
+  price_1TG6gUQmn5YLaXLqOnKqWzs5: 'landlord',
+  price_1TG6jNQmn5YLaXLqNMdEOdk6: 'portfolio',
 }
 
 export function getPlanFromPriceId(priceId: string | null | undefined): PlanTier {
@@ -104,7 +104,7 @@ export function getPlanFromPriceId(priceId: string | null | undefined): PlanTier
 
 export function formatPrice(cents: number, interval: 'month' | 'year' = 'month'): string {
   if (cents === 0) return 'Free'
-  return `$${(cents / 100).toFixed(0)}/${interval}`
+  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}/${interval}`
 }
 
 export function isFeatureAvailable(plan: PlanTier, feature: keyof PlanConfig['features']): boolean {
