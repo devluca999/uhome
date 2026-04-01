@@ -126,20 +126,113 @@ Generating legally binding lease documents requires jurisdiction-specific compli
 
 ---
 
-### Phase 15: Mobile Optimization
-**Goal:** Improve mobile experience
+### Phase 15: Personal Reminders 🆕
+**Goal:** Let landlords and tenants set personal reminders tied to real property events
 
-**Features:**
-- Responsive design polish
-- Mobile-specific UI improvements
-- Touch gesture optimizations
-- Offline data caching
+**Architecture decision:** Extend the existing `tasks` table rather than building a new system. Add `remind_at timestamptz`, `is_personal_reminder boolean`, and `reminder_type` enum (`lease_expiry | rent_due | custom`). Add `'self'` as a new `TaskAssignedToType` value for private, user-owned reminders.
 
-**Timeline:** 2-3 weeks
+**Two distinct reminder types:**
+
+User-created personal reminders (Sprint 3 scope):
+- Freeform reminders a user sets themselves — "Call about renewal", "Check insurance renewal", "Follow up on late payment"
+- Private to the user who created them — not visible to the other party
+- Set from: property detail page (landlord), tenant profile (landlord), lease detail page (both roles), and a "Reminders" section in the dashboard
+- In-app delivery only — a notification badge fires when `remind_at` is reached
+- DB: extend tasks table, frontend polling or Supabase realtime subscription checks `remind_at <= now()`
+
+System-aware automatic reminders (Phase 10 / post-launch):
+- Triggered automatically based on data that already exists — lease end dates in `tenants.lease_end_date`, rent due dates in `rent_records.due_date`
+- A nightly Supabase cron job (pg_cron or scheduled Edge Function) scans thresholds: leases expiring in 60/30/14/7 days, rent due in 7/3/1 days
+- Inserts rows into `notifications` for the relevant user
+- Same notification row drives in-app badge (MVP), email (Phase 10 Resend), and push (Phase 10 PWA push)
+
+**Scope note:** Renewal intent ("I want to renew") is a personal reminder, not a system workflow. The reminder fires — the landlord decides what to do. uhome does not auto-generate renewal documents or trigger lease workflows.
+
+**Sprint 3 items:** Personal reminders UI + extend tasks table (3 hrs)
+**Phase 10 items:** System-aware cron + email/push delivery
 
 ---
 
-### Phase 16: React Native App
+### Phase 16: Documents Redesign 🆕
+**Goal:** Transform the documents page from a flat property-scoped grid into a structured, navigable document library
+
+**Current state:** Flat grid, property filter only, categories hacked into filenames as `[Category] filename`. No folders, no tags, no hierarchy.
+
+**New architecture:**
+- New `document_folders` table: `id, property_id, name, color, created_by, created_at`
+- New columns on `documents`: `folder_id uuid`, `is_starred boolean default false`, `tenant_visible boolean default false`, `tags text[]`
+- Tags stored as `text[]` on the document row for MVP; migrate to junction table if tag management (rename, recolor) becomes needed
+
+**UI system (Notion-inspired, uhome aesthetic):**
+- Left sidebar: Library (All, Recent, Starred), Properties, Tags with colored dots and counts
+- Folder grid: color-coded folder cards, dashed "New folder" card, `···` context menu per folder (Rename, Move, Share with tenants, Delete)
+- File list: compact rows with file type badges (PDF/DOC/IMG), multi-tag pills, size, date, `···` context menu per file (Open, Download, Move to folder, Add tag, Star, Share with tenant, Delete)
+- Drag-drop upload zone
+- Breadcrumb navigation when inside a folder
+- Search across all documents
+- Filter bar: file type, sort order, property filter pills
+
+**Tenant-facing view:** Read-only, shows only documents where `tenant_visible = true`. Same folder/tag structure, no upload button.
+
+**Share with tenant:** Toggle per file — explicit, not automatic. Surfaces in the `···` context menu.
+
+**Mobile:** Documents fits the mobile sheet pattern — folder tap opens a sheet, file tap opens a preview sheet. Upload via FAB.
+
+**Timeline:** 3-4 weeks (Sprint 3 scope: migration + core UI. Polish in post-launch iteration)
+
+---
+
+### Phase 17: Mobile-First UX 🆕
+**Goal:** Make uhome genuinely usable on a phone — not just responsive, but designed for mobile context
+
+**Current state:** Mobile already switches to `SidebarLayout` at <768px, but `SidebarLayout` is a desktop sidebar (w-64) forced onto a 375px screen, leaving ~119px for content. Pages are vertical card stacks with no mobile hierarchy.
+
+**Architecture: replace sidebar with bottom tab bar + sheets**
+
+Bottom tab bar (5 tabs max):
+- Landlord: Home · Properties · Finances · Messages · More
+- Tenant: Home · Payments · Maintenance · Messages · More
+- "More" tab opens a bottom sheet listing: Documents, Operations, Notifications, Settings
+- Implementation: new `MobileLayout` component replacing `SidebarLayout` when `isMobile === true`. Desktop layout untouched.
+
+Page-level content tabs (not navigation):
+- Finances: Overview / Ledger / Expenses
+- Properties: List / Map (future)
+- Operations: Tasks / Work Orders
+- Each tab is a separate scroll context — solves the endless scroll problem on dense pages
+
+Dashboard mobile redesign:
+- Single hero card (collection rate + amount — the one number that matters)
+- Horizontally scrollable pill row for secondary metrics (properties, tenants, overdue, open WO, expenses)
+- Activity feed below — no charts on initial load
+- Charts are "tap to expand" → opens a bottom sheet
+
+FAB (floating action button):
+- Persistent `+` above the tab bar, changes by active tab
+- Finances → sheet: Log payment / Add expense / Attach receipt / Export
+- Properties → sheet: Add property / Add tenant / Upload document
+- Maintenance → sheet: New request / New work order
+- One thumb tap to the most common action on every screen
+
+Sheets instead of full page navigations:
+- All form actions (add property, log rent, submit maintenance request, upload document) open as bottom sheets
+- User never leaves their current screen context
+- Dismiss sheet → back to exactly where they were
+
+**Implementation scope:** ~6 hours in Cursor
+- `MobileLayout.tsx` — new component, replaces SidebarLayout on mobile
+- `BottomTabBar.tsx` — 5-tab bar with active state and notification dot
+- `MobileSheet.tsx` — reusable bottom sheet utility with backdrop, handle, and slide-up animation
+- Page-level tab wrappers for Finances, Properties, Operations
+- Dashboard layout reskin behind `isMobile` breakpoint check
+
+**Dependencies:** All data hooks, pages, and routes unchanged — layout only.
+
+**Timeline:** Sprint 3 (core layout + tabs), polish post-launch
+
+---
+
+### Phase 18: React Native App
 **Goal:** Native mobile apps
 
 **Features:**
@@ -151,8 +244,25 @@ Generating legally binding lease documents requires jurisdiction-specific compli
 **Timeline:** 6-8 weeks
 
 **Dependencies:**
+- Phase 17 complete (mobile UX patterns established)
 - Architecture designed for RN parity ✅
-- Mobile optimization complete
+
+---
+
+### Phase 19: React Native App
+**Goal:** Native mobile apps
+
+**Features:**
+- React Native iOS app
+- React Native Android app
+- Shared component library
+- Platform-specific optimizations
+
+**Timeline:** 6-8 weeks
+
+**Dependencies:**
+- Phase 17 complete (mobile UX patterns established)
+- Architecture designed for RN parity ✅
 
 ---
 
@@ -248,22 +358,23 @@ These items are non-negotiable before reaching scale. Tracked separately because
 ## Timeline (Revised April 2026)
 
 **Now (Sprints 2–3):**
-- Sprint 2: Reliability, UX polish, demo data fix, messaging UI
-- Sprint 3: GTM hardening, legal review, receipt attach, lease template storage scoping
+- Sprint 2: Reliability, UX polish, demo data fix, messaging UI redesign
+- Sprint 3: GTM hardening, legal review, receipt attach, lease templates, personal reminders, documents redesign, mobile layout
 
 **Post-launch (Q2 2026):**
 - Phase 9: Rent Collection (Stripe Connect)
-- Phase 10: Notifications
+- Phase 10: Notifications + system-aware automatic reminders (cron + email/push)
 - Phase 12: Data Utilities & Tax Exports
 
 **Q3 2026:**
 - Phase 11: Advanced Rent Features
 - Phase 13: Enhanced Analytics + custom date range picker
 - Phase 14: Lease Template Storage & Reuse
+- Phase 16: Documents Redesign (polish iteration)
 
 **Q4 2026:**
-- Phase 15: Mobile Optimization
-- Phase 16: React Native (start)
+- Phase 17: Mobile-First UX (full polish + PWA)
+- Phase 18/19: React Native (start)
 
 ---
 

@@ -180,6 +180,22 @@
 - **What:** Add "Export for tax season" button to the Finances page. Generates a PDF (or CSV) with: property name, total rent collected per property, total expenses by category, net income — all scoped to a selected tax year. Include a footer: "This export is for record-keeping purposes. uhome does not provide tax advice."
 - **Labels:** 🤖 `P2 can automate` · 🖥️ `Cursor · 2 hrs`
 
+### 29. Personal reminders — extend tasks + UI 🆕
+- **Why:** Landlords and tenants have no way to set private reminders tied to their property context. "Follow up on lease renewal", "Check insurance", "Remind tenant about late payment" — these are real daily-use cases with no current home in the app.
+- **What:** Add `remind_at timestamptz`, `is_personal_reminder boolean default false`, and `reminder_type text` (`lease_expiry | rent_due | custom`) columns to `tasks` table via migration. Add `'self'` to the `TaskAssignedToType` enum. Build a "Set reminder" UI component that appears on: property detail page (landlord), tenant profile (landlord), lease detail page (both roles). In-app delivery only: Supabase realtime subscription checks `remind_at <= now()` and surfaces a notification badge. System-aware automatic reminders (cron for lease expiry/rent due) deferred to Phase 10.
+- **Scope guardrail:** Reminder fires, user decides action. uhome does not auto-generate renewal documents or trigger lease workflows.
+- **Labels:** 🤖 `P2 can automate` · 🖥️ `Cursor · 3 hrs`
+
+### 30. Documents page redesign 🆕
+- **Why:** The current documents page is a flat property-scoped grid with categories hacked into filenames. No hierarchy, no tags, no folders — unusable for landlords managing more than 5-6 documents.
+- **What:** New DB migration: `document_folders` table (`id, property_id, name, color, created_by`) + new columns on `documents` (`folder_id, is_starred, tenant_visible, tags text[]`). New page layout: left sidebar (Library, Properties, Tags), folder grid with color-coded cards + `···` context menus, compact file list with type badges + tag pills + context menus. Drag-drop upload zone. Breadcrumb nav. Search. Tenant view: read-only, `tenant_visible = true` files only. "Share with tenant" toggle per file in context menu.
+- **Labels:** 🤖 `P2 can automate` · 🖥️ `Cursor · 4 hrs`
+
+### 31. Mobile layout — bottom tabs + sheets + FAB 🆕
+- **Why:** Mobile currently renders a desktop sidebar on a phone screen, leaving ~119px for content. Pages are vertical card stacks with no mobile hierarchy. This is the single biggest UX gap for mobile users.
+- **What:** New `MobileLayout.tsx` replacing `SidebarLayout` when `isMobile === true` (desktop layout untouched). `BottomTabBar.tsx`: 5 tabs (Home / Properties / Finances / Messages / More). `MobileSheet.tsx`: reusable slide-up sheet utility. Page-level content tabs for Finances (Overview/Ledger/Expenses), Properties, Operations (Tasks/Work Orders). Dashboard reskin: hero card + metric pill row + activity feed. FAB `+` button above tab bar, context-aware sheet per section. All form actions (add property, log rent, submit request, upload doc) open as sheets — user never leaves current screen.
+- **Labels:** 🤖 `P2 can automate` · 🖥️ `Cursor · 6 hrs`
+
 ---
 
 ## Summary
@@ -189,11 +205,12 @@
 | 0 — Blockers | 6 | Mix | ~2.5 hrs |
 | 1 — Brand | 5 | Mix | ~2 hrs |
 | 2 — Reliability | 11 (8 original + 3 added) | Mix | ~6 hrs |
-| 3 — GTM | 8 (5 original + 3 added) | Mix | ~5 hrs |
-| **Total** | **30** | | **~15.5 hrs** |
+| 3 — GTM + Features | 11 (5 original + 6 added) | Mix | ~8 hrs |
+| **Total** | **33** | | **~18.5 hrs** |
 
-> **Sprint 2 additions:** A. Demo populated state fix · B. Messaging UI redesign · (custom date range picker deferred to Phase 13)  
-> **Sprint 3 additions:** 26. Expense receipt attachment · 27. Lease template storage · 28. Tax-friendly export  
-> **Legal note:** Item 25 (T&C + Privacy Policy review) should be treated as urgent — the disclaimer language protects uhome from liability related to items 27 and 28.
+> **Sprint 2 additions (A–C):** Demo populated state fix · Messaging UI redesign · (date range picker deferred Phase 13)
+> **Sprint 3 additions:** 26. Expense receipt attachment · 27. Lease template storage · 28. Tax export · 29. Personal reminders · 30. Documents redesign · 31. Mobile layout
 
-> **Automated by P2 (items 1, 2, 3, 6, 7, 8, 10, 12, 14, 15, 18, 19, 20, 26, 27, 28):** 16 of 30 items can be fully written and committed by P2 in Cursor sessions.
+> **Legal note:** Item 25 (T&C + Privacy Policy) is urgent — disclaimer language covers items 27, 28, 29, 30.
+
+> **Automated by P2:** Items 1, 2, 3, 6, 7, 8, 10, 12, 14, 15, 18, 19, 20, 26, 27, 28, 29, 30, 31 — 19 of 33 items.
