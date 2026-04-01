@@ -141,10 +141,21 @@ This document clearly separates MVP features (must feel real and usable with moc
 ### Legal & Compliance
 - ❌ Background checks
 - ❌ Credit checks
-- ❌ Legal lease document generation
+- ❌ Legal lease document generation (jurisdiction risk — requires legal partnership)
+- ❌ Location-aware AI lease generation (post-scale, requires per-jurisdiction attorney review)
 - ❌ E-signatures
 - ❌ Legal compliance tools
 - ❌ Tenant screening services
+
+### Financial Records & Tax
+- ❌ Expense receipt/invoice attachment to expense records (Sprint 3 / Phase 12)
+- ❌ Tax-friendly annual export (income + expenses by category, for accountant handoff)
+- ❌ Year-end PDF summary report
+- ❌ Tax liability calculation (out of scope permanently — legal/jurisdiction risk)
+
+### Lease Management
+- ❌ Lease template storage and reuse (Phase 14 — document storage only, no generation)
+- ❌ Lease renewal workflow with document duplication
 
 ### Communication
 - ❌ Email automation
