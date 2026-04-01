@@ -121,7 +121,7 @@ export function HomePage() {
             }
             layout={false}
           >
-            Property management for independent landlords and tenants
+            Property management that feels nothing like property management.
           </motion.p>
           <div className="flex gap-4 justify-center">
             <motion.div
@@ -182,24 +182,24 @@ export function HomePage() {
             }
             layout={false}
           >
-            Features
+            Built for independent landlords
           </motion.h2>
           <div className="grid gap-6 md:grid-cols-3">
             {[
               {
                 icon: Home,
-                title: 'Property Management',
-                description: 'Manage all your properties in one place',
+                title: 'Ditch the spreadsheet',
+                description: 'Track rent, expenses, and leases in one place — no formulas required.',
               },
               {
                 icon: Shield,
-                title: 'Secure & Private',
-                description: 'Your data is protected and secure',
+                title: 'One place for every property',
+                description: 'Properties, tenants, documents, and maintenance requests all connected.',
               },
               {
                 icon: Users,
-                title: 'Tenant Portal',
-                description: 'Easy communication between landlords and tenants',
+                title: 'Tenants stay informed',
+                description: 'Rent receipts, maintenance updates, and messages — without the back-and-forth.',
               },
             ].map((feature, index) => (
               <motion.div
