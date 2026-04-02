@@ -153,7 +153,45 @@ System-aware automatic reminders (Phase 10 / post-launch):
 
 ---
 
-### Phase 16: Documents Redesign 🆕
+### Phase 16: Marketing Site Visual Alignment 🆕
+**Goal:** Make `getuhome.app` and `app.getuhome.app` feel like a single coherent product, not two separate projects
+
+**Current gap:** The landing page uses Inter + DM Serif Display, sage green primary (`152 25% 42%`), warm off-white light-mode backgrounds, and Apple-style shadows. The app uses Geist, slate/steel primary (`215 15% 55%`), near-black dark-mode surfaces, SVG grain textures, and glassmorphic cards. A user arriving from the marketing site encounters a jarring visual discontinuity when they open the app.
+
+**Three-layer implementation:**
+
+Layer 1 — Token alignment (30 min):
+- Replace landing page primary from sage green to slate/steel `hsl(215, 15%, 55%)`
+- Replace Inter with Geist as primary typeface (landing page already imports Google Fonts)
+- Port the grain overlay SVG noise implementation from `app/src/index.css` to landing page
+- Align `glass-card` class implementation so both use same rgba/border/inset-highlight approach
+
+Layer 2 — Component style alignment (1-2 hrs):
+- Apply app's glass-card visual language to landing page feature cards, pricing cards, "Who it's for" section
+- Landing page cards currently use Apple-style box shadows — replace with app's `0px 12px 30px rgba(0,0,0,0.18)` + white inset border
+- Makes landing page feel like a preview of the actual product
+
+Layer 3 — Demo screenshots (2-4 hrs):
+- Add real app screenshots inside browser mockup frames to key landing page sections
+- "Zero chaos. One place." section → populated landlord dashboard screenshot
+- "For Landlords" section → properties list + rent tracking view
+- Pricing section → shows what Starter plan actually looks like in-product
+- Tenant section → tenant dashboard screenshot
+- **Hard dependency:** Sprint 2 item A (demo populated state fix) must be done first — screenshots must show real populated data, not zero-state dashboards
+
+**Sequence:** Layer 1 → Layer 2 → fix Sprint 2 item A → take screenshots → Layer 3
+
+**Files affected in landing page repo:**
+- `src/index.css` — token and grain changes
+- `src/pages/Landing.tsx` — screenshot sections
+- `src/pages/Pricing.tsx` — card style alignment
+- `public/screenshots/` — new directory for app screenshot assets
+
+**Timeline:** Sprint 3 (layers 1+2), after demo data fix (layer 3)
+
+---
+
+### Phase 17: Documents Redesign 🆕
 **Goal:** Transform the documents page from a flat property-scoped grid into a structured, navigable document library
 
 **Current state:** Flat grid, property filter only, categories hacked into filenames as `[Category] filename`. No folders, no tags, no hierarchy.
