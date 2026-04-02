@@ -53,6 +53,7 @@ import { useSettings } from '@/contexts/settings-context'
 import type { DashboardTimeline } from '@/contexts/settings-context'
 import { supabase } from '@/lib/supabase/client' // used by child components via context
 import { useAuth } from '@/contexts/auth-context'
+import { OnboardingCard } from '@/components/landlord/onboarding-card'
 
 type LandlordDashboardRpcRow = {
   total_properties: unknown
@@ -624,6 +625,13 @@ export function LandlordDashboard() {
             </div>
           </div>
         </motion.div>
+
+        {/* Show onboarding card if no properties exist */}
+        {!propertiesLoading && properties.length === 0 && (
+          <div className="mb-8">
+            <OnboardingCard />
+          </div>
+        )}
 
         {hasErrors && (
           <div className="mb-6 space-y-3">

@@ -20,8 +20,8 @@ const WEBHOOK_URL = 'https://vtucrtvajbmtedroevlz.supabase.co/functions/v1/strip
 const TEST_ORG_ID = '00000000-0000-0000-0000-000000000001'
 const TEST_CUSTOMER_ID = 'cus_test_webhook_runner'
 const TEST_SUB_ID = 'sub_test_webhook_runner'
-const LANDLORD_PRICE = 'price_1TDgrcHPNU6LjU8JU3KBaA9i'
-const PORTFOLIO_PRICE = 'price_1TDgvbHPNU6LjU8JrqpxpYnU'
+const LANDLORD_PRICE = 'price_1TFftVQmn5YLaXLqqVaazjQW'
+const PORTFOLIO_PRICE = 'price_1TFfuzQmn5YLaXLqdoVRBqjn'
 
 const now = Math.floor(Date.now() / 1000)
 const periodEnd = now + 30 * 24 * 60 * 60 // 30 days from now

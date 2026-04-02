@@ -78,6 +78,9 @@ npm run type-check
 # Lint
 npm run lint
 
+# Before commit/push (typecheck + doc sync — see docs)
+# docs/PRE_COMMIT_CHECKLIST.md
+
 # Format code
 npm run format
 
@@ -121,6 +124,7 @@ uhome/
 
 ## Documentation
 
+- **[Pre-commit / pre-push checklist](docs/PRE_COMMIT_CHECKLIST.md)** — Run before committing (includes updating sprint docs)
 - [Project Context](docs/project_context.md)
 - [MVP Roadmap](docs/mvp_roadmap.md)
 - [Engineering Rules](docs/engineering_rules.md)
@@ -148,6 +152,32 @@ Required:
 - `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
 
 See [Environment Setup](docs/environment_setup.md) for details.
+
+## 🚀 Launch Sprint Documentation
+
+**Status:** Sprint 2 complete in code (verify + deploy manually).  
+**Next:** Sprint 0 blockers, then Sprint 3 hardening — see checklist.
+
+### Quick Links
+
+- **[Sprint Checklist](docs/LAUNCH_SPRINT_CHECKLIST.md)** — Master checklist (25 items, 4 sprints)
+- **[Pre-commit checklist](docs/PRE_COMMIT_CHECKLIST.md)** — Standard step before commit/push
+- **[Session Summary](SESSION_SUMMARY.md)** — Sprint 2 summary and next steps
+- **[Item 14 handoff](CURSOR_HANDOFF_ITEM14.md)** — Historical context (implementation done in repo)
+- **[Quick start Item 14](QUICK_START_ITEM14.md)** — Reference only
+
+### Sprint Progress (see checklist for authoritative counts)
+
+- **Sprint 0:** 1/6 complete (organizationId wired ✅)
+- **Sprint 1:** 0/5 complete
+- **Sprint 2:** 8/8 complete ✅
+- **Sprint 3:** 0/6 complete
+
+### Next Actions
+
+1. QA Settings billing, Stripe portal, plan gates; deploy `create-portal-session` if needed  
+2. Add GitHub `VERCEL_*` secrets; align Vercel auto-deploy with `deploy.yml`  
+3. Execute Sprint 0 items (checkout, webhook, OAuth, …) per checklist
 
 ## License
 

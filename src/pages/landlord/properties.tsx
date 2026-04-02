@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { useProperties } from '@/hooks/use-properties'
 import { useLeases } from '@/hooks/use-leases'
 import { useTenants } from '@/hooks/use-tenants'
@@ -14,6 +15,8 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Plus, Home, Filter, X, Search } from 'lucide-react'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
+import { useAuth } from '@/contexts/auth-context'
+import { useSubscription } from '@/hooks/use-subscription'
 
 type PropertyTypeFilter = string | 'all'
 type OccupancyFilter = 'occupied' | 'vacant' | 'all'
@@ -24,12 +27,17 @@ type SortFilter = 'newest' | 'oldest' | 'rent_high' | 'rent_low' | 'name_az' | '
 export function LandlordProperties() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordProperties' })
+  const navigate = useNavigate()
+  const { viewMode } = useAuth()
+  const { canAddProperty, loading: subscriptionLoading } = useSubscription()
+  const applyPlanGates = viewMode !== 'landlord-demo'
   const { properties, loading, error, createProperty, deleteProperty } = useProperties()
   const { leases } = useLeases()
   const { tenants } = useTenants()
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [planGateNotice, setPlanGateNotice] = useState<string | null>(null)
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -168,6 +176,10 @@ export function LandlordProperties() {
   ])
 
   async function handleCreate(data: Parameters<typeof createProperty>[0]) {
+    if (applyPlanGates && !subscriptionLoading && !canAddProperty(properties.length)) {
+      setCreateError('Your plan does not allow more properties. Upgrade to add another.')
+      return
+    }
     setSubmitting(true)
     setCreateError(null)
     try {
@@ -206,6 +218,7 @@ export function LandlordProperties() {
             onCancel={() => {
               setShowForm(false)
               setCreateError(null)
+              setPlanGateNotice(null)
             }}
             loading={submitting}
           />
@@ -224,10 +237,33 @@ export function LandlordProperties() {
             <h1 className="text-4xl font-semibold text-foreground mb-2">Properties</h1>
             <p className="text-muted-foreground">Manage your properties</p>
           </div>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Property
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button
+              onClick={() => {
+                setPlanGateNotice(null)
+                if (subscriptionLoading) return
+                if (applyPlanGates && !canAddProperty(properties.length)) {
+                  setPlanGateNotice(
+                    'You have reached the property limit on your current plan. Upgrade to add more properties.'
+                  )
+                  return
+                }
+                setShowForm(true)
+              }}
+              disabled={subscriptionLoading}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Property
+            </Button>
+            {applyPlanGates && planGateNotice && (
+              <div className="flex flex-col items-end gap-2 max-w-sm text-right">
+                <p className="text-sm text-muted-foreground">{planGateNotice}</p>
+                <Button variant="outline" size="sm" onClick={() => navigate('/landlord/subscription-plans')}>
+                  View plans
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {error && <ErrorAlert error={error} className="mb-6" />}

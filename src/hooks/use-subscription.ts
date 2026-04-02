@@ -18,6 +18,7 @@ export interface SubscriptionState {
   stripeCustomerId: string | null
   stripeSubscriptionId: string | null
   currentPeriodEnd: string | null
+  trialEnd: string | null
   cancelAtPeriodEnd: boolean
   loading: boolean
   error: string | null
@@ -40,6 +41,7 @@ export function useSubscription(): UseSubscriptionReturn {
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     currentPeriodEnd: null,
+    trialEnd: null,
     cancelAtPeriodEnd: false,
     loading: true,
     error: null,
@@ -47,7 +49,17 @@ export function useSubscription(): UseSubscriptionReturn {
 
   const fetchSubscription = useCallback(async () => {
     if (!organizationId) {
-      setState(s => ({ ...s, loading: false }))
+      setState({
+        plan: 'free',
+        status: null,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        currentPeriodEnd: null,
+        trialEnd: null,
+        cancelAtPeriodEnd: false,
+        loading: false,
+        error: null,
+      })
       return
     }
 
@@ -57,7 +69,7 @@ export function useSubscription(): UseSubscriptionReturn {
       const { data, error } = await supabase
         .from('subscriptions')
         .select(
-          'plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end'
+          'plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, trial_end, cancel_at_period_end'
         )
         .eq('organization_id', organizationId)
         .maybeSingle()
@@ -70,6 +82,7 @@ export function useSubscription(): UseSubscriptionReturn {
         stripeCustomerId: data?.stripe_customer_id ?? null,
         stripeSubscriptionId: data?.stripe_subscription_id ?? null,
         currentPeriodEnd: data?.current_period_end ?? null,
+        trialEnd: data?.trial_end ?? null,
         cancelAtPeriodEnd: data?.cancel_at_period_end ?? false,
         loading: false,
         error: null,

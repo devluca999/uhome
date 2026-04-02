@@ -54,10 +54,13 @@ uhome uses GitHub Actions for continuous integration and deployment. The setup s
 - Manual workflow dispatch
 
 **Actions:**
+- Verifies merge source (soft check)
+- Runs production smoke tests (local Supabase + Playwright)
 - Builds application with production credentials
-- Records deployment in Releases tab (`environment='production'`)
-- Deploys to production hosting platform
-- Runs production smoke tests
+- Deploys to **Vercel** via `amondnet/vercel-action` (`--prod`) when secrets are set
+- Records deployment placeholder / artifacts
+
+**Vercel (production job):** GitHub secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Prefer disabling Vercel’s duplicate Git-based production deploy if this workflow owns releases.
 
 ## Environment Variables in CI/CD
 
@@ -72,6 +75,8 @@ uhome uses GitHub Actions for continuous integration and deployment. The setup s
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (for Edge Functions)
+- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (for `deploy.yml` production deploy)
+- `VITE_SUPABASE_STAGING_URL` (deploy workflow guard: must differ from production URL)
 
 **Staging:**
 - `VITE_SUPABASE_STAGING_URL`
@@ -81,15 +86,11 @@ uhome uses GitHub Actions for continuous integration and deployment. The setup s
 
 ## Local Development
 
-**Pre-commit:**
-- Run `npm run lint` before committing
-- Run `npm run format` to auto-format code
-- Run `npm run type-check` to verify types
-- Run `npm run build` to verify build succeeds
+**Pre-commit and pre-push:** Follow **[PRE_COMMIT_CHECKLIST.md](./PRE_COMMIT_CHECKLIST.md)** — typecheck, lint, and **update launch docs** (`LAUNCH_SPRINT_CHECKLIST.md`, `SESSION_SUMMARY.md`, etc.) when sprint status changes.
 
-**Recommended:**
-- Use husky for git hooks (optional, not required for MVP)
-- Or run checks manually before pushing
+**Also useful before a large change:**
+- `npm run format`
+- `npm run build`
 
 ## Adding New Checks
 

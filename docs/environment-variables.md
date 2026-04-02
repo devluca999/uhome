@@ -106,6 +106,20 @@ Used by Node.js scripts, test helpers, and seed utilities. **Never exposed to th
 
 Auto-injected by Supabase or set as Edge Function secrets.
 
+### Local Docker (`supabase start`)
+
+Stripe and other custom secrets are **not** on the staging Dashboard; for local dev, put them in **`supabase/functions/.env`** (gitignored). Supabase loads that file when the local stack runs. Start from the template:
+
+```bash
+cp supabase/functions/.env.example supabase/functions/.env
+```
+
+(PowerShell: `Copy-Item supabase/functions/.env.example supabase/functions/.env`.)
+
+Fill in test-mode `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (Connect endpoint), and `STRIPE_SUBSCRIPTION_WEBHOOK_SECRET` (subscription webhook endpoint). Then restart: `npx supabase stop` and `npx supabase start`.
+
+For a **hosted** Supabase project, set the same keys in **Dashboard → Edge Functions → Secrets** or run `supabase secrets set --env-file ...` while linked to that project (does not apply to the local stack by itself).
+
 | Variable | Purpose | Referenced In |
 |----------|---------|---------------|
 | `SUPABASE_URL` | Supabase project URL (auto-injected) | All Edge Functions in `supabase/functions/*/index.ts` |

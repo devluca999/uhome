@@ -117,6 +117,7 @@ export function canAddProperty(plan: PlanTier, currentCount: number): boolean {
   return currentCount < limit
 }
 
+/** Enforced in UI once a landlord team / collaborator invite flow exists (currently tenant invites only). */
 export function canAddCollaborator(plan: PlanTier, currentCount: number): boolean {
   return currentCount < PLANS[plan].maxCollaborators
 }

@@ -16,10 +16,14 @@ import { useSettings } from '@/contexts/settings-context'
 import type { DashboardTimeline } from '@/contexts/settings-context'
 import { useTheme, type ThemePreference } from '@/contexts/theme-context'
 import { useImageUpload } from '@/hooks/use-image-upload'
+import { useSubscription } from '@/hooks/use-subscription'
+import { useStripePortal } from '@/hooks/use-stripe-portal'
+import { formatPrice } from '@/lib/stripe/plans'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
+import { Badge } from '@/components/ui/badge'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { Settings as SettingsIcon, LogOut, Trash2, Key, Check, Upload } from 'lucide-react'
+import { Settings as SettingsIcon, LogOut, Trash2, Key, Check, Upload, CreditCard } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 
@@ -50,6 +54,18 @@ export function SettingsPage() {
   const { settings, updateSettings } = useSettings()
   const { themePreference, setThemePreference } = useTheme()
   const { uploadImage, uploading: uploadingAvatar, error: avatarError } = useImageUpload('avatars')
+  const {
+    plan,
+    status: subscriptionStatus,
+    stripeCustomerId,
+    currentPeriodEnd,
+    trialEnd,
+    cancelAtPeriodEnd,
+    loading: subscriptionLoading,
+    error: subscriptionFetchError,
+    config: planConfig,
+  } = useSubscription()
+  const { openPortal, loading: portalLoading, error: portalError } = useStripePortal()
   const [userName, setUserName] = useState(settings.userName || '')
   const [organizationName, setOrganizationName] = useState(settings.organizationName || '')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -457,6 +473,111 @@ export function SettingsPage() {
                 <option value="quarterly">Quarterly</option>
                 <option value="yearly">Yearly</option>
               </select>
+            </div>
+          </SettingsSection>
+        )}
+
+        {role === 'landlord' && (
+          <SettingsSection
+            title="Billing & subscription"
+            description="Manage your plan and payment methods"
+          >
+            <div className="space-y-4">
+              {subscriptionLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">Loading subscription…</p>
+                </div>
+              ) : subscriptionFetchError ? (
+                <div className="p-3 rounded-md bg-destructive/20 border border-destructive/30">
+                  <p className="text-sm text-destructive">{subscriptionFetchError}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="p-4 rounded-md border-2 border-primary/50 bg-primary/10">
+                    <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-foreground">Current plan</span>
+                      <Badge variant="default">{planConfig.name}</Badge>
+                    </div>
+                    <div className="space-y-1">
+                      {plan !== 'free' &&
+                        subscriptionStatus === 'active' &&
+                        currentPeriodEnd &&
+                        !cancelAtPeriodEnd && (
+                          <p className="text-xs text-muted-foreground">
+                            {formatPrice(planConfig.monthlyPrice, 'month')} · Renews{' '}
+                            {new Date(currentPeriodEnd).toLocaleDateString()}
+                          </p>
+                        )}
+                      {subscriptionStatus === 'trialing' && trialEnd && (
+                        <p className="text-xs text-amber-600 dark:text-amber-500">
+                          Trial ends {new Date(trialEnd).toLocaleDateString()}
+                        </p>
+                      )}
+                      {(subscriptionStatus === 'canceled' || cancelAtPeriodEnd) &&
+                        currentPeriodEnd && (
+                          <p className="text-xs text-destructive">
+                            {cancelAtPeriodEnd && subscriptionStatus !== 'canceled'
+                              ? 'Plan ends '
+                              : 'Access ends '}
+                            {new Date(currentPeriodEnd).toLocaleDateString()}
+                          </p>
+                        )}
+                      {plan === 'free' && (
+                        <p className="text-xs text-muted-foreground">
+                          Upgrade for more properties, insights, and exports.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {subscriptionStatus === 'trialing' && trialEnd && (
+                    <div className="p-3 rounded-md bg-muted/50 border border-border">
+                      <p className="text-sm text-foreground mb-1">
+                        Your trial ends on{' '}
+                        <strong>{new Date(trialEnd).toLocaleDateString()}</strong>.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Add a payment method to keep access after your trial.
+                      </p>
+                    </div>
+                  )}
+
+                  {portalError && (
+                    <div className="p-3 rounded-md bg-destructive/20 border border-destructive/30">
+                      <p className="text-sm text-destructive">{portalError}</p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {stripeCustomerId ? (
+                      <Button
+                        type="button"
+                        onClick={() => void openPortal()}
+                        disabled={portalLoading}
+                        className="flex-1"
+                      >
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        {portalLoading ? 'Opening…' : 'Manage billing'}
+                      </Button>
+                    ) : plan !== 'free' ? (
+                      <p className="text-xs text-muted-foreground py-2">
+                        Billing portal is unavailable. Contact support to update payment details.
+                      </p>
+                    ) : null}
+
+                    {plan === 'free' && (
+                      <Button
+                        type="button"
+                        variant="default"
+                        onClick={() => navigate('/landlord/subscription-plans')}
+                        className="flex-1"
+                      >
+                        Upgrade plan
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </SettingsSection>
         )}

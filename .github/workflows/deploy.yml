@@ -152,9 +152,21 @@ jobs:
           path: dist
           retention-days: 30  # Keep production artifacts longer
       
-      - name: Deployment
-        run: echo "Deployment steps would be added here based on hosting provider"
-        # For Vercel: Use vercel-action
-        # For Netlify: Use netlify-action
-        # For Cloudflare Pages: Use cloudflare-pages-action
-        # This workflow validates the build - actual deployment is typically handled by hosting platform's integration
+      # Requires GitHub secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+      # After enabling this step, disable Vercel project's automatic Git deployments for main
+      # so production only ships when this workflow passes.
+      - name: Deploy to Vercel (production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          vercel-args: '--prod'
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_ENVIRONMENT: production
+          VITE_SUPABASE_ENV: production
+          VITE_HOSTING_ENV: production
+          VITE_STAGING_SUPABASE_PROJECT_REF: ${{ steps.supabase_guard.outputs.staging_ref }}

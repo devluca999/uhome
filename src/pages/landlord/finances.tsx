@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,12 +32,19 @@ import { FileText, Plus, Download, X, Edit, Trash2 } from 'lucide-react'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import type { Database } from '@/types/database'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
+import { useAuth } from '@/contexts/auth-context'
+import { useSubscription } from '@/hooks/use-subscription'
 
 type Expense = Database['public']['Tables']['expenses']['Row']
 
 export function LandlordFinances() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordFinances' })
+
+  const navigate = useNavigate()
+  const { viewMode } = useAuth()
+  const { hasFeature, loading: subscriptionLoading } = useSubscription()
+  const applyPlanGates = viewMode !== 'landlord-demo'
 
   const { properties } = useProperties()
   const { tenants } = useTenants()
@@ -426,7 +433,10 @@ export function LandlordFinances() {
     return ledgerRows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [recordsForKPIs, filteredExpenses, properties])
 
+  const canExportCsv = !applyPlanGates || hasFeature('csvExport')
+
   const handleExportCSV = () => {
+    if (applyPlanGates && !hasFeature('csvExport')) return
     exportLedgerToCSV(
       ledgerDataForExport,
       `ledger-export-${new Date().toISOString().split('T')[0]}.csv`
@@ -521,68 +531,86 @@ export function LandlordFinances() {
         {/* Onboarding Tooltips */}
         <FinancesOnboarding />
 
-        {/* Smart Insights */}
-        {insights.length > 0 && (
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: motionTokens.duration.normal,
-              ease: motionTokens.easing.standard,
-            }}
-            className="mb-8"
-          >
-            <SmartInsights insights={insights} />
-          </motion.div>
-        )}
+        {!applyPlanGates || (!subscriptionLoading && hasFeature('advancedFinancials')) ? (
+          <>
+            {insights.length > 0 && (
+              <motion.div
+                initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+                animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+                transition={{
+                  duration: motionTokens.duration.normal,
+                  ease: motionTokens.easing.standard,
+                }}
+                className="mb-8"
+              >
+                <SmartInsights insights={insights} />
+              </motion.div>
+            )}
 
-        {/* Section F: Smart Insights & Trends (Collapsible, Default Collapsed) */}
-        <CollapsibleSection
-          id="insights-trends"
-          title="Smart Insights & Trends"
-          defaultExpanded={false}
-          className="mb-8"
-        >
-          <motion.div
-            initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
-            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-            transition={{
-              duration: durationToSeconds(motionTokens.duration.base),
-              ease: motionTokens.easing.standard,
-            }}
-            data-onboarding="view-modes"
-          >
-            <div data-onboarding="expand-icon">
-              <FinancialInsightsModule
-                lineData={lineChartData}
-                barData={barChartData}
-                rentCollectedData={metrics.monthlyRentCollected.map(item => ({
-                  month: item.month,
-                  amount: item.amount,
-                }))}
-                outstandingRentData={[]} // Deferred: use calculateUnpaidRent by month
-                expensesData={metrics.monthlyExpenses.map(item => ({
-                  month: item.month,
-                  amount: item.amount,
-                }))}
-                netCashFlowData={metrics.monthlyNet.map(item => ({
-                  month: item.month,
-                  amount: item.net,
-                }))}
-                rentRecords={recordsForCharts}
-                expenses={expensesWithFallback}
-                workOrders={workOrdersForTimeline}
-                dateGranularity={dateGranularity}
-                timeRange={timeRange}
-                selectedPropertyId={selectedPropertyId || 'all'}
-                properties={properties}
-                onPropertyChange={propertyId =>
-                  setSelectedPropertyId(propertyId === 'all' ? '' : propertyId)
-                }
-              />
-            </div>
-          </motion.div>
-        </CollapsibleSection>
+            <CollapsibleSection
+              id="insights-trends"
+              title="Smart Insights & Trends"
+              defaultExpanded={false}
+              className="mb-8"
+            >
+              <motion.div
+                initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
+                animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+                transition={{
+                  duration: durationToSeconds(motionTokens.duration.base),
+                  ease: motionTokens.easing.standard,
+                }}
+                data-onboarding="view-modes"
+              >
+                <div data-onboarding="expand-icon">
+                  <FinancialInsightsModule
+                    lineData={lineChartData}
+                    barData={barChartData}
+                    rentCollectedData={metrics.monthlyRentCollected.map(item => ({
+                      month: item.month,
+                      amount: item.amount,
+                    }))}
+                    outstandingRentData={[]} // Deferred: use calculateUnpaidRent by month
+                    expensesData={metrics.monthlyExpenses.map(item => ({
+                      month: item.month,
+                      amount: item.amount,
+                    }))}
+                    netCashFlowData={metrics.monthlyNet.map(item => ({
+                      month: item.month,
+                      amount: item.net,
+                    }))}
+                    rentRecords={recordsForCharts}
+                    expenses={expensesWithFallback}
+                    workOrders={workOrdersForTimeline}
+                    dateGranularity={dateGranularity}
+                    timeRange={timeRange}
+                    selectedPropertyId={selectedPropertyId || 'all'}
+                    properties={properties}
+                    onPropertyChange={propertyId =>
+                      setSelectedPropertyId(propertyId === 'all' ? '' : propertyId)
+                    }
+                  />
+                </div>
+              </motion.div>
+            </CollapsibleSection>
+          </>
+        ) : applyPlanGates && subscriptionLoading ? (
+          <div className="mb-8 text-sm text-muted-foreground">Loading plan…</div>
+        ) : (
+          <div className="mb-8 p-4 rounded-lg border border-border bg-muted/30">
+            <p className="text-sm text-foreground mb-3">
+              Smart insights and trend charts are included on paid plans.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/landlord/subscription-plans')}
+            >
+              View plans
+            </Button>
+          </div>
+        )}
 
         {/* Section D: Rent Ledger (Collapsible) */}
         <CollapsibleSection
@@ -600,16 +628,28 @@ export function LandlordFinances() {
                     {selectedCategory && ` â€¢ Filtered by ${selectedCategory}`}
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleExportCSV}
-                    disabled={ledgerDataForExport.length === 0}
+                    disabled={ledgerDataForExport.length === 0 || !canExportCsv}
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Export CSV
                   </Button>
+                  {applyPlanGates && !subscriptionLoading && !hasFeature('csvExport') && (
+                    <p className="text-xs text-muted-foreground text-right max-w-xs">
+                      Portfolio plan includes CSV export.{' '}
+                      <button
+                        type="button"
+                        className="underline text-primary font-medium"
+                        onClick={() => navigate('/landlord/subscription-plans')}
+                      >
+                        Upgrade
+                      </button>
+                    </p>
+                  )}
                 </div>
               </div>
             </CardHeader>
