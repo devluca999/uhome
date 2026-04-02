@@ -53,7 +53,7 @@ import { useSettings } from '@/contexts/settings-context'
 import type { DashboardTimeline } from '@/contexts/settings-context'
 import { supabase } from '@/lib/supabase/client' // used by child components via context
 import { useAuth } from '@/contexts/auth-context'
-import { OnboardingCard } from '@/components/landlord/onboarding-card'
+import { FirstRunPrompt } from '@/components/landlord/first-run-prompt'
 
 type LandlordDashboardRpcRow = {
   total_properties: unknown
@@ -314,6 +314,8 @@ export function LandlordDashboard() {
   ).length
 
   const hasErrors = propertiesError || tenantsError || requestsError
+
+  const isFirstRunEmpty = !propertiesLoading && properties.length === 0
 
   // Calculate occupancy rate using centralized calculation (consistent with Finances page)
   const occupancyRate = useMemo(() => {
@@ -626,13 +628,6 @@ export function LandlordDashboard() {
           </div>
         </motion.div>
 
-        {/* Show onboarding card if no properties exist */}
-        {!propertiesLoading && properties.length === 0 && (
-          <div className="mb-8">
-            <OnboardingCard />
-          </div>
-        )}
-
         {hasErrors && (
           <div className="mb-6 space-y-3">
             {propertiesError && <ErrorAlert error={propertiesError} />}
@@ -647,87 +642,93 @@ export function LandlordDashboard() {
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-          <div onClick={() => setPropertiesModalOpen(true)} className="cursor-pointer relative">
-            <ModalIndicator onClick={() => setPropertiesModalOpen(true)} />
-            <div className="[&_.card-header]:pr-12">
-              <PortfolioCard
-                title="Properties"
-                value={propertiesLoading ? 0 : properties.length}
-                description="Total properties"
-                index={0}
-              />
+        {isFirstRunEmpty ? (
+          <div className="mb-8">
+            <FirstRunPrompt />
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+            <div onClick={() => setPropertiesModalOpen(true)} className="cursor-pointer relative">
+              <ModalIndicator onClick={() => setPropertiesModalOpen(true)} />
+              <div className="[&_.card-header]:pr-12">
+                <PortfolioCard
+                  title="Properties"
+                  value={propertiesLoading ? 0 : properties.length}
+                  description="Total properties"
+                  index={0}
+                />
+              </div>
+            </div>
+            <div onClick={() => setTenantsModalOpen(true)} className="cursor-pointer relative">
+              <ModalIndicator onClick={() => setTenantsModalOpen(true)} />
+              <div className="[&_.card-header]:pr-12">
+                <PortfolioCard
+                  title="Tenants"
+                  value={tenantsLoading ? 0 : tenants.length}
+                  description="Total tenants"
+                  index={1}
+                />
+              </div>
+            </div>
+            <div onClick={() => setOccupancyModalOpen(true)} className="cursor-pointer relative">
+              <ModalIndicator onClick={() => setOccupancyModalOpen(true)} />
+              <div className="[&_.card-header]:pr-12">
+                <PortfolioCard
+                  title="Occupancy"
+                  value={tenantsLoading ? 0 : occupancyCount}
+                  description={`${Math.round(occupancyRate)}% occupied`}
+                  format={v => `${v}`}
+                  index={2}
+                  data-testid="dashboard-occupancy"
+                />
+              </div>
+            </div>
+            <div onClick={() => setRevenueModalOpen(true)} className="cursor-pointer relative">
+              <ModalIndicator onClick={() => setRevenueModalOpen(true)} />
+              <div className="[&_.card-header]:pr-12">
+                <PortfolioCard
+                  title={`${timelineLabel} Revenue`}
+                  value={periodRevenue}
+                  description={
+                    dashboardTimeline === 'monthly'
+                      ? 'Paid rent this month'
+                      : dashboardTimeline === 'quarterly'
+                        ? 'Paid rent this quarter'
+                        : 'Paid rent this year'
+                  }
+                  format={v => formatCurrency(v)}
+                  index={3}
+                  data-testid="dashboard-revenue"
+                />
+              </div>
+            </div>
+            <div onClick={() => setTasksModalOpen(true)} className="cursor-pointer relative">
+              <ModalIndicator onClick={() => setTasksModalOpen(true)} />
+              <div className="[&_.card-header]:pr-12">
+                <PortfolioCard
+                  title="Pending Tasks"
+                  value={pendingTasks}
+                  description="Your action items and reminders"
+                  index={4}
+                />
+              </div>
+            </div>
+            <div onClick={() => setWorkOrdersModalOpen(true)} className="cursor-pointer relative">
+              <ModalIndicator onClick={() => setWorkOrdersModalOpen(true)} />
+              <div className="[&_.card-header]:pr-12">
+                <PortfolioCard
+                  title="Open Work Orders"
+                  value={requestsLoading ? 0 : openWorkOrders}
+                  description="Maintenance requests in progress"
+                  index={5}
+                  data-testid="dashboard-work-orders"
+                />
+              </div>
             </div>
           </div>
-          <div onClick={() => setTenantsModalOpen(true)} className="cursor-pointer relative">
-            <ModalIndicator onClick={() => setTenantsModalOpen(true)} />
-            <div className="[&_.card-header]:pr-12">
-              <PortfolioCard
-                title="Tenants"
-                value={tenantsLoading ? 0 : tenants.length}
-                description="Total tenants"
-                index={1}
-              />
-            </div>
-          </div>
-          <div onClick={() => setOccupancyModalOpen(true)} className="cursor-pointer relative">
-            <ModalIndicator onClick={() => setOccupancyModalOpen(true)} />
-            <div className="[&_.card-header]:pr-12">
-              <PortfolioCard
-                title="Occupancy"
-                value={tenantsLoading ? 0 : occupancyCount}
-                description={`${Math.round(occupancyRate)}% occupied`}
-                format={v => `${v}`}
-                index={2}
-                data-testid="dashboard-occupancy"
-              />
-            </div>
-          </div>
-          <div onClick={() => setRevenueModalOpen(true)} className="cursor-pointer relative">
-            <ModalIndicator onClick={() => setRevenueModalOpen(true)} />
-            <div className="[&_.card-header]:pr-12">
-              <PortfolioCard
-                title={`${timelineLabel} Revenue`}
-                value={periodRevenue}
-                description={
-                  dashboardTimeline === 'monthly'
-                    ? 'Paid rent this month'
-                    : dashboardTimeline === 'quarterly'
-                      ? 'Paid rent this quarter'
-                      : 'Paid rent this year'
-                }
-                format={v => formatCurrency(v)}
-                index={3}
-                data-testid="dashboard-revenue"
-              />
-            </div>
-          </div>
-          <div onClick={() => setTasksModalOpen(true)} className="cursor-pointer relative">
-            <ModalIndicator onClick={() => setTasksModalOpen(true)} />
-            <div className="[&_.card-header]:pr-12">
-              <PortfolioCard
-                title="Pending Tasks"
-                value={pendingTasks}
-                description="Your action items and reminders"
-                index={4}
-              />
-            </div>
-          </div>
-          <div onClick={() => setWorkOrdersModalOpen(true)} className="cursor-pointer relative">
-            <ModalIndicator onClick={() => setWorkOrdersModalOpen(true)} />
-            <div className="[&_.card-header]:pr-12">
-              <PortfolioCard
-                title="Open Work Orders"
-                value={requestsLoading ? 0 : openWorkOrders}
-                description="Maintenance requests in progress"
-                index={5}
-                data-testid="dashboard-work-orders"
-              />
-            </div>
-          </div>
-        </div>
+        )}
 
-        {rpcStats && rpcStats.monthly_rent_due > 0 && (
+        {!isFirstRunEmpty && rpcStats && rpcStats.monthly_rent_due > 0 && (
           <div className="text-xs text-muted-foreground text-center mb-6 -mt-2">
             This month: {formatCurrency(rpcStats.monthly_rent_collected)} collected of{' '}
             {formatCurrency(rpcStats.monthly_rent_due)} due ({rpcStats.collection_rate.toFixed(1)}%
@@ -740,19 +741,21 @@ export function LandlordDashboard() {
           </div>
         )}
 
-        {/* Financial Summary Section */}
-        <motion.div
-          initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
-          animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-          transition={{
-            duration: durationToSeconds(motionTokens.duration.base),
-            delay: 0.06, // Reduced from 0.3
-            ease: motionTokens.ease.standard,
-          }}
-          layout={false}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between mb-4">
+        {!isFirstRunEmpty && (
+          <>
+            {/* Financial Summary Section */}
+            <motion.div
+              initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
+              animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+              transition={{
+                duration: durationToSeconds(motionTokens.duration.base),
+                delay: 0.06, // Reduced from 0.3
+                ease: motionTokens.ease.standard,
+              }}
+              layout={false}
+              className="mb-8"
+            >
+              <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-2xl font-semibold text-foreground">Financial Summary</h2>
               <p className="text-sm text-muted-foreground">Rent collection overview</p>
@@ -1048,6 +1051,8 @@ export function LandlordDashboard() {
             </motion.div>
           </CollapsibleSection>
         </div>
+          </>
+        )}
       </div>
 
       {/* Revenue Breakdown Modal */}

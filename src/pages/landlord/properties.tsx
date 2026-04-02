@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useProperties } from '@/hooks/use-properties'
 import { useLeases } from '@/hooks/use-leases'
 import { useTenants } from '@/hooks/use-tenants'
@@ -28,6 +28,7 @@ export function LandlordProperties() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordProperties' })
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { viewMode } = useAuth()
   const { canAddProperty, loading: subscriptionLoading } = useSubscription()
   const applyPlanGates = viewMode !== 'landlord-demo'
@@ -38,6 +39,31 @@ export function LandlordProperties() {
   const [submitting, setSubmitting] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [planGateNotice, setPlanGateNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (searchParams.get('action') !== 'add') return
+    if (subscriptionLoading) return
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('action')
+    setSearchParams(next, { replace: true })
+
+    setPlanGateNotice(null)
+    if (applyPlanGates && !canAddProperty(properties.length)) {
+      setPlanGateNotice(
+        'You have reached the property limit on your current plan. Upgrade to add more properties.'
+      )
+      return
+    }
+    setShowForm(true)
+  }, [
+    searchParams,
+    setSearchParams,
+    subscriptionLoading,
+    applyPlanGates,
+    canAddProperty,
+    properties.length,
+  ])
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')

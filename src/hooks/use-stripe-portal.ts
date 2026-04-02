@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { appEnvironment } from '@/config/environment'
+
+/** Non-null means open failed; UI should show a fixed message, not this value. */
+const STRIPE_PORTAL_FAILED = 'STRIPE_PORTAL_FAILED'
+
+type PortalResponse = { url?: string; error?: string }
 
 export function useStripePortal() {
   const [loading, setLoading] = useState(false)
@@ -16,34 +20,37 @@ export function useStripePortal() {
       } = await supabase.auth.getSession()
 
       if (!session?.access_token) {
-        throw new Error('Not authenticated')
+        console.error('Error opening Stripe portal: not authenticated')
+        setError(STRIPE_PORTAL_FAILED)
+        return
       }
 
-      const supabaseUrl = appEnvironment.supabaseUrl
-      const response = await fetch(`${supabaseUrl}/functions/v1/create-portal-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      })
+      const { data, error: fnError } = await supabase.functions.invoke<PortalResponse>(
+        'create-portal-session',
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      )
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create portal session')
+      if (fnError) {
+        console.error('Error opening Stripe portal:', fnError)
+        setError(STRIPE_PORTAL_FAILED)
+        return
       }
 
-      if (data.url) {
-        // Redirect to Stripe Customer Portal
-        window.location.href = data.url
-      } else {
-        throw new Error('No portal URL returned')
+      const url = data?.url
+      if (!url || typeof url !== 'string') {
+        console.error('Error opening Stripe portal: no URL in response', data)
+        setError(STRIPE_PORTAL_FAILED)
+        return
       }
+
+      window.location.href = url
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to open billing portal'
-      setError(errorMessage)
       console.error('Error opening Stripe portal:', err)
+      setError(STRIPE_PORTAL_FAILED)
     } finally {
       setLoading(false)
     }

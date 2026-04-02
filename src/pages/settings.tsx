@@ -18,12 +18,23 @@ import { useTheme, type ThemePreference } from '@/contexts/theme-context'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import { useSubscription } from '@/hooks/use-subscription'
 import { useStripePortal } from '@/hooks/use-stripe-portal'
-import { formatPrice } from '@/lib/stripe/plans'
+import { BillingStatusBanners } from '@/components/billing/billing-status-banners'
+import { formatPrice, isSubscriptionActive } from '@/lib/stripe/plans'
+import { ToastNotification } from '@/components/ui/toast-notification'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
 import { Badge } from '@/components/ui/badge'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
-import { Settings as SettingsIcon, LogOut, Trash2, Key, Check, Upload, CreditCard } from 'lucide-react'
+import {
+  Settings as SettingsIcon,
+  LogOut,
+  Trash2,
+  Key,
+  Check,
+  Upload,
+  CreditCard,
+  Loader2,
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 
@@ -75,8 +86,21 @@ export function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
   const [changePasswordError, setChangePasswordError] = useState<string | null>(null)
+  const [portalFailureToastOpen, setPortalFailureToastOpen] = useState(false)
 
   const navItems = role === 'landlord' ? LANDLORD_NAV_ITEMS : TENANT_NAV_ITEMS
+
+  const showManageBilling = Boolean(
+    stripeCustomerId &&
+      subscriptionStatus &&
+      isSubscriptionActive(subscriptionStatus)
+  )
+
+  useEffect(() => {
+    if (portalError) {
+      setPortalFailureToastOpen(true)
+    }
+  }, [portalError])
 
   // Update settings when local state changes
   useEffect(() => {
@@ -493,6 +517,17 @@ export function SettingsPage() {
                 </div>
               ) : (
                 <>
+                  <BillingStatusBanners
+                    subscriptionStatus={subscriptionStatus}
+                    trialEnd={trialEnd}
+                    currentPeriodEnd={currentPeriodEnd}
+                    cancelAtPeriodEnd={cancelAtPeriodEnd}
+                    stripeCustomerId={stripeCustomerId}
+                    onUpgrade={() => navigate('/landlord/subscription-plans')}
+                    onPortal={openPortal}
+                    portalLoading={portalLoading}
+                  />
+
                   <div className="p-4 rounded-md border-2 border-primary/50 bg-primary/10">
                     <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-foreground">Current plan</span>
@@ -508,18 +543,11 @@ export function SettingsPage() {
                             {new Date(currentPeriodEnd).toLocaleDateString()}
                           </p>
                         )}
-                      {subscriptionStatus === 'trialing' && trialEnd && (
-                        <p className="text-xs text-amber-600 dark:text-amber-500">
-                          Trial ends {new Date(trialEnd).toLocaleDateString()}
-                        </p>
-                      )}
-                      {(subscriptionStatus === 'canceled' || cancelAtPeriodEnd) &&
-                        currentPeriodEnd && (
+                      {subscriptionStatus === 'canceled' &&
+                        currentPeriodEnd &&
+                        !cancelAtPeriodEnd && (
                           <p className="text-xs text-destructive">
-                            {cancelAtPeriodEnd && subscriptionStatus !== 'canceled'
-                              ? 'Plan ends '
-                              : 'Access ends '}
-                            {new Date(currentPeriodEnd).toLocaleDateString()}
+                            Access ends {new Date(currentPeriodEnd).toLocaleDateString()}
                           </p>
                         )}
                       {plan === 'free' && (
@@ -530,36 +558,22 @@ export function SettingsPage() {
                     </div>
                   </div>
 
-                  {subscriptionStatus === 'trialing' && trialEnd && (
-                    <div className="p-3 rounded-md bg-muted/50 border border-border">
-                      <p className="text-sm text-foreground mb-1">
-                        Your trial ends on{' '}
-                        <strong>{new Date(trialEnd).toLocaleDateString()}</strong>.
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Add a payment method to keep access after your trial.
-                      </p>
-                    </div>
-                  )}
-
-                  {portalError && (
-                    <div className="p-3 rounded-md bg-destructive/20 border border-destructive/30">
-                      <p className="text-sm text-destructive">{portalError}</p>
-                    </div>
-                  )}
-
                   <div className="flex flex-col sm:flex-row gap-2">
-                    {stripeCustomerId ? (
+                    {showManageBilling ? (
                       <Button
                         type="button"
                         onClick={() => void openPortal()}
                         disabled={portalLoading}
                         className="flex-1"
                       >
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        {portalLoading ? 'Opening…' : 'Manage billing'}
+                        {portalLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <CreditCard className="mr-2 h-4 w-4" />
+                        )}
+                        Manage billing
                       </Button>
-                    ) : plan !== 'free' ? (
+                    ) : plan !== 'free' && !stripeCustomerId ? (
                       <p className="text-xs text-muted-foreground py-2">
                         Billing portal is unavailable. Contact support to update payment details.
                       </p>
@@ -879,6 +893,14 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
       </div>
+
+      {portalFailureToastOpen && (
+        <ToastNotification
+          message="Could not open billing portal. Please try again."
+          respectToastReminders={false}
+          onDismiss={() => setPortalFailureToastOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -9,9 +9,16 @@ interface ToastNotificationProps {
   message: string
   onDismiss?: () => void
   duration?: number
+  /** When false, the toast still shows even if the user disabled reminder toasts (e.g. billing errors). */
+  respectToastReminders?: boolean
 }
 
-export function ToastNotification({ message, onDismiss, duration = 3000 }: ToastNotificationProps) {
+export function ToastNotification({
+  message,
+  onDismiss,
+  duration = 3000,
+  respectToastReminders = true,
+}: ToastNotificationProps) {
   const { settings } = useSettings()
   const buttonSpring = createSpring('button')
 
@@ -22,8 +29,7 @@ export function ToastNotification({ message, onDismiss, duration = 3000 }: Toast
     }
   }, [duration, onDismiss])
 
-  // Don't show toast if toast reminders are disabled
-  if (!settings.toastReminders) {
+  if (respectToastReminders && !settings.toastReminders) {
     return null
   }
 
