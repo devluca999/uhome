@@ -87,7 +87,7 @@
     "supabase": "^2.14.0",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
-    "typescript": "~5.9.3",
+    "typescript": "~6.0.2",
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^0.19.8",
     "vitest": "^4.0.18"
