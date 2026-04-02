@@ -191,6 +191,15 @@
 - **What:** New DB migration: `document_folders` table (`id, property_id, name, color, created_by`) + new columns on `documents` (`folder_id, is_starred, tenant_visible, tags text[]`). New page layout: left sidebar (Library, Properties, Tags), folder grid with color-coded cards + `···` context menus, compact file list with type badges + tag pills + context menus. Drag-drop upload zone. Breadcrumb nav. Search. Tenant view: read-only, `tenant_visible = true` files only. "Share with tenant" toggle per file in context menu.
 - **Labels:** 🤖 `P2 can automate` · 🖥️ `Cursor · 4 hrs`
 
+### 32. Landing page visual alignment — tokens, texture, component style 🆕
+- **Why:** The landing page and app currently look like two different products. Landing page uses Inter + DM Serif Display, sage green primary, warm off-white backgrounds, Apple-style shadows. App uses Geist, slate/steel primary, near-black glassmorphic surfaces, grain texture. A user going from `getuhome.app` to `app.getuhome.app` should feel like they're entering the same world, not switching products.
+- **What — three layers:**
+  - Layer 1 (token alignment, 30 min): Update `uhome-landing-page/src/index.css` — replace sage green primary (`152 25% 42%`) with slate/steel (`215 15% 55%`), replace Inter with Geist, align grain texture implementation to use the same SVG noise approach as the app.
+  - Layer 2 (component style, 1-2 hrs): Apply app's glass-card visual language (dark `rgba` background, white 1px border, inset highlight) to landing page feature cards, pricing cards, and "Who it's for" section. Makes landing page feel like a preview of the product.
+  - Layer 3 (demo screenshots, 2-4 hrs): Add actual app screenshots inside browser mockup frames to key sections — "Zero chaos. One place." (show populated dashboard), "For Landlords" (show properties + rent tracking), pricing section (show what Starter looks like), tenant section (show tenant dashboard). **Dependency: complete Sprint 2 item A (demo populated state fix) first** so screenshots show impressive populated data, not zero-state.
+- **Sequence:** Layer 1 → Layer 2 → fix Sprint 2 item A → take screenshots → Layer 3.
+- **Labels:** 🤖 `P2 automate (layers 1+2)` · 🖥️ `Cursor · 2 hrs` · 🔍 `You — take screenshots after demo data fixed`
+
 ### 31. Mobile layout — bottom tabs + sheets + FAB 🆕
 - **Why:** Mobile currently renders a desktop sidebar on a phone screen, leaving ~119px for content. Pages are vertical card stacks with no mobile hierarchy. This is the single biggest UX gap for mobile users.
 - **What:** New `MobileLayout.tsx` replacing `SidebarLayout` when `isMobile === true` (desktop layout untouched). `BottomTabBar.tsx`: 5 tabs (Home / Properties / Finances / Messages / More). `MobileSheet.tsx`: reusable slide-up sheet utility. Page-level content tabs for Finances (Overview/Ledger/Expenses), Properties, Operations (Tasks/Work Orders). Dashboard reskin: hero card + metric pill row + activity feed. FAB `+` button above tab bar, context-aware sheet per section. All form actions (add property, log rent, submit request, upload doc) open as sheets — user never leaves current screen.
@@ -205,12 +214,13 @@
 | 0 — Blockers | 6 | Mix | ~2.5 hrs |
 | 1 — Brand | 5 | Mix | ~2 hrs |
 | 2 — Reliability | 11 (8 original + 3 added) | Mix | ~6 hrs |
-| 3 — GTM + Features | 11 (5 original + 6 added) | Mix | ~8 hrs |
-| **Total** | **33** | | **~18.5 hrs** |
+| 3 — GTM + Features | 12 (5 original + 7 added) | Mix | ~10 hrs |
+| **Total** | **34** | | **~20.5 hrs** |
 
 > **Sprint 2 additions (A–C):** Demo populated state fix · Messaging UI redesign · (date range picker deferred Phase 13)
-> **Sprint 3 additions:** 26. Expense receipt attachment · 27. Lease template storage · 28. Tax export · 29. Personal reminders · 30. Documents redesign · 31. Mobile layout
+> **Sprint 3 additions:** 26. Expense receipt attachment · 27. Lease template storage · 28. Tax export · 29. Personal reminders · 30. Documents redesign · 31. Mobile layout · 32. Landing page alignment
 
 > **Legal note:** Item 25 (T&C + Privacy Policy) is urgent — disclaimer language covers items 27, 28, 29, 30.
+> **Dependency note:** Item 32 Layer 3 (screenshots) depends on item A (demo populated state) being done first.
 
-> **Automated by P2:** Items 1, 2, 3, 6, 7, 8, 10, 12, 14, 15, 18, 19, 20, 26, 27, 28, 29, 30, 31 — 19 of 33 items.
+> **Automated by P2:** Items 1, 2, 3, 6, 7, 8, 10, 12, 14, 15, 18, 19, 20, 26, 27, 28, 29, 30, 31, 32 — 20 of 34 items.

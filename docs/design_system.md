@@ -101,7 +101,36 @@ Avoid explicit "Success" or "Error" text labels when possible.
 - Active: Slight scale or depth change
 - All within 150-250ms transition window
 
-## Usage Examples
+## Landing Page Alignment
 
-See `docs/ui_conventions.md` for component-specific patterns and usage guidelines.
+The marketing site (`getuhome.app`, repo: `uhome-landing-page`) must feel like it belongs to the same product as the app. Users moving from landing page to signup should not experience a visual context switch.
+
+### Current gaps (April 2026)
+
+| Property | App | Landing page | Status |
+|---|---|---|---|
+| Typeface | Geist | Inter + DM Serif Display | ❌ Misaligned |
+| Primary accent | `hsl(215 15% 55%)` slate/steel | `hsl(152 25% 42%)` sage green | ❌ Misaligned |
+| Background | Near-black `#14171C` (dark-first) | Warm off-white (light-first) | Intentional — landing stays light |
+| Grain texture | SVG noise overlay, `mix-blend-mode: overlay` | SVG noise overlay (same approach) | ✓ Aligned |
+| Glass cards | `rgba(46,50,57,0.75)` + white 1px border + inset highlight | Light glass variant exists but different palette | ❌ Misaligned |
+| App screenshots | Live app | None | ❌ Missing |
+
+### Target state
+
+The landing page should be the light-mode face of the same design language. It does not need to be dark — the warm off-white editorial aesthetic is intentional for marketing. What it needs:
+
+- **Same typeface:** Geist replaces Inter. Landing page keeps DM Serif Display for editorial headings (large hero text) — this is appropriate for a landing page. Body and UI elements switch to Geist.
+- **Same accent colour:** slate/steel `hsl(215 15% 55%)` replaces sage green on all buttons, CTAs, and interactive elements.
+- **Same glass-card language:** Feature cards, pricing cards, and the "Who it's for" section should use the light-mode glass-card variant — `rgba(255,255,255,0.72)`, white border, inset highlight — matching `light .glass-card` in the app.
+- **Product screenshots:** Real app screenshots (populated demo state) inside browser chrome mockup frames, placed at: hero scroll section (dashboard), "For Landlords" section (properties + rent tracking), pricing section (what Starter looks like), tenant section (tenant dashboard).
+
+### Implementation sequence
+
+1. Token alignment + Geist + glass cards (Cursor, ~2 hrs) — no dependencies
+2. Fix Sprint 2 item A (demo populated state) — screenshots depend on this
+3. Take screenshots of populated demo from `app.getuhome.app`
+4. Add screenshots to landing page sections (Cursor, ~2 hrs)
+
+See `LAUNCH_SPRINT_CHECKLIST.md` item 32 for the full spec.
 
