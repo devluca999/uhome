@@ -53,6 +53,12 @@ serve(async (req) => {
       await supabase.from('users').update({ stripe_customer_id: customerId }).eq('id', user.id)
     }
 
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
     const priceIds: Record<string, string | undefined> = {
       landlord: Deno.env.get('STRIPE_PRICE_LANDLORD'),
       portfolio: Deno.env.get('STRIPE_PRICE_PORTFOLIO'),
@@ -75,7 +81,11 @@ serve(async (req) => {
       subscription_data: { trial_period_days: 30 },
       success_url: `${origin}/settings/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/settings/billing?canceled=true`,
-      metadata: { supabase_user_id: user.id, tier },
+      metadata: {
+        supabase_user_id: user.id,
+        tier,
+        organization_id: membership?.organization_id ?? '',
+      },
     })
 
     return new Response(JSON.stringify({ url: session.url }), {

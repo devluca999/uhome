@@ -14,6 +14,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import Stripe from 'https://esm.sh/stripe@14.21.0'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -57,8 +58,7 @@ serve(async (req) => {
     }
 
     const body = await req.text()
-    const Stripe = (await import('https://esm.sh/stripe@14.21.0')).default
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-11-20.acacia' })
 
     let event
     try {
@@ -82,9 +82,13 @@ serve(async (req) => {
         const session = event.data.object as any
         if (session.mode !== 'subscription') break
 
-        const orgId = session.metadata?.organization_id
+        let orgId: string | undefined = session.metadata?.organization_id
+        if (!orgId && session.customer) {
+          const resolved = await resolveOrgByCustomer(supabase, session.customer as string)
+          orgId = resolved ?? undefined
+        }
         if (!orgId) {
-          console.error('checkout.session.completed: missing organization_id in metadata')
+          console.error('checkout.session.completed: cannot resolve org from metadata or customer')
           break
         }
 
