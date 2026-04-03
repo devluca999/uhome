@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { appEnvironment } from '@/config/environment'
 import { motion } from 'framer-motion'
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card' // Unused
@@ -77,6 +78,7 @@ export function SettingsPage() {
     config: planConfig,
   } = useSubscription()
   const { openPortal, loading: portalLoading, error: portalError } = useStripePortal()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [userName, setUserName] = useState(settings.userName || '')
   const [organizationName, setOrganizationName] = useState(settings.organizationName || '')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -904,3 +906,4 @@ export function SettingsPage() {
     </div>
   )
 }
+

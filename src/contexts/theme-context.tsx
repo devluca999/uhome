@@ -4,23 +4,45 @@ export type Theme = 'dark' | 'light'
 export type ThemePreference = 'dark' | 'light' | 'system'
 
 interface ThemeContextType {
-  theme: Theme // Actual applied theme (dark or light)
-  themePreference: ThemePreference // User's preference (dark, light, or system)
+  theme: Theme
+  themePreference: ThemePreference
   setThemePreference: (preference: ThemePreference) => void
   toggleTheme: () => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
-// Get OS preference
 function getSystemTheme(): Theme {
   if (typeof window === 'undefined') return 'dark'
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+/** Write a cross-site cookie readable by getuhome.app landing page.
+ *  Domain=.getuhome.app covers both app.getuhome.app and getuhome.app.
+ *  Falls back silently in localhost / non-production environments.
+ */
+function writeCrossOriginThemeCookie(theme: 'dark' | 'light') {
+  try {
+    const isProd = window.location.hostname.endsWith('getuhome.app')
+    const domain = isProd ? '; domain=.getuhome.app' : ''
+    document.cookie = `uhome-theme=${theme}; path=/${domain}; SameSite=Lax; max-age=31536000`
+  } catch {
+    // Ignore — cookies may be blocked in some browser settings
+  }
+}
+
+/** Read the cross-site theme cookie (set by either app or landing page). */
+function readCrossOriginThemeCookie(): Theme | null {
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)uhome-theme=(dark|light)/)
+    return match ? (match[1] as Theme) : null
+  } catch {
+    return null
+  }
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => {
-    // Check settings context first (if available)
     try {
       const settings = localStorage.getItem('uhome-settings')
       if (settings) {
@@ -29,43 +51,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           return parsed.theme
         }
       }
-    } catch (error) {
-      // Ignore parse errors
-    }
+    } catch { /* ignore */ }
 
-    // Fallback to legacy 'uhome-theme' key for backward compatibility
     const stored = localStorage.getItem('uhome-theme') as Theme | null
-    if (stored === 'dark' || stored === 'light') {
-      return stored
-    }
-    // Default to dark mode
+    if (stored === 'dark' || stored === 'light') return stored
+
+    // Fall back to cross-site cookie (set by landing page or previous app session)
+    const cookie = readCrossOriginThemeCookie()
+    if (cookie) return cookie
+
     return 'dark'
   })
 
   const [theme, setTheme] = useState<Theme>(() => {
-    if (themePreference === 'system') {
-      return getSystemTheme()
-    }
+    if (themePreference === 'system') return getSystemTheme()
     return themePreference
   })
 
-  // Update actual theme when preference changes or system preference changes
   useEffect(() => {
     if (themePreference === 'system') {
       const systemTheme = getSystemTheme()
       setTheme(systemTheme)
-
-      // Listen for system theme changes
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      const handleChange = (e: MediaQueryListEvent) => {
-        setTheme(e.matches ? 'dark' : 'light')
-      }
-
+      const handleChange = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light')
       if (mediaQuery.addEventListener) {
         mediaQuery.addEventListener('change', handleChange)
         return () => mediaQuery.removeEventListener('change', handleChange)
       } else {
-        // Fallback for older browsers
         mediaQuery.addListener(handleChange)
         return () => mediaQuery.removeListener(handleChange)
       }
@@ -74,7 +86,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [themePreference])
 
-  // Apply theme class to document
   useEffect(() => {
     const root = document.documentElement
     root.classList.remove('dark', 'light')
@@ -83,7 +94,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setThemePreference = (preference: ThemePreference) => {
     setThemePreferenceState(preference)
-    // Update settings context if it exists
     try {
       const settings = localStorage.getItem('uhome-settings')
       if (settings) {
@@ -92,22 +102,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         parsed.useSystemTheme = preference === 'system'
         localStorage.setItem('uhome-settings', JSON.stringify(parsed))
       }
-    } catch (error) {
-      // Ignore errors
-    }
-    // Also update legacy key for backward compatibility
+    } catch { /* ignore */ }
     if (preference !== 'system') {
       localStorage.setItem('uhome-theme', preference)
+      writeCrossOriginThemeCookie(preference)
     }
   }
 
   const toggleTheme = () => {
     if (themePreference === 'system') {
-      // If system, toggle to opposite of current system theme
       const systemTheme = getSystemTheme()
       setThemePreference(systemTheme === 'dark' ? 'light' : 'dark')
     } else {
-      // Toggle between dark and light
       setThemePreference(themePreference === 'dark' ? 'light' : 'dark')
     }
   }
@@ -121,8 +127,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext)
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
+  if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider')
   return context
 }

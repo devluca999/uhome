@@ -359,9 +359,30 @@ export function SignupPage() {
                       {loading ? 'Sending...' : 'Send Magic Link'}
                     </Button>
                   ) : (
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Creating account...' : 'Create Account'}
-                    </Button>
+                    <>
+                      <p className="text-xs text-muted-foreground text-center">
+                        By creating an account you agree to our{' '}
+                        <Link
+                          to="/terms"
+                          target="_blank"
+                          className="underline hover:text-foreground"
+                        >
+                          Terms of Service
+                        </Link>
+                        {' '}and{' '}
+                        <Link
+                          to="/privacy"
+                          target="_blank"
+                          className="underline hover:text-foreground"
+                        >
+                          Privacy Policy
+                        </Link>
+                        .
+                      </p>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? 'Creating account...' : 'Create Account'}
+                      </Button>
+                    </>
                   )}
                   <Button
                     type="button"
@@ -428,3 +449,5 @@ export function SignupPage() {
     </div>
   )
 }
+
+
