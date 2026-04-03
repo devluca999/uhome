@@ -61,7 +61,7 @@
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.562.0",
     "react": "^18.3.1",
-    "react-dom": "^19.2.4",
+    "react-dom": "18.3.1",
     "react-router-dom": "^6.26.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^2.6.0"
@@ -70,7 +70,7 @@
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/react": "^18.3.3",
-    "@types/react-dom": "^19.2.3",
+    "@types/react-dom": "18.3.7",
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.54.0",
     "@vitejs/plugin-react": "^4.3.1",
