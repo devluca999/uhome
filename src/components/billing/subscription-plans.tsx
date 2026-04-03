@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { PLANS, type PlanTier } from '@/lib/stripe/plans'
 import { useSubscription } from '@/hooks/use-subscription'
 import { supabase } from '@/lib/supabase/client'
+import { Sparkles } from 'lucide-react'
+
+const SELECTABLE_TIERS: PlanTier[] = ['landlord', 'portfolio']
 
 interface PlanCardProps {
   tier: PlanTier
@@ -13,22 +16,24 @@ interface PlanCardProps {
 function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
   const plan = PLANS[tier]
   const isCurrent = tier === currentPlan
-  const isUpgrade =
-    (tier !== 'free' && currentPlan === 'free') ||
-    (tier === 'portfolio' && currentPlan === 'landlord')
+  const isPopular = tier === 'landlord'
 
   return (
     <div
       className={`relative rounded-2xl border p-6 flex flex-col gap-4 transition-all
-      ${
-        isCurrent
-          ? 'border-primary bg-primary/5 shadow-md'
-          : 'border-border bg-card hover:border-primary/40 hover:shadow-sm'
+      ${isCurrent
+        ? 'border-primary bg-primary/5 shadow-md'
+        : 'border-border bg-card hover:border-primary/40 hover:shadow-sm'
       }`}
     >
       {isCurrent && (
         <span className="absolute top-4 right-4 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
           Current plan
+        </span>
+      )}
+      {isPopular && !isCurrent && (
+        <span className="absolute top-4 right-4 inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          <Sparkles className="w-3 h-3" /> Popular
         </span>
       )}
 
@@ -39,37 +44,34 @@ function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
 
       <div className="flex items-baseline gap-1">
         <span className="text-3xl font-bold text-foreground">
-          {plan.monthlyPrice === 0 ? 'Free' : `$${plan.monthlyPrice / 100}`}
+          ${plan.monthlyPrice / 100}
         </span>
-        {plan.monthlyPrice > 0 && <span className="text-sm text-muted-foreground">/month</span>}
+        <span className="text-sm text-muted-foreground">/month</span>
       </div>
 
       <ul className="flex flex-col gap-2 text-sm text-muted-foreground flex-1">
-        <li className="flex items-center gap-2">
-          <span className="text-foreground font-medium">
-            {plan.maxProperties === -1 ? 'Unlimited' : plan.maxProperties}
-          </span>{' '}
-          properties
+        <li>
+          <span className="text-foreground font-medium">{plan.maxProperties}</span> properties
         </li>
-        <li className="flex items-center gap-2">
+        <li>
           <span className="text-foreground font-medium">Unlimited</span> tenants
         </li>
-        <li className="flex items-center gap-2">
+        <li>
           <span className="text-foreground font-medium">
             {plan.maxCollaborators === 0 ? 'No' : plan.maxCollaborators}
           </span>{' '}
           collaborator{plan.maxCollaborators !== 1 ? 's' : ''}
         </li>
         {plan.features.advancedFinancials && (
-          <li className="flex items-center gap-2 text-foreground">✓ Advanced financials</li>
+          <li className="text-foreground">✓ Advanced financials</li>
         )}
         {plan.features.brandedReceipts && (
-          <li className="flex items-center gap-2 text-foreground">✓ Branded receipts</li>
+          <li className="text-foreground">✓ Branded receipts</li>
         )}
         {plan.features.csvExport && (
-          <li className="flex items-center gap-2 text-foreground">✓ CSV export</li>
+          <li className="text-foreground">✓ CSV export</li>
         )}
-        <li className="flex items-center gap-2">
+        <li>
           <span className="text-foreground font-medium">
             {plan.storageMb >= 1024 ? `${plan.storageMb / 1024}GB` : `${plan.storageMb}MB`}
           </span>{' '}
@@ -81,22 +83,19 @@ function PlanCard({ tier, currentPlan, onSelect, loading }: PlanCardProps) {
         onClick={() => onSelect(tier)}
         disabled={isCurrent || loading}
         className={`w-full rounded-xl py-2.5 text-sm font-medium transition-all
-          ${
-            isCurrent
-              ? 'bg-muted text-muted-foreground cursor-default'
-              : isUpgrade
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'border border-border text-foreground hover:bg-muted'
+          ${isCurrent
+            ? 'bg-muted text-muted-foreground cursor-default'
+            : 'bg-primary text-primary-foreground hover:bg-primary/90'
           }`}
       >
-        {isCurrent ? 'Current plan' : isUpgrade ? 'Upgrade' : 'Downgrade'}
+        {isCurrent ? 'Current plan' : 'Upgrade'}
       </button>
     </div>
   )
 }
 
 export function SubscriptionPlans() {
-  const { plan: currentPlan, loading } = useSubscription()
+  const { plan: currentPlan, isTrialing, daysLeftInTrial, loading } = useSubscription()
   const [checkoutLoading, setCheckoutLoading] = useState(false)
 
   const handleSelect = async (tier: PlanTier) => {
@@ -109,7 +108,7 @@ export function SubscriptionPlans() {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
+            Authorization: `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ tier }),
@@ -127,8 +126,8 @@ export function SubscriptionPlans() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
-        {[0, 1, 2].map(i => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
+        {[0, 1].map(i => (
           <div key={i} className="rounded-2xl border border-border bg-card h-80" />
         ))}
       </div>
@@ -140,11 +139,13 @@ export function SubscriptionPlans() {
       <div>
         <h2 className="text-xl font-semibold text-foreground">Choose your plan</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Upgrade or downgrade at any time. Changes take effect immediately.
+          {isTrialing && daysLeftInTrial !== null
+            ? `Your free trial ends in ${daysLeftInTrial} day${daysLeftInTrial === 1 ? '' : 's'}. Upgrade now to keep full access.`
+            : 'Upgrade or switch plans at any time. Changes take effect immediately.'}
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {(['free', 'landlord', 'portfolio'] as PlanTier[]).map(tier => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {SELECTABLE_TIERS.map(tier => (
           <PlanCard
             key={tier}
             tier={tier}
@@ -154,6 +155,9 @@ export function SubscriptionPlans() {
           />
         ))}
       </div>
+      <p className="text-xs text-muted-foreground text-center">
+        No contracts. Cancel anytime. Tenants are always free.
+      </p>
     </div>
   )
 }

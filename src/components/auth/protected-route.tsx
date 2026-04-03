@@ -2,6 +2,8 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useContext } from 'react'
 import { AuthContext, type ViewMode } from '@/contexts/auth-context'
 import { logFlowWarn } from '@/lib/flow-log'
+import { useSubscription } from '@/hooks/use-subscription'
+import { TrialExpiredPaywall } from '@/components/billing/trial-expired-paywall'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -23,11 +25,22 @@ function isRoleAllowed(
   })
 }
 
+function PaywallGate({ children }: { children: React.ReactNode }) {
+  const { role } = useContext(AuthContext)!
+  const { isLocked, loading } = useSubscription()
+
+  // Only gate landlords — tenants are always free
+  if (!loading && role === 'landlord' && isLocked) {
+    return <TrialExpiredPaywall />
+  }
+
+  return <>{children}</>
+}
+
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const authContext = useContext(AuthContext)
   const location = useLocation()
 
-  // If AuthProvider is not available, show error
   if (!authContext) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
@@ -38,7 +51,6 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   const { user, role, loading, viewMode } = authContext
 
-  // Dev bypass check (only in development)
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
   const devRole = sessionStorage.getItem('dev_role') as 'landlord' | 'tenant' | 'admin' | null
 
@@ -50,15 +62,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     )
   }
 
-  // Allow dev bypass in development mode
   if (devBypass && devRole) {
     if (allowedRoles && !allowedRoles.includes(devRole)) {
       const redirectPath =
-        devRole === 'admin'
-          ? '/admin/overview'
-          : devRole === 'landlord'
-            ? '/landlord/dashboard'
-            : '/tenant/dashboard'
+        devRole === 'admin' ? '/admin/overview'
+        : devRole === 'landlord' ? '/landlord/dashboard'
+        : '/tenant/dashboard'
       return <Navigate to={redirectPath} replace />
     }
     return <>{children}</>
@@ -68,24 +77,16 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // If we have allowed roles and the user has a role, check if they're allowed
-  // Admin demo: admin can access landlord/tenant routes when viewMode is landlord-demo/tenant-demo
   if (allowedRoles && role) {
     if (!isRoleAllowed(allowedRoles, role, viewMode)) {
       logFlowWarn('ProtectedRoute', 'roleMismatch', 'Redirecting to role-appropriate route', {
-        path: location.pathname,
-        role,
-        viewMode,
-        allowed: allowedRoles.join(','),
+        path: location.pathname, role, viewMode, allowed: allowedRoles.join(','),
       })
-      // Redirect to appropriate dashboard based on role (or admin's current view)
       if (role === 'admin') {
         const target =
-          viewMode === 'landlord-demo'
-            ? '/landlord/dashboard'
-            : viewMode === 'tenant-demo'
-              ? '/tenant/dashboard'
-              : '/admin/overview'
+          viewMode === 'landlord-demo' ? '/landlord/dashboard'
+          : viewMode === 'tenant-demo' ? '/tenant/dashboard'
+          : '/admin/overview'
         return <Navigate to={target} replace />
       } else if (role === 'landlord') {
         return <Navigate to="/landlord/dashboard" replace />
@@ -94,11 +95,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       }
       return <Navigate to="/login" replace />
     }
+
+    // Paywall gate — only for landlord routes, skips admin/tenant
+    if (allowedRoles.includes('landlord') && !allowedRoles.includes('admin')) {
+      return <PaywallGate>{children}</PaywallGate>
+    }
+
     return <>{children}</>
   }
 
-  // If we have allowed roles but role is not yet loaded, wait only while loading
-  // Once loading is false and role is still null, role fetch failed - redirect to login
   if (allowedRoles && !role && user && loading) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
@@ -107,7 +112,6 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     )
   }
 
-  // Role fetch completed but role is null (user not in users table, RLS, etc.)
   if (allowedRoles && !role && user && !loading) {
     return <Navigate to="/login" state={{ from: location, roleError: true }} replace />
   }

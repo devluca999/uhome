@@ -10,6 +10,8 @@ import {
   canAddCollaborator,
   isFeatureAvailable,
   isSubscriptionActive,
+  isAccountLocked,
+  isTrialing,
 } from '@/lib/stripe/plans'
 
 export interface SubscriptionState {
@@ -27,6 +29,9 @@ export interface SubscriptionState {
 export interface UseSubscriptionReturn extends SubscriptionState {
   config: PlanConfig
   isActive: boolean
+  isLocked: boolean
+  isTrialing: boolean
+  daysLeftInTrial: number | null
   canAddProperty: (currentCount: number) => boolean
   canAddCollaborator: (currentCount: number) => boolean
   hasFeature: (feature: keyof PlanConfig['features']) => boolean
@@ -49,33 +54,17 @@ export function useSubscription(): UseSubscriptionReturn {
 
   const fetchSubscription = useCallback(async () => {
     if (!organizationId) {
-      setState({
-        plan: 'free',
-        status: null,
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        currentPeriodEnd: null,
-        trialEnd: null,
-        cancelAtPeriodEnd: false,
-        loading: false,
-        error: null,
-      })
+      setState(s => ({ ...s, loading: false }))
       return
     }
-
     try {
       setState(s => ({ ...s, loading: true, error: null }))
-
       const { data, error } = await supabase
         .from('subscriptions')
-        .select(
-          'plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, trial_end, cancel_at_period_end'
-        )
+        .select('plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, trial_end, cancel_at_period_end')
         .eq('organization_id', organizationId)
         .maybeSingle()
-
       if (error) throw error
-
       setState({
         plan: (data?.plan as PlanTier) ?? 'free',
         status: (data?.status as SubscriptionStatus) ?? null,
@@ -96,21 +85,31 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, [organizationId])
 
-  useEffect(() => {
-    fetchSubscription()
-  }, [fetchSubscription])
+  useEffect(() => { fetchSubscription() }, [fetchSubscription])
 
-  const plan = state.plan
+  const { plan, status, trialEnd } = state
   const config = PLANS[plan]
-  const isActive = state.status ? isSubscriptionActive(state.status) : plan === 'free'
+  const isActive = status ? isSubscriptionActive(status) : false
+  const locked = isAccountLocked(plan, status)
+  const trialing = isTrialing(status)
+
+  // Calculate days left in trial
+  const daysLeftInTrial = (() => {
+    if (!trialing || !trialEnd) return null
+    const ms = new Date(trialEnd).getTime() - Date.now()
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
+  })()
 
   return {
     ...state,
     config,
     isActive,
-    canAddProperty: (count: number) => canAddProperty(plan, count),
-    canAddCollaborator: (count: number) => canAddCollaborator(plan, count),
-    hasFeature: (feature: keyof PlanConfig['features']) => isFeatureAvailable(plan, feature),
+    isLocked: locked,
+    isTrialing: trialing,
+    daysLeftInTrial,
+    canAddProperty: (count: number) => !locked && canAddProperty(plan, count),
+    canAddCollaborator: (count: number) => !locked && canAddCollaborator(plan, count),
+    hasFeature: (feature: keyof PlanConfig['features']) => !locked && isFeatureAvailable(plan, feature),
     refresh: fetchSubscription,
   }
 }
