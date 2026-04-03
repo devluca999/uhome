@@ -132,32 +132,6 @@ export function AdminAuditSecurity() {
     })
   }, [alerts, severityFilter])
 
-  if (auditLoading || alertsLoading) {
-    return (
-      <div className="min-h-screen bg-background relative">
-        <GrainOverlay />
-        <MatteLayer />
-        <div className="relative z-10 p-6">
-          <div className="max-w-7xl mx-auto">Loading audit logs...</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (auditError || alertsError) {
-    return (
-      <div className="min-h-screen bg-background relative">
-        <GrainOverlay />
-        <MatteLayer />
-        <div className="relative z-10 p-6">
-          <div className="max-w-7xl mx-auto text-destructive">
-            Error loading data: {auditError?.message || alertsError?.message}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background relative">
       <GrainOverlay />
@@ -240,7 +214,17 @@ export function AdminAuditSecurity() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {filteredAuditLogs.length === 0 ? (
+                  {auditLoading ? (
+                    <div className="space-y-2 animate-pulse">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-14 rounded-lg bg-muted" />
+                      ))}
+                    </div>
+                  ) : auditError ? (
+                    <div className="text-center py-8 text-destructive text-sm">
+                      {auditError.message}
+                    </div>
+                  ) : filteredAuditLogs.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No audit logs found in this time range
                     </div>
@@ -352,7 +336,17 @@ export function AdminAuditSecurity() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {filteredSecurityAlerts.length === 0 ? (
+                  {alertsLoading ? (
+                    <div className="space-y-2 animate-pulse">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-14 rounded-lg bg-muted" />
+                      ))}
+                    </div>
+                  ) : alertsError ? (
+                    <div className="text-center py-8 text-destructive text-sm">
+                      {alertsError.message}
+                    </div>
+                  ) : filteredSecurityAlerts.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No security alerts in this time range
                     </div>

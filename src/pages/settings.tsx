@@ -35,7 +35,7 @@ import {
   CreditCard,
   Loader2,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 
 // Navigation items for landlord
@@ -77,6 +77,30 @@ export function SettingsPage() {
     config: planConfig,
   } = useSubscription()
   const { openPortal, loading: portalLoading, error: portalError } = useStripePortal()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const checkoutPlan = searchParams.get('checkout')
+    if (!checkoutPlan || !['landlord', 'portfolio'].includes(checkoutPlan)) return
+    if (subscriptionLoading) return
+    setSearchParams(prev => { prev.delete('checkout'); return prev }, { replace: true })
+    const run = async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase/client')
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier: checkoutPlan }),
+        })
+        const { url, error } = await res.json()
+        if (!error && url) window.location.href = url
+      } catch { /* silent */ }
+    }
+    void run()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, subscriptionLoading])
+
   const [userName, setUserName] = useState(settings.userName || '')
   const [organizationName, setOrganizationName] = useState(settings.organizationName || '')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
