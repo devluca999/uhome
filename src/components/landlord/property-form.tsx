@@ -78,7 +78,10 @@ export function PropertyForm({ property, onSubmit, onCancel, loading }: Property
   }
 
   return (
-    <Card className="glass-card relative z-20" data-testid="property-form">
+    <Card
+      className="glass-card relative z-20 max-h-none overflow-visible"
+      data-testid="property-form"
+    >
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div>

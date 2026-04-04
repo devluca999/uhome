@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
-import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
+import { logLandlordDataOwner, useLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import { withRetry } from '@/lib/retry'
 import { calculateProjectedExpenses, getExpenseDate } from '@/lib/finance-calculations'
 import type { Database } from '@/types/database'
@@ -12,6 +12,7 @@ type ExpenseUpdate = Database['public']['Tables']['expenses']['Update']
 
 export function useExpenses(propertyId?: string) {
   const { user, role, viewMode, demoState } = useAuth()
+  const { ownerId, loading: ownerLoading } = useLandlordDataOwnerId()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -40,24 +41,41 @@ export function useExpenses(propertyId?: string) {
   useEffect(() => {
     fetchExpenses()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propertyId, user?.id, role, viewMode, demoState])
+  }, [propertyId, user?.id, role, viewMode, demoState, ownerId, ownerLoading])
 
   async function fetchExpenses() {
+    if (ownerLoading) {
+      setLoading(true)
+      return
+    }
+
     try {
       setLoading(true)
+      logLandlordDataOwner('useExpenses', {
+        ownerId,
+        sessionUserId: user?.id,
+        role,
+        viewMode,
+        demoState,
+        propertyId: propertyId ?? null,
+      })
+
       let query = supabase.from('expenses').select('*').order('expense_date', { ascending: false })
+
+      if (!propertyId) {
+        if (role === 'admin' && viewMode === 'tenant-demo') {
+          setExpenses([])
+          return
+        }
+        if (role === 'admin' && viewMode === 'landlord-demo' && demoState === 'empty') {
+          setExpenses([])
+          return
+        }
+      }
+
       if (propertyId) {
         query = query.eq('property_id', propertyId)
       } else {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser()
-        const ownerId = await resolveLandlordDataOwnerId({
-          role,
-          viewMode,
-          demoState,
-          sessionUserId: authUser?.id,
-        })
         if (!ownerId) {
           setExpenses([])
           return

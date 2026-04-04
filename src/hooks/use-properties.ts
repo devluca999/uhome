@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { getProperties } from '@/lib/data/property-service'
-import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
+import { logLandlordDataOwner, useLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import type { Database } from '@/types/database'
 
 type Property = Database['public']['Tables']['properties']['Row']
@@ -12,38 +12,67 @@ function isDemoMode(viewMode: string, role: string | null): boolean {
 }
 
 export function useProperties() {
-  const { role, viewMode, demoState } = useAuth()
+  const { user, role, viewMode, demoState } = useAuth()
+  const { ownerId, loading: ownerLoading } = useLandlordDataOwnerId()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
+  useEffect(() => {
+    if (ownerLoading) {
+      setLoading(true)
+      return
+    }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        logLandlordDataOwner('useProperties', {
+          ownerId,
+          sessionUserId: user?.id,
+          role,
+          viewMode,
+          demoState,
+        })
+        const data = await getProperties(viewMode, demoState, ownerId)
+        if (!cancelled) setProperties(data)
+      } catch (err) {
+        if (!cancelled) setError(err as Error)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, 100)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [ownerLoading, ownerId, viewMode, demoState, role, user?.id])
+
   const fetchProperties = useCallback(async () => {
+    if (ownerLoading) {
+      setLoading(true)
+      return
+    }
     try {
       setLoading(true)
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
-      const landlordOwnerId = await resolveLandlordDataOwnerId({
+      logLandlordDataOwner('useProperties', {
+        ownerId,
+        sessionUserId: user?.id,
         role,
         viewMode,
         demoState,
-        sessionUserId: authUser?.id,
       })
-      const data = await getProperties(viewMode, demoState, landlordOwnerId)
+      const data = await getProperties(viewMode, demoState, ownerId)
       setProperties(data)
     } catch (err) {
       setError(err as Error)
     } finally {
       setLoading(false)
     }
-  }, [viewMode, demoState, role])
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchProperties()
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [fetchProperties])
+  }, [ownerLoading, ownerId, viewMode, demoState, role, user?.id])
 
   async function createProperty(property: {
     name: string
@@ -56,9 +85,9 @@ export function useProperties() {
   }) {
     if (isDemoMode(viewMode, role)) return Promise.resolve(null as any)
     const {
-      data: { user },
+      data: { user: authUser },
     } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+    if (!authUser) throw new Error('Not authenticated')
 
     const { property_type, group_ids, ...propertyData } = property
 
@@ -67,7 +96,7 @@ export function useProperties() {
       .insert({
         ...propertyData,
         property_type: property_type || null,
-        owner_id: user.id,
+        owner_id: authUser.id,
       })
       .select()
       .single()

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { fetchTenantsForOwner } from '@/lib/data/tenant-service'
-import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
+import { logLandlordDataOwner, useLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 
 export type Tenant = {
   id: string
@@ -29,14 +29,29 @@ function isDemoMode(viewMode: string, role: string | null): boolean {
 }
 
 export function useTenants() {
-  const { role, viewMode, demoState } = useAuth()
+  const { user, role, viewMode, demoState } = useAuth()
+  const { ownerId, loading: ownerLoading } = useLandlordDataOwnerId()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   const fetchTenants = useCallback(async () => {
+    if (ownerLoading) {
+      setLoading(true)
+      return
+    }
+
     try {
       setLoading(true)
+
+      logLandlordDataOwner('useTenants', {
+        ownerId,
+        sessionUserId: user?.id,
+        role,
+        viewMode,
+        demoState,
+      })
+
       if (role === 'admin' && viewMode === 'tenant-demo') {
         setTenants([])
         return
@@ -46,15 +61,6 @@ export function useTenants() {
         return
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      const ownerId = await resolveLandlordDataOwnerId({
-        role,
-        viewMode,
-        demoState,
-        sessionUserId: user?.id,
-      })
       if (!ownerId) {
         setTenants([])
         return
@@ -68,7 +74,7 @@ export function useTenants() {
     } finally {
       setLoading(false)
     }
-  }, [viewMode, demoState, role])
+  }, [ownerLoading, ownerId, viewMode, demoState, role, user?.id])
 
   useEffect(() => {
     fetchTenants()

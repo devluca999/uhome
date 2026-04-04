@@ -48,6 +48,7 @@
     "ensure:local-supabase": "tsx scripts/ensure-local-supabase.ts",
     "validate:env": "tsx scripts/validate-env.ts",
     "verify:staging-decommission": "tsx scripts/staging-decommission-readiness.ts",
+    "docs:button-map": "tsx scripts/generate-button-map-doc.ts",
     "verify:cloud-parity": "tsx scripts/verify-cloud-parity.ts",
     "verify:schema-congruence": "tsx scripts/verify-schema-congruence.ts"
   },

@@ -8,6 +8,7 @@ import {
   // CreatorRole removed - not used
 } from '@/lib/work-order-status'
 import { useAuth } from '@/contexts/auth-context'
+import { logLandlordDataOwner, useLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import { useTenantDevMode } from '@/contexts/tenant-dev-mode-context'
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 // isDevModeActive removed - not used
@@ -53,7 +54,8 @@ export function useMaintenanceRequests(
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const { user } = useAuth()
+  const { user, role, viewMode, demoState } = useAuth()
+  const { ownerId, loading: ownerLoading } = useLandlordDataOwnerId()
   const devMode = useTenantDevMode()
 
   useEffect(() => {
@@ -62,12 +64,30 @@ export function useMaintenanceRequests(
       setLoading(false)
       return
     }
+    if (!leaseIdOrPropertyId && ownerLoading) {
+      setLoading(true)
+      return
+    }
     fetchRequests()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaseIdOrPropertyId, isPropertyId, devMode?.isActive, devMode?.state, enabled])
+  }, [
+    leaseIdOrPropertyId,
+    isPropertyId,
+    devMode?.isActive,
+    devMode?.state,
+    enabled,
+    ownerLoading,
+    ownerId,
+    role,
+    viewMode,
+    demoState,
+  ])
 
   async function fetchRequests() {
     if (!enabled) {
+      return
+    }
+    if (!leaseIdOrPropertyId && ownerLoading) {
       return
     }
     try {
@@ -77,12 +97,7 @@ export function useMaintenanceRequests(
       // Mock data is only for UI-only state, core data comes from DB
 
       // Production/dev mode flow: fetch from Supabase (staging DB in dev mode)
-      const query = supabase
-        .from('maintenance_requests')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      let data = null
+      let data: any[] | null = null
 
       if (leaseIdOrPropertyId) {
         if (isPropertyId) {
@@ -196,10 +211,77 @@ export function useMaintenanceRequests(
           data = unique
         }
       } else {
-        // No filter - get all requests
-        const { data: allData, error: allError } = await query
-        if (allError) throw allError
-        data = allData
+        // Landlord-wide list: scope to resolved owner (admin + landlord-demo + populated → demo landlord)
+        logLandlordDataOwner('useMaintenanceRequests', {
+          ownerId,
+          sessionUserId: user?.id,
+          role,
+          viewMode,
+          demoState,
+        })
+        if (role === 'admin' && viewMode === 'tenant-demo') {
+          data = []
+        } else if (role === 'admin' && viewMode === 'landlord-demo' && demoState === 'empty') {
+          data = []
+        } else if (!ownerId) {
+          data = []
+        } else {
+          const { data: ownedProps, error: propErr } = await supabase
+            .from('properties')
+            .select('id')
+            .eq('owner_id', ownerId)
+
+          if (propErr) throw propErr
+          const propertyIds = (ownedProps ?? []).map(p => p.id)
+
+          if (propertyIds.length === 0) {
+            data = []
+          } else {
+            let propertyData: any[] = []
+            const { data: propertyResults, error: propertyError } = await supabase
+              .from('maintenance_requests')
+              .select('*')
+              .in('property_id', propertyIds)
+              .order('created_at', { ascending: false })
+
+            if (propertyError && propertyError.code !== 'PGRST116') throw propertyError
+            if (propertyResults) {
+              propertyData = propertyResults
+              const hasLeaseIdColumn = propertyResults.some(r => 'lease_id' in r)
+              if (hasLeaseIdColumn) {
+                propertyData = propertyResults.filter(r => !r.lease_id)
+              }
+            }
+
+            try {
+              const { data: leases } = await supabase
+                .from('leases')
+                .select('id')
+                .in('property_id', propertyIds)
+
+              if (leases && leases.length > 0) {
+                const leaseIds = leases.map(l => l.id)
+                const { data: leaseScopedResults } = await supabase
+                  .from('maintenance_requests')
+                  .select('*')
+                  .in('lease_id', leaseIds)
+                  .order('created_at', { ascending: false })
+
+                if (leaseScopedResults) {
+                  const allIds = new Set(propertyData.map(r => r.id))
+                  const uniqueLeaseScoped = leaseScopedResults.filter(r => !allIds.has(r.id))
+                  propertyData = [...propertyData, ...uniqueLeaseScoped]
+                }
+              }
+            } catch (e) {
+              if ((e as any)?.code !== '42703') {
+                console.warn('Error fetching lease-scoped maintenance requests:', e)
+              }
+            }
+
+            data = propertyData
+          }
+        }
       }
 
       // Fetch related data separately to avoid nested FK issues

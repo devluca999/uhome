@@ -1021,8 +1021,8 @@ async function seedProductionDemoData() {
       const rentAmount = lease.rent_amount
       const dueDate = unit?.rent_due_date || 1
 
-      // Create records for last 12 months (for comprehensive demo showcase)
-      for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
+      // Create records for last 18 months (for comprehensive demo showcase)
+      for (let monthOffset = 17; monthOffset >= 0; monthOffset--) {
         const dueDateObj = new Date(today.getFullYear(), today.getMonth() - monthOffset, dueDate)
         const isPastMonth = monthOffset > 0
         const isCurrentMonth = monthOffset === 0
@@ -1206,8 +1206,8 @@ async function seedProductionDemoData() {
       expense_date: string
     }> = []
 
-    // Distribute expenses across 12 months, ensuring current month has expenses for E2E tests
-    for (let monthOffset = 11; monthOffset >= 0; monthOffset--) {
+    // Distribute expenses across 18 months, ensuring current month has expenses for E2E tests
+    for (let monthOffset = 17; monthOffset >= 0; monthOffset--) {
       // For current month (monthOffset === 0), ensure expenses are spread throughout the month
       // For past months, use random days
       const dayOfMonth =
@@ -1294,6 +1294,8 @@ async function seedProductionDemoData() {
       created_by_role: 'landlord' | 'tenant'
       scheduled_date: string | null
       visibility_to_tenants: boolean
+      created_at?: string
+      updated_at?: string
     }> = []
 
     // Tenant-created work orders (8-10)
@@ -1406,12 +1408,65 @@ async function seedProductionDemoData() {
       })
     }
 
+    // Historical work orders (~2 per month × 18 months) for timelines/charts; same leases/properties as rent
+    if (tenantLeases.length > 0) {
+      const histLabels = [
+        'Seasonal HVAC check',
+        'Smoke detector battery',
+        'Gutter clearing',
+        'Caulking touch-up',
+        'Deck inspection',
+        'Pest treatment follow-up',
+      ]
+      let histIdx = 0
+      for (let monthsAgo = 17; monthsAgo >= 0; monthsAgo--) {
+        for (let k = 0; k < 2; k++) {
+          const tlIdx = histIdx % tenantLeases.length
+          const { tenantId, leaseId, propertyId } = tenantLeases[tlIdx]
+          const tenantUserId = tenantUserIds[tlIdx] ?? demoTenantUserId
+          const day = Math.floor(Math.random() * 27) + 1
+          const created = new Date(today.getFullYear(), today.getMonth() - monthsAgo, day)
+          const createdIso = created.toISOString()
+          const tenantCreated = k === 0
+          let status: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
+          if (monthsAgo >= 2) {
+            status = tenantCreated ? 'resolved' : 'closed'
+          } else if (monthsAgo === 1) {
+            status = tenantCreated ? 'seen' : 'in_progress'
+          } else {
+            status = tenantCreated ? 'submitted' : 'scheduled'
+          }
+          const category = workOrderCategories[histIdx % workOrderCategories.length]
+          const description = `${histLabels[histIdx % histLabels.length]} — ${category}`
+
+          workOrders.push({
+            property_id: propertyId,
+            tenant_id: tenantId,
+            lease_id: leaseId,
+            status,
+            category,
+            description,
+            public_description: description,
+            internal_notes: tenantCreated ? 'Historical tenant request' : 'Historical landlord task',
+            created_by: tenantCreated ? tenantUserId : demoLandlordId,
+            created_by_role: tenantCreated ? 'tenant' : 'landlord',
+            scheduled_date: null,
+            visibility_to_tenants: true,
+            created_at: createdIso,
+            updated_at: createdIso,
+          })
+          histIdx += 1
+        }
+      }
+    }
+
     const { error: workOrderError } = await supabase.from('maintenance_requests').insert(workOrders)
     if (workOrderError) {
       console.warn(`   ⚠️  Work orders error: ${workOrderError.message}`)
     } else {
+      const recentCount = tenantCreatedCount + landlordCreatedCount
       console.log(
-        `✅ Created ${workOrders.length} work orders (${tenantCreatedCount} tenant-created, ${landlordCreatedCount} landlord-created)\n`
+        `✅ Created ${workOrders.length} work orders (${recentCount} recent: ${tenantCreatedCount} tenant + ${landlordCreatedCount} landlord; ${workOrders.length - recentCount} historical over 18mo)\n`
       )
     }
 

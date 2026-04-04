@@ -15,6 +15,10 @@ export const MOCK_LANDLORD_ID = '00000000-0000-0000-0000-000000000001'
 export const MOCK_TENANT_1_ID = '00000000-0000-0000-0000-000000000002'
 export const MOCK_TENANT_2_ID = '00000000-0000-0000-0000-000000000003'
 export const MOCK_TENANT_3_ID = '00000000-0000-0000-0000-000000000004'
+export const MOCK_ADMIN_ID = '00000000-0000-0000-0000-000000000099'
+export const MOCK_ORG_ID = '31000000-0000-0000-0000-000000000001'
+export const MOCK_LEASE_1_ID = '40000000-0000-0000-0000-000000000001'
+export const MOCK_UNIT_1_ID = '45000000-0000-0000-0000-000000000001'
 
 export const MOCK_PROPERTY_1_ID = '10000000-0000-0000-0000-000000000001'
 export const MOCK_PROPERTY_2_ID = '10000000-0000-0000-0000-000000000002'
@@ -43,7 +47,15 @@ const FIXED_DATES = {
   TENANT_3_LEASE_END: null,
 }
 
-// Mock Users
+const userStatusBase = {
+  account_status: 'active' as const,
+  is_locked: false,
+  locked_until: null as string | null,
+  banned_at: null as string | null,
+  suspended_at: null as string | null,
+}
+
+// Mock Users (include admin columns used by admin UI)
 export const MOCK_USERS = [
   {
     id: MOCK_LANDLORD_ID,
@@ -51,6 +63,7 @@ export const MOCK_USERS = [
     role: 'landlord',
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
+    ...userStatusBase,
   },
   {
     id: MOCK_TENANT_1_ID,
@@ -58,6 +71,7 @@ export const MOCK_USERS = [
     role: 'tenant',
     created_at: '2023-12-01T00:00:00Z',
     updated_at: '2023-12-01T00:00:00Z',
+    ...userStatusBase,
   },
   {
     id: MOCK_TENANT_2_ID,
@@ -65,6 +79,7 @@ export const MOCK_USERS = [
     role: 'tenant',
     created_at: '2023-12-15T00:00:00Z',
     updated_at: '2023-12-15T00:00:00Z',
+    ...userStatusBase,
   },
   {
     id: MOCK_TENANT_3_ID,
@@ -72,6 +87,39 @@ export const MOCK_USERS = [
     role: 'tenant',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
+    ...userStatusBase,
+  },
+  {
+    id: MOCK_ADMIN_ID,
+    email: 'admin@example.com',
+    role: 'admin',
+    created_at: '2023-01-01T00:00:00Z',
+    updated_at: '2023-01-01T00:00:00Z',
+    ...userStatusBase,
+  },
+]
+
+export const MOCK_ORGANIZATION_MEMBERS = [
+  {
+    user_id: MOCK_LANDLORD_ID,
+    organization_id: MOCK_ORG_ID,
+    created_at: '2023-01-01T00:00:00Z',
+  },
+]
+
+export const MOCK_SUBSCRIPTIONS = [
+  {
+    id: '32000000-0000-0000-0000-000000000001',
+    organization_id: MOCK_ORG_ID,
+    plan: 'landlord',
+    status: 'trialing',
+    stripe_customer_id: null as string | null,
+    stripe_subscription_id: null as string | null,
+    current_period_end: null as string | null,
+    trial_end: '2030-12-31T00:00:00Z',
+    cancel_at_period_end: false,
+    created_at: '2023-01-01T00:00:00Z',
+    updated_at: '2023-01-01T00:00:00Z',
   },
 ]
 
@@ -112,12 +160,13 @@ export const MOCK_PROPERTIES = [
   },
 ]
 
-// Mock Tenant Assignments
+// Mock Tenant Assignments (lease_id matches useActiveLease)
 export const MOCK_TENANTS = [
   {
     id: MOCK_TENANT_ASSIGNMENT_1_ID,
     user_id: MOCK_TENANT_1_ID,
     property_id: MOCK_PROPERTY_1_ID,
+    lease_id: MOCK_LEASE_1_ID,
     move_in_date: FIXED_DATES.TENANT_1_MOVE_IN,
     lease_end_date: FIXED_DATES.TENANT_1_LEASE_END,
     created_at: '2023-12-15T00:00:00Z',
@@ -138,6 +187,24 @@ export const MOCK_TENANTS = [
     property_id: MOCK_PROPERTY_3_ID,
     move_in_date: FIXED_DATES.TENANT_3_MOVE_IN,
     lease_end_date: FIXED_DATES.TENANT_3_LEASE_END,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  },
+]
+
+export const MOCK_LEASES = [
+  {
+    id: MOCK_LEASE_1_ID,
+    property_id: MOCK_PROPERTY_1_ID,
+    unit_id: MOCK_UNIT_1_ID,
+    tenant_id: MOCK_TENANT_ASSIGNMENT_1_ID,
+    status: 'active' as const,
+    lease_start_date: '2024-01-01',
+    lease_end_date: '2025-01-14',
+    lease_type: 'long-term' as const,
+    rent_amount: 2800,
+    rent_frequency: 'monthly' as const,
+    security_deposit: 2800,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   },

@@ -11,7 +11,7 @@ Local Supabase (CLI + Docker) is the canonical test backend for E2E tests, finan
 
 ## Quick Start: Full Demo (Recommended)
 
-**One command** to boot the app with complete demo data (6–12 months of finances, work orders, congruent landlord/tenant data):
+**One command** to boot the app with complete demo data (18+ months of finances, work orders, congruent landlord/tenant data):
 
 ```bash
 npx supabase start    # If not already running
@@ -21,7 +21,7 @@ npm run dev:demo
 This will:
 1. Ensure local Supabase is reachable
 2. Reset the database (apply migrations)
-3. Seed 12 months of rent records, expenses, work orders
+3. Seed 18+ months of rent records, expenses, work orders
 4. Start the dev server at http://localhost:1000
 
 **Demo credentials:**
@@ -57,7 +57,7 @@ This applies all migrations in `supabase/migrations/` in order.
 npm run seed:demo
 ```
 
-Creates demo landlord (`demo-landlord@uhome.internal`) and tenant (`demo-tenant@uhome.internal`) with 12 months of financial and operational data.
+Creates demo landlord (`demo-landlord@uhome.internal`) and tenant (`demo-tenant@uhome.internal`) with 18+ months of financial and operational data.
 
 ## Running tests
 

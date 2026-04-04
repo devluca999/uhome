@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
-import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
+import { logLandlordDataOwner, useLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 
 export type RentRecordWithRelations = {
   id: string
@@ -44,42 +44,45 @@ export type RentRecordFilter = {
 
 export function useLandlordRentRecords(filter?: RentRecordFilter) {
   const { user, role, viewMode, demoState } = useAuth()
+  const { ownerId, loading: ownerLoading } = useLandlordDataOwnerId()
   const [records, setRecords] = useState<RentRecordWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      fetchRecords()
+  const fetchRecords = useCallback(async () => {
+    if (ownerLoading) {
+      setLoading(true)
+      return
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    user,
-    role,
-    viewMode,
-    demoState,
-    filter?.leaseId,
-    filter?.propertyId,
-    filter?.status,
-    filter?.dateRange?.start?.toISOString(),
-    filter?.dateRange?.end?.toISOString(),
-  ])
 
-  async function fetchRecords() {
-    if (!user) return
+    logLandlordDataOwner('useLandlordRentRecords', {
+      ownerId,
+      sessionUserId: user?.id,
+      role,
+      viewMode,
+      demoState,
+    })
+
+    if (!user) {
+      setRecords([])
+      setLoading(false)
+      return
+    }
+
+    if (role === 'admin' && viewMode === 'tenant-demo') {
+      setRecords([])
+      setLoading(false)
+      return
+    }
+    if (role === 'admin' && viewMode === 'landlord-demo' && demoState === 'empty') {
+      setRecords([])
+      setLoading(false)
+      return
+    }
 
     try {
       setLoading(true)
 
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
-      const ownerId = await resolveLandlordDataOwnerId({
-        role,
-        viewMode,
-        demoState,
-        sessionUserId: authUser?.id,
-      })
       if (!ownerId) {
         setRecords([])
         setLoading(false)
@@ -136,11 +139,11 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
 
       query = query.order('due_date', { ascending: false })
 
-      const { data, error } = await query
+      const { data, error: queryError } = await query
 
-      if (error) {
-        console.error('[useLandlordRentRecords] Query error:', JSON.stringify(error))
-        throw error
+      if (queryError) {
+        console.error('[useLandlordRentRecords] Query error:', JSON.stringify(queryError))
+        throw queryError
       }
 
       if (import.meta.env.DEV) {
@@ -167,7 +170,23 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [
+    user,
+    ownerLoading,
+    ownerId,
+    role,
+    viewMode,
+    demoState,
+    filter?.leaseId,
+    filter?.propertyId,
+    filter?.status,
+    filter?.dateRange?.start?.toISOString(),
+    filter?.dateRange?.end?.toISOString(),
+  ])
+
+  useEffect(() => {
+    fetchRecords()
+  }, [fetchRecords])
 
   async function createRentRecord(data: {
     property_id: string
