@@ -4,6 +4,7 @@
   "description": "Property management made simple",
   "start_url": "/landlord/dashboard",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "theme_color": "#111318",
   "background_color": "#111318",

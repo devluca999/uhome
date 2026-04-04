@@ -27,6 +27,8 @@ import { usePendingOnboarding } from '@/hooks/use-onboarding'
 import { OnboardingModal } from '@/components/tenant/onboarding-modal'
 import { OnboardingReminderBanner } from '@/components/tenant/onboarding-reminder-banner'
 import { useIsMobile } from '@/hooks/use-is-mobile'
+import { MobileScrollFadeHeading } from '@/components/layout/mobile-scroll-fade-heading'
+import { TenantDashboardLoadingSkeleton } from '@/components/dashboard/dashboard-loading-skeleton'
 
 type TenantDashboardRpcRow = {
   property_name: unknown
@@ -179,20 +181,19 @@ export function TenantDashboard() {
     .slice(0, 5)
 
   if (tenantLoading) {
-    return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
-        <GrainOverlay />
-        <div className="text-center py-12 relative z-10">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
+    return <TenantDashboardLoadingSkeleton />
   }
 
   if (!tenantData) {
     return (
       <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
+        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground relative z-10">
+          <span className="px-2 py-0.5 rounded-full bg-muted text-xs font-medium">
+            Tenant account
+          </span>
+          <span>Signed in as {user?.email}</span>
+        </div>
         <div className="mb-8 relative z-10">
           <h1 className="text-3xl font-semibold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back</p>
@@ -255,19 +256,20 @@ export function TenantDashboard() {
 
         {isMobile ? (
           <>
-            <p className="text-lg font-semibold text-foreground mb-1">Hey {displayName} 👋</p>
-
-            {tenantRpcStats?.days_until_end != null && (
-              <p className="text-xs text-muted-foreground mb-4">
-                {tenantRpcStats.days_until_end} day{tenantRpcStats.days_until_end === 1 ? '' : 's'}{' '}
-                on your lease
-                {tenantRpcStats.lease_end_date && (
-                  <span className="ml-1">
-                    (ends {new Date(tenantRpcStats.lease_end_date).toLocaleDateString()})
-                  </span>
-                )}
-              </p>
-            )}
+            <MobileScrollFadeHeading srTitle="Dashboard" className="mb-4">
+              <p className="text-lg font-semibold text-foreground mb-1">Hey {displayName} 👋</p>
+              {tenantRpcStats?.days_until_end != null && (
+                <p className="text-xs text-muted-foreground">
+                  {tenantRpcStats.days_until_end} day{tenantRpcStats.days_until_end === 1 ? '' : 's'}{' '}
+                  on your lease
+                  {tenantRpcStats.lease_end_date && (
+                    <span className="ml-1">
+                      (ends {new Date(tenantRpcStats.lease_end_date).toLocaleDateString()})
+                    </span>
+                  )}
+                </p>
+              )}
+            </MobileScrollFadeHeading>
 
             <div className="mb-4">
               {nextRentRecord ? (

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import { Upload, X } from 'lucide-react'
+import { haptic } from '@/lib/haptics'
 
 interface MaintenanceRequestFormProps {
   propertyId?: string
@@ -66,6 +67,7 @@ export function MaintenanceRequestForm({
 
       if (error) throw error
 
+      haptic.success()
       onSubmit()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit request')

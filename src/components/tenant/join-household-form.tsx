@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Link2, Loader2 } from 'lucide-react'
 import { extractTokenFromInviteInput } from '@/lib/invite-token'
 import { logFlowError, logFlowWarn } from '@/lib/flow-log'
+import { haptic } from '@/lib/haptics'
 
 interface JoinHouseholdFormProps {
   onCancel?: () => void
@@ -41,6 +42,7 @@ export function JoinHouseholdForm({ onCancel }: JoinHouseholdFormProps) {
       }
 
       setLoading(false)
+      haptic.success()
       navigate(`/accept-invite?token=${encodeURIComponent(token)}`)
     } catch (err) {
       logFlowError('JoinHousehold', 'handleSubmit', err)

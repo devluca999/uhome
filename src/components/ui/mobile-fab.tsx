@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { haptic } from '@/lib/haptics'
 import { useIsMobile } from '@/hooks/use-is-mobile'
 
 interface MobileFabProps {
@@ -15,12 +16,14 @@ export function MobileFab({ onClick, label, className }: MobileFabProps) {
     <button
       type="button"
       aria-label={label ?? 'Add'}
-      onClick={onClick}
+      onClick={() => {
+        haptic.medium()
+        onClick()
+      }}
       className={cn(
         'fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full',
         'bg-primary text-primary-foreground shadow-lg shadow-primary/40',
         'flex items-center justify-center',
-        'active:scale-95 transition-transform',
         className
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}

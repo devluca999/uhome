@@ -16,11 +16,23 @@ import { MatteLayer } from '@/components/ui/matte-layer'
 import { useNavigate } from 'react-router-dom'
 import { useUrlParams } from '@/lib/url-params'
 import { isFeatureEnabled } from '@/lib/feature-flags'
-import { Plus, Users, Mail, X, Search, Filter, LayoutGrid, List, Group } from 'lucide-react'
+import {
+  Plus,
+  Users,
+  Mail,
+  X,
+  Search,
+  Filter,
+  LayoutGrid,
+  List,
+  Group,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { motionTokens } from '@/lib/motion'
 import type { Tenant } from '@/hooks/use-tenants'
 import { MobileFab } from '@/components/ui/mobile-fab'
+import { Drawer } from '@/components/ui/drawer'
 
 type StatusFilter = 'all' | 'active' | 'ended'
 type SortFilter = 'name_az' | 'name_za' | 'newest' | 'oldest' | 'rent_high' | 'rent_low'
@@ -59,6 +71,7 @@ export function LandlordTenants() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sortFilter, setSortFilter] = useState<SortFilter>('newest')
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   // Check feature flag
   const viewModesEnabled = isFeatureEnabled('ENABLE_TENANT_VIEW_MODES')
@@ -218,7 +231,7 @@ export function LandlordTenants() {
 
   if (showForm || showInviteForm) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative overflow-x-hidden">
         <GrainOverlay />
         <div className="relative z-10">
           {showInviteForm ? (
@@ -249,7 +262,7 @@ export function LandlordTenants() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate] overflow-x-hidden">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">
@@ -297,119 +310,190 @@ export function LandlordTenants() {
 
         {/* Filter Bar */}
         {tenants.length > 0 && (
-          <Card className="glass-card mb-6 max-w-4xl">
-            <CardContent className="pt-4 pb-4">
-              <div className="space-y-3">
-                {/* Search Input Row */}
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name, email, phone, or property..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="flex-1 h-9 bg-background/50"
-                  />
-                </div>
+          <>
+            <Card className="glass-card mb-6 max-w-4xl">
+              <CardContent className="pt-4 pb-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <Input
+                      type="text"
+                      placeholder="Search by name, email, phone, or property..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="flex-1 h-9 bg-background/50 min-w-0"
+                    />
+                  </div>
 
-                {/* View Mode Toggle (if feature enabled) */}
-                {viewModesEnabled && (
-                  <div className="flex items-center gap-2 pb-2 border-b border-border">
-                    <span className="text-xs text-muted-foreground">View:</span>
-                    <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="md:hidden w-full mt-2"
+                    type="button"
+                    onClick={() => setShowMobileFilters(true)}
+                  >
+                    <SlidersHorizontal className="w-4 h-4 mr-2" />
+                    Filters & Sort
+                  </Button>
+
+                  {viewModesEnabled && (
+                    <div className="flex items-center gap-2 pb-2 border-b border-border flex-wrap">
+                      <span className="text-xs text-muted-foreground">View:</span>
+                      <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
+                        <Button
+                          variant={viewMode === 'card' ? 'default' : 'ghost'}
+                          size="sm"
+                          type="button"
+                          onClick={() => setViewMode('card')}
+                          className="h-7 px-2"
+                        >
+                          <LayoutGrid className="w-3 h-3 mr-1" />
+                          Card
+                        </Button>
+                        <Button
+                          variant={viewMode === 'list' ? 'default' : 'ghost'}
+                          size="sm"
+                          type="button"
+                          onClick={() => setViewMode('list')}
+                          className="h-7 px-2"
+                        >
+                          <List className="w-3 h-3 mr-1" />
+                          List
+                        </Button>
+                      </div>
                       <Button
-                        variant={viewMode === 'card' ? 'default' : 'ghost'}
+                        variant={groupByProperty ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setViewMode('card')}
-                        className="h-7 px-2"
+                        type="button"
+                        onClick={() => setGroupByProperty(!groupByProperty)}
+                        className="h-7 px-2 ml-auto"
                       >
-                        <LayoutGrid className="w-3 h-3 mr-1" />
-                        Card
-                      </Button>
-                      <Button
-                        variant={viewMode === 'list' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setViewMode('list')}
-                        className="h-7 px-2"
-                      >
-                        <List className="w-3 h-3 mr-1" />
-                        List
+                        <Group className="w-3 h-3 mr-1" />
+                        Group by Property
                       </Button>
                     </div>
-                    <Button
-                      variant={groupByProperty ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setGroupByProperty(!groupByProperty)}
-                      className="h-7 px-2 ml-auto"
-                    >
-                      <Group className="w-3 h-3 mr-1" />
-                      Group by Property
-                    </Button>
-                  </div>
-                )}
-
-                {/* Filters Row */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">Filters:</span>
-                  </div>
-
-                  {/* Status Filter */}
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">
-                      Status:
-                    </label>
-                    <select
-                      value={statusFilter}
-                      onChange={e => setStatusFilter(e.target.value as StatusFilter)}
-                      className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">All</option>
-                      <option value="active">Active</option>
-                      <option value="ended">Ended</option>
-                    </select>
-                  </div>
-
-                  {/* Sort Filter */}
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">Sort:</label>
-                    <select
-                      value={sortFilter}
-                      onChange={e => setSortFilter(e.target.value as SortFilter)}
-                      className="flex h-8 min-w-[140px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="newest">Newest First</option>
-                      <option value="oldest">Oldest First</option>
-                      <option value="name_az">Name: A-Z</option>
-                      <option value="name_za">Name: Z-A</option>
-                      <option value="rent_high">Rent: High→Low</option>
-                      <option value="rent_low">Rent: Low→High</option>
-                    </select>
-                  </div>
-
-                  {/* Clear Filters */}
-                  {(searchQuery.trim() !== '' ||
-                    statusFilter !== 'all' ||
-                    sortFilter !== 'newest') && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery('')
-                        setStatusFilter('all')
-                        setSortFilter('newest')
-                      }}
-                      className="ml-auto h-8 text-xs"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Clear
-                    </Button>
                   )}
+
+                  <div className="hidden md:block">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">Filters:</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-muted-foreground whitespace-nowrap">
+                          Status:
+                        </label>
+                        <select
+                          value={statusFilter}
+                          onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                          className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="all">All</option>
+                          <option value="active">Active</option>
+                          <option value="ended">Ended</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-muted-foreground whitespace-nowrap">
+                          Sort:
+                        </label>
+                        <select
+                          value={sortFilter}
+                          onChange={e => setSortFilter(e.target.value as SortFilter)}
+                          className="flex h-8 min-w-[140px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="newest">Newest First</option>
+                          <option value="oldest">Oldest First</option>
+                          <option value="name_az">Name: A-Z</option>
+                          <option value="name_za">Name: Z-A</option>
+                          <option value="rent_high">Rent: High→Low</option>
+                          <option value="rent_low">Rent: Low→High</option>
+                        </select>
+                      </div>
+
+                      {(searchQuery.trim() !== '' ||
+                        statusFilter !== 'all' ||
+                        sortFilter !== 'newest') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('')
+                            setStatusFilter('all')
+                            setSortFilter('newest')
+                          }}
+                          className="ml-auto h-8 text-xs"
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Drawer
+              isOpen={showMobileFilters}
+              onClose={() => setShowMobileFilters(false)}
+              title="Filters & Sort"
+              side="bottom"
+              className="max-w-none max-h-[85vh]"
+            >
+              <div className="flex flex-col gap-4 w-full">
+                <div className="space-y-1.5 w-full">
+                  <label className="text-xs font-medium text-muted-foreground">Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="ended">Ended</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5 w-full">
+                  <label className="text-xs font-medium text-muted-foreground">Sort</label>
+                  <select
+                    value={sortFilter}
+                    onChange={e => setSortFilter(e.target.value as SortFilter)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name_az">Name: A-Z</option>
+                    <option value="name_za">Name: Z-A</option>
+                    <option value="rent_high">Rent: High→Low</option>
+                    <option value="rent_low">Rent: Low→High</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    className="w-full"
+                    onClick={() => {
+                      setSearchQuery('')
+                      setStatusFilter('all')
+                      setSortFilter('newest')
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Clear filters
+                  </Button>
+                  <Button type="button" className="w-full" onClick={() => setShowMobileFilters(false)}>
+                    Done
+                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </Drawer>
+          </>
         )}
 
         {loading ? (

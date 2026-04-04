@@ -15,7 +15,7 @@ import { TaskForm } from '@/components/landlord/task-form'
 import { NotesPanel } from '@/components/landlord/notes-panel'
 import { WorkOrderExpensePrompt } from '@/components/landlord/work-order-expense-prompt'
 import { WorkOrderForm } from '@/components/landlord/work-order-form'
-import { Wrench, Plus, X, Filter, AlertTriangle } from 'lucide-react'
+import { Wrench, Plus, X, Filter, AlertTriangle, SlidersHorizontal } from 'lucide-react'
 import { motionTokens } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import {
@@ -24,6 +24,7 @@ import {
   type WorkOrderStatus,
 } from '@/lib/work-order-status'
 import { MobileFab } from '@/components/ui/mobile-fab'
+import { Drawer } from '@/components/ui/drawer'
 import type { Database } from '@/types/database'
 
 // Use the type from the hook, but convert to database type when needed
@@ -93,6 +94,7 @@ export function LandlordOperations() {
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   // Deep link: open a specific work order from elsewhere (e.g. dashboard activity feed).
   useEffect(() => {
@@ -450,7 +452,7 @@ export function LandlordOperations() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate] overflow-x-hidden">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">
@@ -478,138 +480,259 @@ export function LandlordOperations() {
             </Button>
           </div>
 
-          {/* Filter Bar */}
-          <Card className="glass-card mb-6 max-w-4xl mx-auto">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <Filter className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Filters:</span>
-                </div>
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            className="md:hidden w-full mb-4"
+            onClick={() => setShowMobileFilters(true)}
+          >
+            <SlidersHorizontal className="w-4 h-4 mr-2" />
+            Filters & Sort
+          </Button>
 
-                {/* Property Filter */}
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">
-                    Property:
-                  </label>
-                  <select
-                    value={propertyIdFilter || 'all'}
-                    onChange={e => {
-                      if (e.target.value === 'all') {
-                        clearFilterParam('propertyId')
-                      } else {
-                        setFilterParam('propertyId', e.target.value)
-                      }
-                    }}
-                    className="flex h-8 min-w-[120px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="all">All Properties</option>
-                    {properties.map(prop => (
-                      <option key={prop.id} value={prop.id}>
-                        {prop.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          {/* Filter Bar (desktop) */}
+          <div className="hidden md:block">
+            <Card className="glass-card mb-6 max-w-4xl mx-auto">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <Filter className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Filters:</span>
+                  </div>
 
-                {/* Status Filter */}
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">Status:</label>
-                  <select
-                    value={statusFilter}
-                    onChange={e => setStatusFilter(e.target.value as StatusFilter)}
-                    className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="seen">Seen</option>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-
-                {/* Category Filter */}
-                {categories.length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <label className="text-xs text-muted-foreground whitespace-nowrap">
-                      Category:
+                      Property:
                     </label>
                     <select
-                      value={categoryFilter}
-                      onChange={e => setCategoryFilter(e.target.value)}
-                      className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={propertyIdFilter || 'all'}
+                      onChange={e => {
+                        if (e.target.value === 'all') {
+                          clearFilterParam('propertyId')
+                        } else {
+                          setFilterParam('propertyId', e.target.value)
+                        }
+                      }}
+                      className="flex h-8 min-w-[120px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <option value="all">All Categories</option>
-                      {categories.map(cat => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                      <option value="all">All Properties</option>
+                      {properties.map(prop => (
+                        <option key={prop.id} value={prop.id}>
+                          {prop.name}
                         </option>
                       ))}
                     </select>
                   </div>
-                )}
 
-                {/* Urgency Filter */}
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">
-                    Urgency:
-                  </label>
-                  <select
-                    value={urgencyFilter}
-                    onChange={e => setUrgencyFilter(e.target.value as UrgencyFilter)}
-                    className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="all">All</option>
-                    <option value="urgent">Urgent (7+ days)</option>
-                    <option value="normal">Normal</option>
-                  </select>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Status:
+                    </label>
+                    <select
+                      value={statusFilter}
+                      onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                      className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="submitted">Submitted</option>
+                      <option value="seen">Seen</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </div>
+
+                  {categories.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs text-muted-foreground whitespace-nowrap">
+                        Category:
+                      </label>
+                      <select
+                        value={categoryFilter}
+                        onChange={e => setCategoryFilter(e.target.value)}
+                        className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="all">All Categories</option>
+                        {categories.map(cat => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Urgency:
+                    </label>
+                    <select
+                      value={urgencyFilter}
+                      onChange={e => setUrgencyFilter(e.target.value as UrgencyFilter)}
+                      className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">All</option>
+                      <option value="urgent">Urgent (7+ days)</option>
+                      <option value="normal">Normal</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      Sort by:
+                    </label>
+                    <select
+                      value={recencyFilter}
+                      onChange={e => setRecencyFilter(e.target.value as RecencyFilter)}
+                      className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                      <option value="last7days">Last 7 Days</option>
+                      <option value="last30days">Last 30 Days</option>
+                      <option value="all">All Time</option>
+                    </select>
+                  </div>
+
+                  {(propertyIdFilter ||
+                    statusFilter !== 'all' ||
+                    categoryFilter !== 'all' ||
+                    urgencyFilter !== 'all' ||
+                    recencyFilter !== 'newest') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        clearFilterParam('propertyId')
+                        setStatusFilter('all')
+                        setCategoryFilter('all')
+                        setUrgencyFilter('all')
+                        setRecencyFilter('newest')
+                      }}
+                      className="ml-auto h-8 text-xs"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Clear All
+                    </Button>
+                  )}
                 </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                {/* Recency Filter */}
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">
-                    Sort by:
-                  </label>
-                  <select
-                    value={recencyFilter}
-                    onChange={e => setRecencyFilter(e.target.value as RecencyFilter)}
-                    className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="last7days">Last 7 Days</option>
-                    <option value="last30days">Last 30 Days</option>
-                    <option value="all">All Time</option>
-                  </select>
-                </div>
-
-                {/* Clear All Filters */}
-                {(propertyIdFilter ||
-                  statusFilter !== 'all' ||
-                  categoryFilter !== 'all' ||
-                  urgencyFilter !== 'all' ||
-                  recencyFilter !== 'newest') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
+          <Drawer
+            isOpen={showMobileFilters}
+            onClose={() => setShowMobileFilters(false)}
+            title="Filters & Sort"
+            side="bottom"
+            className="max-w-none max-h-[85vh]"
+          >
+            <div className="flex flex-col gap-4 w-full">
+              <div className="space-y-1.5 w-full">
+                <label className="text-xs font-medium text-muted-foreground">Property</label>
+                <select
+                  value={propertyIdFilter || 'all'}
+                  onChange={e => {
+                    if (e.target.value === 'all') {
                       clearFilterParam('propertyId')
-                      setStatusFilter('all')
-                      setCategoryFilter('all')
-                      setUrgencyFilter('all')
-                      setRecencyFilter('newest')
-                    }}
-                    className="ml-auto h-8 text-xs"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Clear All
-                  </Button>
-                )}
+                    } else {
+                      setFilterParam('propertyId', e.target.value)
+                    }
+                  }}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="all">All Properties</option>
+                  {properties.map(prop => (
+                    <option key={prop.id} value={prop.id}>
+                      {prop.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1.5 w-full">
+                <label className="text-xs font-medium text-muted-foreground">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="all">All Status</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="seen">Seen</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+              {categories.length > 0 && (
+                <div className="space-y-1.5 w-full">
+                  <label className="text-xs font-medium text-muted-foreground">Category</label>
+                  <select
+                    value={categoryFilter}
+                    onChange={e => setCategoryFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="space-y-1.5 w-full">
+                <label className="text-xs font-medium text-muted-foreground">Urgency</label>
+                <select
+                  value={urgencyFilter}
+                  onChange={e => setUrgencyFilter(e.target.value as UrgencyFilter)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="all">All</option>
+                  <option value="urgent">Urgent (7+ days)</option>
+                  <option value="normal">Normal</option>
+                </select>
+              </div>
+              <div className="space-y-1.5 w-full">
+                <label className="text-xs font-medium text-muted-foreground">Sort by</label>
+                <select
+                  value={recencyFilter}
+                  onChange={e => setRecencyFilter(e.target.value as RecencyFilter)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="last7days">Last 7 Days</option>
+                  <option value="last30days">Last 30 Days</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="w-full"
+                  onClick={() => {
+                    clearFilterParam('propertyId')
+                    setStatusFilter('all')
+                    setCategoryFilter('all')
+                    setUrgencyFilter('all')
+                    setRecencyFilter('newest')
+                  }}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear all
+                </Button>
+                <Button type="button" className="w-full" onClick={() => setShowMobileFilters(false)}>
+                  Done
+                </Button>
+              </div>
+            </div>
+          </Drawer>
         </motion.div>
 
         {showWorkOrderForm && (

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, type TouchEvent as ReactTouchEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
 import { useNavigate } from 'react-router-dom'
@@ -91,6 +91,49 @@ export function DraggableDemoSelector() {
     setIsDragging(false)
   }, [])
 
+  const handleTouchStart = useCallback(
+    (e: ReactTouchEvent) => {
+      if (isSidebarOpen) return
+      const touch = e.touches[0]
+      if (!touch) return
+      setIsDragging(true)
+      const rect = floatingRef.current?.getBoundingClientRect()
+      if (rect) {
+        setDragOffset({
+          x: touch.clientX - rect.left,
+          y: touch.clientY - rect.top,
+        })
+      }
+    },
+    [isSidebarOpen]
+  )
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isDragging || isSidebarOpen) return
+      e.preventDefault()
+      const touch = e.touches[0]
+      if (!touch) return
+      const newX = touch.clientX - dragOffset.x
+      const newY = touch.clientY - dragOffset.y
+
+      const maxX = window.innerWidth - 60
+      const maxY = window.innerHeight - 60
+      const minX = 0
+      const minY = 0
+
+      setPosition({
+        x: Math.max(minX, Math.min(maxX, newX)),
+        y: Math.max(minY, Math.min(maxY, newY)),
+      })
+    },
+    [isDragging, isSidebarOpen, dragOffset]
+  )
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
   // Load position from localStorage on mount
   useEffect(() => {
     const savedPosition = localStorage.getItem('admin-demo-selector-position')
@@ -114,12 +157,18 @@ export function DraggableDemoSelector() {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
+      window.addEventListener('touchmove', handleTouchMove, { passive: false })
+      window.addEventListener('touchend', handleTouchEnd)
+      window.addEventListener('touchcancel', handleTouchEnd)
       return () => {
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
+        window.removeEventListener('touchmove', handleTouchMove)
+        window.removeEventListener('touchend', handleTouchEnd)
+        window.removeEventListener('touchcancel', handleTouchEnd)
       }
     }
-  }, [isDragging, handleMouseMove, handleMouseUp])
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd])
 
   // Early return for non-admin users - must be AFTER all hooks
   if (role !== 'admin') {
@@ -213,6 +262,7 @@ export function DraggableDemoSelector() {
         ease: motionTokens.ease.standard,
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       <div className="p-2">
         <div className="flex items-center gap-2">

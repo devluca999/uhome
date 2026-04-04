@@ -276,14 +276,17 @@ async function cleanupDemoData(landlordId: string) {
     await supabase.from('messages').delete().in('lease_id', leaseIds)
   }
 
-  // 2. Delete work orders
-  await supabase.from('work_orders').delete().in('property_id', propertyIds)
+  // 2. Delete maintenance requests (work orders)
+  await supabase.from('maintenance_requests').delete().in('property_id', propertyIds)
 
   // 3. Delete rent records
   await supabase.from('rent_records').delete().in('property_id', propertyIds)
 
   // 4. Delete expenses
   await supabase.from('expenses').delete().in('property_id', propertyIds)
+
+  // 4b. Delete documents
+  await supabase.from('documents').delete().in('property_id', propertyIds)
 
   // 5. Delete tenant invites
   await supabase.from('tenant_invites').delete().eq('created_by', landlordId)
@@ -296,7 +299,12 @@ async function cleanupDemoData(landlordId: string) {
   const { data: demoTenantUsers } = await supabase.auth.admin.listUsers()
   const demoTenantUserIds =
     demoTenantUsers?.users
-      ?.filter(u => u.email?.includes('demo-tenant') && u.email?.includes('@uhome.internal'))
+      ?.filter(
+        u =>
+          u.email &&
+          (u.email.endsWith('@demo.uhome.app') ||
+            (u.email.includes('demo-tenant') && u.email.includes('@uhome.internal')))
+      )
       .map(u => u.id) || []
 
   if (demoTenantUserIds.length > 0) {
@@ -564,50 +572,75 @@ async function seedProductionDemoData() {
     // ========================================================================
     const propertyTemplates = [
       {
-        name: 'Oak Street Apartments',
-        address: '123 Oak Street, San Francisco, CA 94102',
-        rules: 'No smoking. Quiet hours after 10 PM. Pets allowed with deposit.',
-        units: [
-          { unit_name: '2A', rent_amount: 1450, rent_due_date: 1 },
-          { unit_name: '2B', rent_amount: 1500, rent_due_date: 1 },
-          { unit_name: '3A', rent_amount: 1550, rent_due_date: 1 },
-        ],
+        name: 'Willow 2BR Flat',
+        address: '1200 Market St #4B, San Francisco, CA 94102',
+        property_type: '2-bedroom apartment',
+        rules: 'No smoking. Pets with deposit. Quiet hours 10pm–7am.',
+        units: [{ unit_name: '4B', rent_amount: 2650, rent_due_date: 1 }],
       },
       {
-        name: 'Pine Avenue Complex',
-        address: '456 Pine Avenue, San Francisco, CA 94103',
-        rules: 'No pets. Street parking available. Building has laundry facilities.',
-        units: [
-          { unit_name: '5B', rent_amount: 2800, rent_due_date: 5 },
-          { unit_name: '5C', rent_amount: 2750, rent_due_date: 5 },
-        ],
+        name: 'Harbor View 3BR House',
+        address: '88 Bay Laurel Dr, Oakland, CA 94610',
+        property_type: '3-bedroom house',
+        rules: 'Yard maintenance included. Tenant pays water over cap.',
+        units: [{ unit_name: 'Main', rent_amount: 3400, rent_due_date: 5 }],
       },
       {
-        name: 'Elm Drive House',
-        address: '789 Elm Drive, San Francisco, CA 94104',
-        rules: 'Garden access. Bicycle storage available. Tenant responsible for utilities.',
-        units: [{ unit_name: 'Main', rent_amount: 1850, rent_due_date: 15 }],
+        name: 'Mission Loft Studio',
+        address: '450 Valencia St #206, San Francisco, CA 94103',
+        property_type: 'Studio',
+        rules: 'Utilities included up to $120/mo. No short-term sublets.',
+        units: [{ unit_name: '206', rent_amount: 1895, rent_due_date: 1 }],
       },
       {
-        name: 'Maple Heights',
-        address: '321 Maple Heights, San Francisco, CA 94105',
-        rules: 'Pet-friendly. Covered parking. Modern amenities.',
-        units: [
-          { unit_name: '3C', rent_amount: 3200, rent_due_date: 1 },
-          { unit_name: '3D', rent_amount: 3100, rent_due_date: 1 },
-          { unit_name: '4A', rent_amount: 3300, rent_due_date: 1 },
-        ],
+        name: 'Presidio 1BR Classic',
+        address: '2100 Sacramento St #12, San Francisco, CA 94115',
+        property_type: '1-bedroom apartment',
+        rules: 'Street parking only. Coin laundry in basement.',
+        units: [{ unit_name: '12', rent_amount: 2250, rent_due_date: 1 }],
       },
       {
-        name: 'Cedar Lane Studios',
-        address: '654 Cedar Lane, San Francisco, CA 94106',
-        rules: 'Utilities included. No pets. Quiet building.',
-        units: [
-          { unit_name: 'Studio 12', rent_amount: 2100, rent_due_date: 10 },
-          { unit_name: 'Studio 15', rent_amount: 2050, rent_due_date: 10 },
-        ],
+        name: 'Lake Merritt 2BR Condo',
+        address: '199 10th St #908, Oakland, CA 94607',
+        property_type: '2-bedroom condo',
+        rules: 'HOA quiet rules apply. One reserved parking space.',
+        units: [{ unit_name: '908', rent_amount: 2950, rent_due_date: 1 }],
+      },
+      {
+        name: 'SoMa Commercial Bay',
+        address: '600 Townsend St Unit C, San Francisco, CA 94103',
+        property_type: 'Commercial unit',
+        rules: 'CAM charges reconciled annually. Delivery window 7–9am weekdays.',
+        units: [{ unit_name: 'C', rent_amount: 4200, rent_due_date: 1 }],
+      },
+      {
+        name: 'Rockridge 3BR Townhouse',
+        address: '5525 Lawton Ave, Oakland, CA 94618',
+        property_type: '3-bedroom townhouse',
+        rules: 'Trash/recycle per city schedule. Small pets OK.',
+        units: [{ unit_name: 'TH-A', rent_amount: 3800, rent_due_date: 5 }],
+      },
+      {
+        name: 'North Beach 1BR Condo',
+        address: '800 Columbus Ave #3, San Francisco, CA 94133',
+        property_type: '1-bedroom condo',
+        rules: 'Roof deck shared. No BBQ on deck after 9pm.',
+        units: [{ unit_name: '3', rent_amount: 2450, rent_due_date: 1 }],
       },
     ]
+
+    const TENANT_SEED_ROWS = [
+      { name: 'Marcus Webb', email: 'marcus.webb@demo.uhome.app', propertyIndex: 0 },
+      { name: 'Priya Sharma', email: 'priya.sharma@demo.uhome.app', propertyIndex: 1 },
+      { name: 'Devon Carter', email: 'devon.carter@demo.uhome.app', propertyIndex: 1 },
+      { name: 'Sofia Reyes', email: 'sofia.reyes@demo.uhome.app', propertyIndex: 2 },
+      { name: 'Jordan Kim', email: 'jordan.kim@demo.uhome.app', propertyIndex: 3 },
+      { name: 'Aaliyah Brooks', email: 'aaliyah.brooks@demo.uhome.app', propertyIndex: 4 },
+      { name: 'Ethan Park', email: 'ethan.park@demo.uhome.app', propertyIndex: 5 },
+      { name: 'Chloe Martin', email: 'chloe.martin@demo.uhome.app', propertyIndex: 6 },
+      { name: 'Tobias Nguyen', email: 'tobias.nguyen@demo.uhome.app', propertyIndex: 7 },
+      { name: 'Imani Hassan', email: 'imani.hassan@demo.uhome.app', propertyIndex: 7 },
+    ] as const
 
     // Check for existing properties to avoid duplicates
     const createdProperties: Array<{
@@ -656,6 +689,7 @@ async function seedProductionDemoData() {
             name: propertyTemplate.name,
             address: propertyTemplate.address,
             rules: propertyTemplate.rules,
+            property_type: propertyTemplate.property_type,
             rent_amount: 0, // Default value, rent_amount now comes from units
             rent_due_date: 1, // Default value
           })
@@ -698,9 +732,9 @@ async function seedProductionDemoData() {
     console.log(`✅ Working with ${propertyIds.length} properties\n`)
 
     // ========================================================================
-    // Step 3: Create Demo Tenant via Invite Flow (NO shortcuts)
+    // Step 3: Primary demo tenant via invite flow (first TENANT_SEED_ROWS)
     // ========================================================================
-    const demoTenantEmail = 'demo-tenant@uhome.internal'
+    const demoTenantEmail = TENANT_SEED_ROWS[0].email
     const demoTenantPassword = 'DemoTenant2024!'
 
     let demoTenantUserId: string
@@ -786,16 +820,8 @@ async function seedProductionDemoData() {
     console.log(`   Tenant: ${demoTenantEmail} / ${demoTenantPassword}\n`)
 
     // ========================================================================
-    // Step 4: Create Additional Tenants (12-20 total, including demo tenant)
+    // Step 4: Create remaining tenants from TENANT_SEED_ROWS (roommates share leases)
     // ========================================================================
-    const additionalTenantsNeeded = 11 // 12 total - 1 demo = 11 more
-    const tenantEmails: string[] = []
-
-    // Generate tenant emails
-    for (let i = 1; i <= additionalTenantsNeeded; i++) {
-      tenantEmails.push(`demo-tenant${i}@uhome.internal`)
-    }
-
     const tenantUserIds: string[] = [demoTenantUserId]
     const tenantLeases: Array<{ tenantId: string; leaseId: string; propertyId: string }> = []
 
@@ -807,36 +833,28 @@ async function seedProductionDemoData() {
       })
     }
 
-    console.log(`👥 Creating ${additionalTenantsNeeded} additional tenant users...`)
+    const extraTenantCount = TENANT_SEED_ROWS.length - 1
+    console.log(`👥 Creating ${extraTenantCount} additional tenant users...`)
 
     const tenantCreationErrors: Array<{ email: string; error: string }> = []
 
-    // Get all units from all properties
-    const allUnits = createdProperties.flatMap(p => p.units)
-
-    // Create roommates: some units will have multiple tenants
-    const unitsForRoommates = allUnits.filter(
-      unit => unit.unit_name.includes('A') || unit.unit_name.includes('Main')
-    )
-
-    for (let i = 0; i < tenantEmails.length; i++) {
-      const email = tenantEmails[i]
-
-      // For some tenants, create roommates in the same unit
-      let selectedUnit
-      if (i < 3 && unitsForRoommates.length > 0) {
-        // First 3 tenants go to units that will have roommates
-        selectedUnit = unitsForRoommates[i % unitsForRoommates.length]
-      } else {
-        // Others get their own units
-        selectedUnit = allUnits[i % allUnits.length]
+    for (let i = 1; i < TENANT_SEED_ROWS.length; i++) {
+      const row = TENANT_SEED_ROWS[i]
+      const email = row.email
+      const prop = createdProperties[row.propertyIndex]
+      if (!prop?.units?.[0]) {
+        tenantCreationErrors.push({
+          email,
+          error: `No unit for propertyIndex ${row.propertyIndex}`,
+        })
+        continue
       }
-
-      const property = createdProperties.find(p => p.units.some(u => u.id === selectedUnit.id))
+      const selectedUnit = prop.units[0]
+      const property = prop
 
       try {
         console.log(
-          `   👤 Creating tenant ${i + 1}/${additionalTenantsNeeded}: ${email} for unit ${selectedUnit.unit_name} in ${property?.name}`
+          `   👤 Creating tenant ${i}/${extraTenantCount}: ${email} for unit ${selectedUnit.unit_name} in ${property.name}`
         )
 
         // Check if user exists
@@ -930,9 +948,9 @@ async function seedProductionDemoData() {
 
         tenantLeases.push({ tenantId, leaseId, propertyId })
 
-        if ((i + 1) % 3 === 0 || i === tenantEmails.length - 1) {
+        if ((i + 1) % 3 === 0 || i === TENANT_SEED_ROWS.length - 1) {
           console.log(
-            `   ✅ Progress: ${i + 1}/${additionalTenantsNeeded} tenants created successfully`
+            `   ✅ Progress: ${i + 1}/${extraTenantCount} additional tenants processed`
           )
         }
       } catch (error) {
@@ -963,10 +981,39 @@ async function seedProductionDemoData() {
     console.log(`✅ Created ${tenantLeases.length} tenant-lease pairs (including demo tenant)\n`)
 
     // ========================================================================
-    // Step 5: Create Rent Records (20+ records)
+    // Step 5: Create Rent Records (~220 over 18 months, deterministic arcs)
     // ========================================================================
     console.log('💰 Creating rent records...')
     const today = new Date()
+
+    function mix32(a: number, b: number): number {
+      return (Math.imul((a + 1) ^ (b + 1), 2654435761) >>> 0) % 10000
+    }
+
+    /** Deterministic pseudo-random in [0, 1) from lease month slice. */
+    function det01(leaseIdx: number, monthOffset: number, salt: number): number {
+      return mix32(leaseIdx + salt * 31, monthOffset + salt * 17) / 10000
+    }
+
+    function propertyIndexForPropertyId(propertyId: string): number {
+      return createdProperties.findIndex(p => p.id === propertyId)
+    }
+
+    function skipRentMonth(monthOffset: number, propertyIndex: number): boolean {
+      if (propertyIndex < 0) return true
+      if (monthOffset >= 13 && propertyIndex >= 6) return true
+      if (monthOffset >= 10 && monthOffset <= 12 && propertyIndex === 2) return true
+      return false
+    }
+
+    const uniqueLeaseRows: Array<{ tenantId: string; leaseId: string; propertyId: string }> = []
+    const seenLeaseIds = new Set<string>()
+    for (const tl of tenantLeases) {
+      if (seenLeaseIds.has(tl.leaseId)) continue
+      seenLeaseIds.add(tl.leaseId)
+      uniqueLeaseRows.push(tl)
+    }
+
     const rentRecords: Array<{
       property_id: string
       tenant_id: string
@@ -975,22 +1022,23 @@ async function seedProductionDemoData() {
       due_date: string
       status: 'paid' | 'pending' | 'overdue'
       paid_date: string | null
+      late_fee?: number
+      notes?: string | null
+      payment_method?: 'manual' | 'external'
+      payment_method_label?: string | null
     }> = []
 
-    // Track if we've created an overdue record (guarantee at least one for tests)
-    let hasOverdueRecord = false
-
-    // Create rent records for each tenant-lease pair
     if (tenantLeases.length === 0) {
       console.warn(`   ⚠️  No tenant-lease pairs found, skipping rent records creation`)
     } else {
-      console.log(`   Creating rent records for ${tenantLeases.length} tenant-lease pairs...`)
+      console.log(
+        `   Creating rent records for ${uniqueLeaseRows.length} leases (${tenantLeases.length} tenant rows)...`
+      )
     }
 
-    for (let tenantLeaseIdx = 0; tenantLeaseIdx < tenantLeases.length; tenantLeaseIdx++) {
-      const { tenantId, leaseId, propertyId } = tenantLeases[tenantLeaseIdx]
+    for (let leaseIdx = 0; leaseIdx < uniqueLeaseRows.length; leaseIdx++) {
+      const { tenantId, leaseId, propertyId } = uniqueLeaseRows[leaseIdx]
 
-      // Get lease to get rent amount (leases have rent_amount from their unit)
       const { data: lease, error: leaseError } = await supabase
         .from('leases')
         .select('rent_amount, unit_id')
@@ -1011,7 +1059,6 @@ async function seedProductionDemoData() {
         continue
       }
 
-      // Get unit to get rent_due_date
       const { data: unit, error: unitError } = await supabase
         .from('units')
         .select('rent_due_date')
@@ -1024,80 +1071,129 @@ async function seedProductionDemoData() {
         )
       }
 
-      const rentAmount = lease.rent_amount
-      const dueDate = unit?.rent_due_date || 1
+      const rentAmount = Number(lease.rent_amount)
+      const dueDom = unit?.rent_due_date || 1
+      const pi = propertyIndexForPropertyId(propertyId)
 
-      // Create records for last 18 months (for comprehensive demo showcase)
       for (let monthOffset = 17; monthOffset >= 0; monthOffset--) {
-        const dueDateObj = new Date(today.getFullYear(), today.getMonth() - monthOffset, dueDate)
-        const isPastMonth = monthOffset > 0
-        const isCurrentMonth = monthOffset === 0
+        if (skipRentMonth(monthOffset, pi)) continue
+
+        const dueDateObj = new Date(today.getFullYear(), today.getMonth() - monthOffset, dueDom)
+        const r = det01(leaseIdx, monthOffset, 0)
+
+        let status: 'paid' | 'pending' | 'overdue'
+        if (monthOffset === 0) {
+          status = r > 0.3 ? 'paid' : 'pending'
+        } else if (monthOffset <= 2) {
+          if (r < 0.88) status = 'paid'
+          else if (r < 0.94) status = 'overdue'
+          else status = 'pending'
+        } else if (monthOffset >= 7 && monthOffset <= 9) {
+          if (r < 0.78) status = 'paid'
+          else if (r < 0.92) status = 'overdue'
+          else status = 'pending'
+        } else {
+          if (r < 0.91) status = 'paid'
+          else if (r < 0.97) status = 'overdue'
+          else status = 'pending'
+        }
+
+        let variedAmount = rentAmount
+        if (status === 'overdue' && det01(leaseIdx, monthOffset, 2) < 0.2) {
+          variedAmount = Math.max(100, rentAmount - 200)
+        } else if (det01(leaseIdx, monthOffset, 5) < 0.12) {
+          const d = (mix32(monthOffset + 1, leaseIdx + 2) % 101) - 50
+          variedAmount = Math.max(100, Math.round(rentAmount + d))
+        }
 
         let paidDate: string | null = null
-        let status: 'paid' | 'pending' | 'overdue' = 'pending'
         let lateFee = 0
+        const payLabels = ['Zelle', 'ACH transfer', 'Check', 'Venmo'] as const
+        let payment_method: 'external' | undefined
+        let payment_method_label: string | null | undefined
 
-        // Guarantee at least one overdue record (use first tenant-lease, 2 months ago)
-        if (!hasOverdueRecord && tenantLeaseIdx === 0 && monthOffset === 2) {
-          status = 'overdue'
-          lateFee = Math.floor(rentAmount * 0.1) // 10% late fee for overdue
-          hasOverdueRecord = true
-        } else if (isPastMonth) {
-          // Past months: 70% paid on time, 20% paid late, 10% outstanding
-          const rand = Math.random()
-          if (rand < 0.7) {
-            // Paid on time
-            status = 'paid'
-            paidDate = dueDateObj.toISOString().split('T')[0]
-          } else if (rand < 0.9) {
-            // Paid late
-            status = 'paid'
-            const daysLate = Math.floor(Math.random() * 5) + 1
-            paidDate = new Date(dueDateObj.getTime() + daysLate * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0]
-            lateFee = Math.floor(rentAmount * 0.05) // 5% late fee
-          } else {
-            // Outstanding
-            status = 'overdue'
-            lateFee = Math.floor(rentAmount * 0.1) // 10% late fee for overdue
+        if (status === 'paid') {
+          const isLate = det01(leaseIdx, monthOffset, 3) < 0.15
+          const daysAfter = isLate
+            ? 10 + (mix32(leaseIdx + 3, monthOffset + 1) % 18)
+            : 1 + (mix32(leaseIdx + 5, monthOffset) % 5)
+          const pd = new Date(dueDateObj)
+          pd.setDate(pd.getDate() + daysAfter)
+          paidDate = pd.toISOString().split('T')[0]
+          if (daysAfter > 5) lateFee = Math.floor(variedAmount * 0.05)
+          if (monthOffset === 0) {
+            const dom = 1 + (mix32(leaseIdx, 99) % Math.max(1, today.getDate()))
+            paidDate = new Date(today.getFullYear(), today.getMonth(), dom).toISOString().split('T')[0]
           }
-        } else if (isCurrentMonth) {
-          // Current month: Ensure most are paid with paid_date in current month
-          // This is critical for dashboard to show revenue > $0
-          // 85% paid (higher than past months to ensure revenue shows), 15% pending
-          if (Math.random() > 0.15) {
-            status = 'paid'
-
-            // Distribute paid_date throughout the month (days 1 to current day)
-            const currentDayOfMonth = today.getDate()
-            const randomDay = Math.floor(Math.random() * currentDayOfMonth) + 1
-            paidDate = new Date(today.getFullYear(), today.getMonth(), randomDay)
-              .toISOString()
-              .split('T')[0]
-          } else {
-            status = 'pending'
-          }
+          payment_method = 'external'
+          payment_method_label = payLabels[mix32(leaseIdx, monthOffset + 8) % payLabels.length]
+        } else if (status === 'overdue') {
+          lateFee = Math.floor(variedAmount * 0.1)
         }
 
-        // Validate rent amount before creating record
-        if (!rentAmount || rentAmount <= 0) {
-          console.warn(
-            `   ⚠️  Skipping rent record: invalid rent amount (${rentAmount}) for lease ${leaseId}`
-          )
-          continue
-        }
+        const notes =
+          status === 'overdue' && det01(leaseIdx, monthOffset, 4) < 0.3
+            ? 'Tenant notified. Payment arrangement in progress.'
+            : null
 
         rentRecords.push({
           property_id: propertyId,
           tenant_id: tenantId,
           lease_id: leaseId,
-          amount: rentAmount,
+          amount: variedAmount,
           due_date: dueDateObj.toISOString().split('T')[0],
           status,
           paid_date: paidDate,
+          late_fee: lateFee,
+          notes,
+          payment_method,
+          payment_method_label,
         })
       }
+    }
+
+    const nLeaseRows = uniqueLeaseRows.length || 1
+    const TARGET_EXTRA = Math.max(0, 220 - rentRecords.length)
+    for (let k = 0; k < TARGET_EXTRA; k++) {
+      const leaseIdx = k % nLeaseRows
+      const { tenantId, leaseId, propertyId } = uniqueLeaseRows[leaseIdx]
+      const monthOffset = Math.floor(k / nLeaseRows) % 18
+      const pi = propertyIndexForPropertyId(propertyId)
+      if (skipRentMonth(monthOffset, pi)) continue
+
+      const { data: lease } = await supabase
+        .from('leases')
+        .select('rent_amount, unit_id')
+        .eq('id', leaseId)
+        .single()
+      if (!lease?.rent_amount) continue
+
+      const addAmount = 65 + (mix32(k, monthOffset) % 8) * 10
+      const dueMid = new Date(today.getFullYear(), today.getMonth() - monthOffset, 15)
+      const r = mix32(k + 50, monthOffset) / 10000
+      let status: 'paid' | 'pending' | 'overdue' = 'paid'
+      let paidDate: string | null = new Date(dueMid.getTime() + 2 * 86400000).toISOString().split('T')[0]
+      if (monthOffset === 0 && r > 0.85) {
+        status = 'pending'
+        paidDate = null
+      } else if (monthOffset > 0 && r > 0.92) {
+        status = 'overdue'
+        paidDate = null
+      }
+
+      rentRecords.push({
+        property_id: propertyId,
+        tenant_id: tenantId,
+        lease_id: leaseId,
+        amount: addAmount,
+        due_date: dueMid.toISOString().split('T')[0],
+        status,
+        paid_date: paidDate,
+        late_fee: status === 'overdue' ? Math.floor(addAmount * 0.08) : 0,
+        notes: 'Parking / storage add-on (demo)',
+        payment_method: status === 'paid' ? 'external' : undefined,
+        payment_method_label: status === 'paid' ? 'Parking add-on (demo)' : undefined,
+      })
     }
 
     if (rentRecords.length === 0) {
@@ -1138,6 +1234,8 @@ async function seedProductionDemoData() {
           due_date: r.due_date,
           status: r.status,
           paid_date: r.paid_date,
+          late_fee: r.late_fee ?? 0,
+          notes: r.notes ?? undefined,
         }))
 
         const { data: fallbackData, error: fallbackError } = await supabase
@@ -1168,89 +1266,124 @@ async function seedProductionDemoData() {
     }
 
     // ========================================================================
-    // Step 6: Create Expenses (30+ records)
+    // Step 6: Create Expenses (72 curated rows / 18 months)
     // ========================================================================
     console.log('💸 Creating expenses...')
-    // Only use valid categories from schema: 'maintenance', 'utilities', 'repairs'
-    const expenseCategories: Array<'maintenance' | 'utilities' | 'repairs'> = [
-      'maintenance',
-      'utilities',
-      'repairs',
-    ]
-    const expenseNames: Record<string, string[]> = {
-      maintenance: [
-        'HVAC Maintenance',
-        'Gutter Cleaning',
-        'Lawn Mowing Service',
-        'Window Cleaning',
-        'Landscaping',
-        'Snow Removal',
-        'Pest Control',
-      ],
-      utilities: [
-        'Water Bill',
-        'Electricity Bill',
-        'Gas Bill',
-        'Trash Collection',
-        'Internet Service',
-      ],
-      repairs: [
-        'Plumbing Repair',
-        'Electrical Repair',
-        'Roof Repair',
-        'Appliance Repair',
-        'Drywall Repair',
-        'Door Lock Replacement',
-      ],
-    }
-
+    type ExpCat = 'maintenance' | 'utilities' | 'repairs'
     const expenses: Array<{
       property_id: string
-      description: string
-      category: 'maintenance' | 'utilities' | 'repairs' | null
+      name: string
       amount: number
-      expense_date: string
+      date: string
+      category: ExpCat | null
+      title?: string | null
+      notes?: string | null
+      is_recurring?: boolean
+      recurring_frequency?: 'monthly' | 'quarterly' | 'yearly' | null
     }> = []
 
-    // Distribute expenses across 18 months, ensuring current month has expenses for E2E tests
     for (let monthOffset = 17; monthOffset >= 0; monthOffset--) {
-      // For current month (monthOffset === 0), ensure expenses are spread throughout the month
-      // For past months, use random days
-      const dayOfMonth =
-        monthOffset === 0
-          ? Math.floor(Math.random() * (today.getDate() + 1)) + 1 // Days 1 to current day (so they appear in current month)
-          : Math.floor(Math.random() * 28) + 1
-      const expenseDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, dayOfMonth)
+      const y = today.getFullYear()
+      const m = today.getMonth() - monthOffset
+      const calMonth = ((m % 12) + 12) % 12
+      const winter = calMonth === 11 || calMonth === 0 || calMonth === 1
+      const winterMul = winter ? 1.22 : 1
 
-      // Create 4-6 expenses per month
-      const expensesThisMonth = Math.floor(Math.random() * 3) + 4
+      const pidAt = (i: number) => propertyIds[i % propertyIds.length]
+      const onDay = (day: number) =>
+        new Date(y, today.getMonth() - monthOffset, day).toISOString().split('T')[0]
 
-      for (let e = 0; e < expensesThisMonth; e++) {
-        const category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)]
-        const names = expenseNames[category]
-        const name = names[Math.floor(Math.random() * names.length)]
+      expenses.push({
+        property_id: pidAt(monthOffset),
+        name: 'Property management fee',
+        amount: Math.round((215 + (monthOffset % 4) * 12) * winterMul),
+        date: onDay(4),
+        category: 'maintenance',
+        title: 'Management fee',
+        notes: 'Demo: management_fee',
+        is_recurring: true,
+        recurring_frequency: 'monthly',
+      })
+      expenses.push({
+        property_id: pidAt(monthOffset + 1),
+        name: 'Landlord insurance (allocated)',
+        amount: Math.round((165 + (monthOffset % 5) * 10) * winterMul),
+        date: onDay(9),
+        category: 'utilities',
+        title: 'Insurance',
+        notes: 'Demo: insurance (utilities category in schema)',
+        is_recurring: true,
+        recurring_frequency: 'monthly',
+      })
 
-        // Realistic amounts based on category
-        let amount: number
-        if (category === 'repairs') {
-          amount = Math.floor(Math.random() * 400) + 100 // $100-$500
-        } else if (category === 'utilities') {
-          amount = Math.floor(Math.random() * 200) + 50 // $50-$250
-        } else {
-          // maintenance
-          amount = Math.floor(Math.random() * 300) + 50 // $50-$350
-        }
-
-        // Distribute across properties
-        const propertyIndex = expenses.length % propertyIds.length
-        const propertyId = propertyIds[propertyIndex]
-
+      if (monthOffset % 3 === 0) {
         expenses.push({
-          property_id: propertyId,
-          description: name,
-          category,
-          amount,
-          expense_date: expenseDate.toISOString().split('T')[0],
+          property_id: pidAt(monthOffset + 2),
+          name: 'Common area utilities (quarterly allocation)',
+          amount: Math.round(340 * winterMul),
+          date: onDay(12),
+          category: 'utilities',
+          title: 'Utility commons',
+          notes: 'Demo: quarterly commons',
+        })
+      } else {
+        expenses.push({
+          property_id: pidAt(monthOffset + 3),
+          name: winter ? 'Snow removal / ice melt' : 'Seasonal landscaping',
+          amount: Math.round((winter ? 280 : 195) * (winter ? 1.1 : 1)),
+          date: onDay(14),
+          category: 'maintenance',
+          title: winter ? 'Winter services' : 'Landscaping',
+          notes: 'Demo: seasonal',
+        })
+      }
+
+      if (monthOffset === 5) {
+        expenses.push({
+          property_id: pidAt(2),
+          name: 'Roof patch + emergency HVAC (combined invoice)',
+          amount: 3400 + 1200,
+          date: onDay(18),
+          category: 'repairs',
+          title: 'Major repair month',
+          notes: 'Demo: roof patch $3400 + HVAC $1200',
+        })
+      } else if (monthOffset === 11) {
+        expenses.push({
+          property_id: pidAt(5),
+          name: 'Interior painting — turnover',
+          amount: 1800,
+          date: onDay(21),
+          category: 'maintenance',
+          title: 'Improvements',
+          notes: 'Demo: painting',
+        })
+      } else if (monthOffset === 8) {
+        expenses.push({
+          property_id: pidAt(4),
+          name: 'Appliance replacement — dishwasher',
+          amount: 800,
+          date: onDay(16),
+          category: 'repairs',
+          notes: 'Demo: appliance replacement',
+        })
+      } else if (monthOffset === 14) {
+        expenses.push({
+          property_id: pidAt(1),
+          name: 'Plumbing repair — leak under sink',
+          amount: 450,
+          date: onDay(11),
+          category: 'repairs',
+          notes: 'Demo: plumbing',
+        })
+      } else {
+        expenses.push({
+          property_id: pidAt(monthOffset + 4),
+          name: 'Routine maintenance & supplies',
+          amount: Math.round((95 + (monthOffset % 6) * 18) * winterMul),
+          date: onDay(22),
+          category: 'maintenance',
+          notes: 'Demo: misc maintenance',
         })
       }
     }
@@ -1282,10 +1415,201 @@ async function seedProductionDemoData() {
     console.log(`✅ Created ${insertedExpenses.length} expense records\n`)
 
     // ========================================================================
-    // Step 7: Create Work Orders (15+ records, bidirectional)
+    // Step 7: Create Work Orders (18 curated — 4 open, 8 resolved, 6 closed)
     // ========================================================================
     console.log('🔧 Creating work orders...')
-    const workOrderCategories = ['Plumbing', 'HVAC', 'Electrical', 'Appliance', 'General']
+    type WoDef = {
+      description: string
+      category: string
+      status: 'submitted' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
+      daysAgo: number
+      by: 'tenant' | 'landlord'
+      sched?: boolean
+      resolveInDays?: number
+      /** Aligns with tenantLeases / tenantUserIds ordering from TENANT_SEED_ROWS + primary invite */
+      tenantLeaseIndex: number
+    }
+
+    const workOrderDefs: WoDef[] = [
+      {
+        description:
+          'HVAC not heating — bedroom zone. Bedroom is not getting heat. Living room is fine. Started 3 days ago.',
+        category: 'HVAC',
+        status: 'in_progress',
+        daysAgo: 4,
+        by: 'tenant',
+        sched: true,
+        tenantLeaseIndex: 1,
+      },
+      {
+        description:
+          'Kitchen faucet dripping constantly. Hot water faucet won\'t fully shut off. Dripping at ~1 drop/sec.',
+        category: 'Plumbing',
+        status: 'submitted',
+        daysAgo: 2,
+        by: 'tenant',
+        tenantLeaseIndex: 0,
+      },
+      {
+        description:
+          'Bathroom exhaust fan making grinding noise. Started 1 week ago, getting louder. Vibrates the ceiling.',
+        category: 'General',
+        status: 'submitted',
+        daysAgo: 7,
+        by: 'tenant',
+        tenantLeaseIndex: 5,
+      },
+      {
+        description:
+          'Bedroom window latch broken — won\'t lock. Latch snapped off. Window can be opened from outside.',
+        category: 'General',
+        status: 'in_progress',
+        daysAgo: 3,
+        by: 'tenant',
+        tenantLeaseIndex: 7,
+      },
+      {
+        description:
+          'Dishwasher not draining. Standing water after cycle. Checked filter — still backed up.',
+        category: 'Appliance',
+        status: 'resolved',
+        daysAgo: 18,
+        by: 'tenant',
+        resolveInDays: 8,
+        tenantLeaseIndex: 4,
+      },
+      {
+        description:
+          'Mold spots in bathroom corner. Small mold growth near shower grout. Ventilation may be issue.',
+        category: 'Plumbing',
+        status: 'resolved',
+        daysAgo: 22,
+        by: 'tenant',
+        resolveInDays: 8,
+        tenantLeaseIndex: 8,
+      },
+      {
+        description:
+          'Front door buzzer not working. Intercom buzzes but door release doesn\'t open. Has been like this for a week.',
+        category: 'Electrical',
+        status: 'resolved',
+        daysAgo: 30,
+        by: 'tenant',
+        sched: true,
+        resolveInDays: 6,
+        tenantLeaseIndex: 3,
+      },
+      {
+        description:
+          'Dryer takes 2+ cycles to dry clothes. Heating element seems weak. Clothes still damp after full cycle.',
+        category: 'Appliance',
+        status: 'resolved',
+        daysAgo: 35,
+        by: 'tenant',
+        resolveInDays: 10,
+        tenantLeaseIndex: 6,
+      },
+      {
+        description:
+          'Parking spot dispute with neighbor. Upstairs neighbor using assigned parking spot #4. Need resolution.',
+        category: 'General',
+        status: 'resolved',
+        daysAgo: 60,
+        by: 'tenant',
+        resolveInDays: 8,
+        tenantLeaseIndex: 1,
+      },
+      {
+        description:
+          'Roof deck furniture missing — 2 chairs. Two outdoor chairs from roof deck storage are gone. Unsure if moved or stolen.',
+        category: 'General',
+        status: 'resolved',
+        daysAgo: 75,
+        by: 'tenant',
+        resolveInDays: 7,
+        tenantLeaseIndex: 5,
+      },
+      {
+        description:
+          'Hot water intermittent — shower goes cold. Water heater cycling. Hot water lasts ~8 mins in morning rush.',
+        category: 'Plumbing',
+        status: 'resolved',
+        daysAgo: 90,
+        by: 'tenant',
+        resolveInDays: 8,
+        tenantLeaseIndex: 0,
+      },
+      {
+        description:
+          'Pest issue — ants in kitchen. Trail of ants near sink and cabinet corners. Appeared after rain.',
+        category: 'General',
+        status: 'resolved',
+        daysAgo: 110,
+        by: 'tenant',
+        resolveInDays: 10,
+        tenantLeaseIndex: 9,
+      },
+      {
+        description:
+          'AC unit not cooling below 78°F. Window AC runs constantly but won\'t get below 78. Filters cleaned.',
+        category: 'HVAC',
+        status: 'closed',
+        daysAgo: 130,
+        by: 'tenant',
+        resolveInDays: 12,
+        tenantLeaseIndex: 4,
+      },
+      {
+        description:
+          'Garbage disposal jammed. Humming but not spinning. Reset button pressed — still jammed.',
+        category: 'Plumbing',
+        status: 'closed',
+        daysAgo: 145,
+        by: 'tenant',
+        resolveInDays: 8,
+        tenantLeaseIndex: 7,
+      },
+      {
+        description:
+          'Light fixture flickering in hallway. Overhead hallway light flickers when on for more than 5 minutes.',
+        category: 'Electrical',
+        status: 'closed',
+        daysAgo: 160,
+        by: 'tenant',
+        resolveInDays: 7,
+        tenantLeaseIndex: 3,
+      },
+      {
+        description:
+          'Bathroom tiles cracked near tub edge. 3 tiles along tub edge cracked. Worried about water getting behind.',
+        category: 'General',
+        status: 'closed',
+        daysAgo: 180,
+        by: 'tenant',
+        resolveInDays: 10,
+        tenantLeaseIndex: 6,
+      },
+      {
+        description:
+          'Back door deadbolt stiff — hard to lock. Deadbolt requires a lot of force. Key gets stuck occasionally.',
+        category: 'General',
+        status: 'closed',
+        daysAgo: 200,
+        by: 'tenant',
+        resolveInDays: 8,
+        tenantLeaseIndex: 2,
+      },
+      {
+        description:
+          'Radiator making banging sounds. Loud banging from bedroom radiator when heat first kicks on in morning.',
+        category: 'HVAC',
+        status: 'closed',
+        daysAgo: 220,
+        by: 'tenant',
+        resolveInDays: 10,
+        tenantLeaseIndex: 0,
+      },
+    ]
 
     const workOrders: Array<{
       property_id: string | null
@@ -1304,176 +1628,89 @@ async function seedProductionDemoData() {
       updated_at?: string
     }> = []
 
-    // Tenant-created work orders (8-10)
-    const tenantCreatedCount = 9
-    for (let i = 0; i < tenantCreatedCount && i < tenantLeases.length; i++) {
-      const { tenantId, leaseId, propertyId } = tenantLeases[i]
-      const tenantUserId = tenantUserIds[i + 1] || demoTenantUserId // +1 because first is demo
-
-      const statusOptions: Array<'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved'> =
-        ['submitted', 'seen', 'scheduled', 'in_progress', 'resolved']
-      const status = statusOptions[Math.floor(Math.random() * statusOptions.length)]
-      const category = workOrderCategories[Math.floor(Math.random() * workOrderCategories.length)]
-
-      const descriptions: Record<string, string[]> = {
-        Plumbing: [
-          'Kitchen sink is leaking',
-          'Toilet not flushing properly',
-          'Shower head dripping',
-        ],
-        HVAC: ['AC not cooling', 'Heating not working', 'Strange noise from furnace'],
-        Electrical: ['Outlet not working', 'Light switch broken', 'Circuit breaker keeps tripping'],
-        Appliance: ['Dishwasher not draining', 'Refrigerator making noise', 'Oven not heating'],
-        General: ['Door lock is stuck', "Window won't close", 'Carpet stain'],
-      }
-
-      const descList = descriptions[category] || ['Maintenance request']
-      const description = descList[Math.floor(Math.random() * descList.length)]
-
-      let scheduledDate: string | null = null
-      let internalNotes: string | null = null
-
-      if (status === 'scheduled' || status === 'in_progress') {
-        const daysFromNow = Math.floor(Math.random() * 7) + 1
-        scheduledDate = new Date(today.getTime() + daysFromNow * 24 * 60 * 60 * 1000).toISOString()
-        internalNotes = 'Scheduled maintenance visit'
-      }
-
-      if (status === 'resolved') {
-        internalNotes = 'Issue resolved'
-      }
-
-      workOrders.push({
-        property_id: propertyId,
-        tenant_id: tenantId,
-        lease_id: leaseId,
-        status,
-        category,
-        description,
-        public_description: description,
-        internal_notes: internalNotes,
-        created_by: tenantUserId,
-        created_by_role: 'tenant',
-        scheduled_date: scheduledDate,
-        visibility_to_tenants: true,
-      })
-    }
-
-    // Landlord-created work orders (5-7)
-    const landlordCreatedCount = 6
-    let hasClosedWorkOrder = false
-    for (let i = 0; i < landlordCreatedCount && i < tenantLeases.length; i++) {
-      const { tenantId, leaseId, propertyId } = tenantLeases[i]
-
-      const statusOptions: Array<'scheduled' | 'in_progress' | 'resolved' | 'closed'> = [
-        'scheduled',
-        'in_progress',
-        'resolved',
-        'closed',
-      ]
-      // Guarantee at least one closed work order for tests (first landlord-created work order)
-      let status: 'scheduled' | 'in_progress' | 'resolved' | 'closed'
-      if (!hasClosedWorkOrder && i === 0) {
-        status = 'closed'
-        hasClosedWorkOrder = true
+    for (let i = 0; i < workOrderDefs.length; i++) {
+      const def = workOrderDefs[i]
+      if (tenantLeases.length === 0) break
+      const idx = Math.min(def.tenantLeaseIndex, tenantLeases.length - 1)
+      const tl = tenantLeases[idx]
+      const tenantUserId = tenantUserIds[idx] ?? demoTenantUserId
+      const created = new Date(today.getTime() - def.daysAgo * 86400000)
+      const createdIso = created.toISOString()
+      let updatedIso = createdIso
+      if (def.status === 'resolved' || def.status === 'closed') {
+        const rd = def.resolveInDays ?? 4 + (i % 10)
+        updatedIso = new Date(created.getTime() + rd * 86400000).toISOString()
       } else {
-        status = statusOptions[Math.floor(Math.random() * statusOptions.length)]
+        updatedIso = new Date(created.getTime() + 86400000).toISOString()
       }
-      const category = workOrderCategories[Math.floor(Math.random() * workOrderCategories.length)]
-
-      const descriptions: Record<string, string[]> = {
-        Plumbing: ['Routine pipe inspection', 'Annual plumbing maintenance'],
-        HVAC: ['HVAC system maintenance', 'Filter replacement'],
-        Electrical: ['Electrical safety inspection', 'Outlet upgrade'],
-        Appliance: ['Appliance inspection', 'Maintenance check'],
-        General: ['Property inspection', 'General maintenance'],
-      }
-
-      const descList = descriptions[category] || ['Maintenance task']
-      const description = descList[Math.floor(Math.random() * descList.length)]
-
       let scheduledDate: string | null = null
-      if (status === 'scheduled' || status === 'in_progress') {
-        const daysFromNow = Math.floor(Math.random() * 10) + 1
-        scheduledDate = new Date(today.getTime() + daysFromNow * 24 * 60 * 60 * 1000).toISOString()
+      if (def.sched) {
+        scheduledDate = new Date(today.getTime() + 3 * 86400000).toISOString()
       }
+      const internal =
+        def.status === 'resolved' || def.status === 'closed'
+          ? `Closed after ${def.resolveInDays ?? 4}d (demo)`
+          : def.sched
+            ? 'Vendor scheduled (demo)'
+            : 'Awaiting triage (demo)'
 
       workOrders.push({
-        property_id: propertyId,
-        tenant_id: tenantId,
-        lease_id: leaseId,
-        status,
-        category,
-        description,
-        public_description: description,
-        internal_notes: 'Landlord-initiated maintenance',
-        created_by: demoLandlordId,
-        created_by_role: 'landlord',
+        property_id: tl.propertyId,
+        tenant_id: tl.tenantId,
+        lease_id: tl.leaseId,
+        status: def.status,
+        category: def.category,
+        description: def.description,
+        public_description: def.description,
+        internal_notes: internal,
+        created_by: def.by === 'tenant' ? tenantUserId : demoLandlordId,
+        created_by_role: def.by,
         scheduled_date: scheduledDate,
         visibility_to_tenants: true,
+        created_at: createdIso,
+        updated_at: updatedIso,
       })
-    }
-
-    // Historical work orders (~2 per month × 18 months) for timelines/charts; same leases/properties as rent
-    if (tenantLeases.length > 0) {
-      const histLabels = [
-        'Seasonal HVAC check',
-        'Smoke detector battery',
-        'Gutter clearing',
-        'Caulking touch-up',
-        'Deck inspection',
-        'Pest treatment follow-up',
-      ]
-      let histIdx = 0
-      for (let monthsAgo = 17; monthsAgo >= 0; monthsAgo--) {
-        for (let k = 0; k < 2; k++) {
-          const tlIdx = histIdx % tenantLeases.length
-          const { tenantId, leaseId, propertyId } = tenantLeases[tlIdx]
-          const tenantUserId = tenantUserIds[tlIdx] ?? demoTenantUserId
-          const day = Math.floor(Math.random() * 27) + 1
-          const created = new Date(today.getFullYear(), today.getMonth() - monthsAgo, day)
-          const createdIso = created.toISOString()
-          const tenantCreated = k === 0
-          let status: 'submitted' | 'seen' | 'scheduled' | 'in_progress' | 'resolved' | 'closed'
-          if (monthsAgo >= 2) {
-            status = tenantCreated ? 'resolved' : 'closed'
-          } else if (monthsAgo === 1) {
-            status = tenantCreated ? 'seen' : 'in_progress'
-          } else {
-            status = tenantCreated ? 'submitted' : 'scheduled'
-          }
-          const category = workOrderCategories[histIdx % workOrderCategories.length]
-          const description = `${histLabels[histIdx % histLabels.length]} — ${category}`
-
-          workOrders.push({
-            property_id: propertyId,
-            tenant_id: tenantId,
-            lease_id: leaseId,
-            status,
-            category,
-            description,
-            public_description: description,
-            internal_notes: tenantCreated ? 'Historical tenant request' : 'Historical landlord task',
-            created_by: tenantCreated ? tenantUserId : demoLandlordId,
-            created_by_role: tenantCreated ? 'tenant' : 'landlord',
-            scheduled_date: null,
-            visibility_to_tenants: true,
-            created_at: createdIso,
-            updated_at: createdIso,
-          })
-          histIdx += 1
-        }
-      }
     }
 
     const { error: workOrderError } = await supabase.from('maintenance_requests').insert(workOrders)
     if (workOrderError) {
       console.warn(`   ⚠️  Work orders error: ${workOrderError.message}`)
     } else {
-      const recentCount = tenantCreatedCount + landlordCreatedCount
-      console.log(
-        `✅ Created ${workOrders.length} work orders (${recentCount} recent: ${tenantCreatedCount} tenant + ${landlordCreatedCount} landlord; ${workOrders.length - recentCount} historical over 18mo)\n`
-      )
+      console.log(`✅ Created ${workOrders.length} work orders (18 curated statuses)\n`)
+    }
+
+    // ========================================================================
+    // Step 7b: Documents (8 landlord-visible demo files)
+    // ========================================================================
+    console.log('📄 Creating documents...')
+    const documentSeeds = [
+      { file_name: 'Lease Agreement — Willow 2BR Flat (executed).pdf', file_type: 'application/pdf' },
+      { file_name: 'Pet Addendum — Harbor View 3BR House.pdf', file_type: 'application/pdf' },
+      { file_name: 'Move-in Inspection — Mission Loft Studio.pdf', file_type: 'application/pdf' },
+      { file_name: 'Renters Insurance Certificate — Presidio 1BR.pdf', file_type: 'application/pdf' },
+      { file_name: 'HOA Rules Acknowledgment — Lake Merritt 2BR Condo.pdf', file_type: 'application/pdf' },
+      { file_name: 'CAM Lease Schedule — SoMa Commercial Bay.pdf', file_type: 'application/pdf' },
+      { file_name: 'Annual Smoke & CO Inspection — Rockridge Townhouse.pdf', file_type: 'application/pdf' },
+      { file_name: 'Roof Deck Addendum — North Beach 1BR Condo.pdf', file_type: 'application/pdf' },
+    ]
+    const documentInserts = documentSeeds.map((doc, d) => {
+      const prop = createdProperties[d % createdProperties.length]
+      const tl = tenantLeases.find(t => t.propertyId === prop.id)
+      return {
+        property_id: prop.id,
+        lease_id: tl?.leaseId ?? null,
+        uploaded_by: demoLandlordId,
+        file_url: `https://demo.uhome.internal/storage/seed/${encodeURIComponent(doc.file_name)}`,
+        file_name: doc.file_name,
+        file_type: doc.file_type,
+        visibility: 'landlord' as const,
+      }
+    })
+    const { error: documentsError } = await supabase.from('documents').insert(documentInserts)
+    if (documentsError) {
+      console.warn(`   ⚠️  Documents error: ${documentsError.message}`)
+    } else {
+      console.log(`✅ Created ${documentInserts.length} document records\n`)
     }
 
     // ========================================================================
@@ -1625,7 +1862,11 @@ async function seedProductionDemoData() {
     console.log(`   ✅ Rent Records: ${rentRecords.length}`)
     console.log(`   ✅ Expenses: ${expenses.length}`)
     console.log(`   ✅ Work Orders: ${workOrders.length}`)
+    console.log(`   ✅ Documents: ${documentInserts.length}`)
     console.log(`   ✅ Messages: ${messages.length}\n`)
+    console.log(
+      `Seeded: ${createdProperties.length} properties, ${tenantLeases.length} tenants, ${rentRecords.length} rent records, ${insertedExpenses.length} expenses, ${workOrders.length} work orders\n`
+    )
 
     // ========================================================================
     // Verification: Query actual counts from database
@@ -1732,9 +1973,9 @@ async function seedProductionDemoData() {
       // Final assertions
       console.log('\n✅ Verification complete\n')
 
-      if ((actualTenantCount || 0) < 8) {
+      if ((actualTenantCount || 0) < 10) {
         console.error(
-          '❌ FAILED: Expected at least 8 tenants, but only found',
+          '❌ FAILED: Expected at least 10 tenants, but only found',
           actualTenantCount || 0
         )
         console.error('   This indicates tenant creation loop failed. Check error logs above.')
@@ -1745,7 +1986,7 @@ async function seedProductionDemoData() {
         console.error('   Dashboard will show $0 revenue. Check rent record creation logic.')
       }
 
-      if ((actualTenantCount || 0) >= 8 && (currentMonthPaidCount || 0) > 0) {
+      if ((actualTenantCount || 0) >= 10 && (currentMonthPaidCount || 0) > 0) {
         console.log('✅ All critical verifications passed!')
       }
     } catch (verifyError) {

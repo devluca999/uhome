@@ -13,11 +13,12 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { MatteLayer } from '@/components/ui/matte-layer'
-import { Plus, Home, Filter, X, Search } from 'lucide-react'
+import { Plus, Home, Filter, X, Search, SlidersHorizontal } from 'lucide-react'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 import { useAuth } from '@/contexts/auth-context'
 import { useSubscription } from '@/hooks/use-subscription'
 import { MobileFab } from '@/components/ui/mobile-fab'
+import { Drawer } from '@/components/ui/drawer'
 
 type PropertyTypeFilter = string | 'all'
 type OccupancyFilter = 'occupied' | 'vacant' | 'all'
@@ -40,6 +41,7 @@ export function LandlordProperties() {
   const [submitting, setSubmitting] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [planGateNotice, setPlanGateNotice] = useState<string | null>(null)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('action') !== 'add') return
@@ -198,6 +200,7 @@ export function LandlordProperties() {
     occupancyFilter,
     rentRangeFilter,
     sortFilter,
+    statusFilter,
     tenants,
     rentRanges,
   ])
@@ -230,7 +233,7 @@ export function LandlordProperties() {
 
   if (showForm) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 max-w-2xl relative overflow-x-hidden">
         <GrainOverlay />
         <div className="relative z-20 isolate">
           {createError && (
@@ -255,7 +258,7 @@ export function LandlordProperties() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate] overflow-x-hidden">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">
@@ -297,143 +300,258 @@ export function LandlordProperties() {
 
         {/* Filter Bar */}
         {properties.length > 0 && (
-          <Card className="glass-card mb-6 max-w-4xl">
-            <CardContent className="pt-4 pb-4">
-              <div className="space-y-3">
-                {/* Search Input Row */}
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name, address, or city..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="flex-1 h-9 bg-background/50"
-                  />
-                </div>
-
-                {/* Filters Row */}
-                <div className="flex flex-wrap items-center gap-3">
+          <>
+            <Card className="glass-card mb-6 max-w-4xl">
+              <CardContent className="pt-4 pb-4">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">Filters:</span>
+                    <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <Input
+                      type="text"
+                      placeholder="Search by name, address, or city..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="flex-1 h-9 bg-background/50 min-w-0"
+                    />
                   </div>
 
-                  {/* Property Type Filter */}
-                  {propertyTypes.length > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-xs text-muted-foreground whitespace-nowrap">
-                        Type:
-                      </label>
-                      <select
-                        value={propertyTypeFilter}
-                        onChange={e => setPropertyTypeFilter(e.target.value)}
-                        className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <option value="all">All Types</option>
-                        {propertyTypes.map(type => (
-                          <option key={type} value={type}>
-                            {type}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="md:hidden w-full mt-2"
+                    type="button"
+                    onClick={() => setShowMobileFilters(true)}
+                  >
+                    <SlidersHorizontal className="w-4 h-4 mr-2" />
+                    Filters & Sort
+                  </Button>
+
+                  <div className="hidden md:block">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">Filters:</span>
+                      </div>
+
+                      {propertyTypes.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-xs text-muted-foreground whitespace-nowrap">
+                            Type:
+                          </label>
+                          <select
+                            value={propertyTypeFilter}
+                            onChange={e => setPropertyTypeFilter(e.target.value)}
+                            className="flex h-8 min-w-[100px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <option value="all">All Types</option>
+                            {propertyTypes.map(type => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-muted-foreground whitespace-nowrap">
+                          Status:
+                        </label>
+                        <select
+                          value={statusFilter}
+                          onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                          className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="all">All</option>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-muted-foreground whitespace-nowrap">
+                          Occupancy:
+                        </label>
+                        <select
+                          value={occupancyFilter}
+                          onChange={e => setOccupancyFilter(e.target.value as OccupancyFilter)}
+                          className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="all">All</option>
+                          <option value="occupied">Occupied</option>
+                          <option value="vacant">Vacant</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-muted-foreground whitespace-nowrap">
+                          Rent:
+                        </label>
+                        <select
+                          value={rentRangeFilter}
+                          onChange={e => setRentRangeFilter(e.target.value as RentRangeFilter)}
+                          className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="all">All Ranges</option>
+                          <option value="low">Low (≤ ${rentRanges.low.toLocaleString()})</option>
+                          <option value="medium">
+                            Med (${rentRanges.low.toLocaleString()}-${rentRanges.high.toLocaleString()})
                           </option>
-                        ))}
-                      </select>
+                          <option value="high">High (≥ ${rentRanges.medium.toLocaleString()})</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-muted-foreground whitespace-nowrap">
+                          Sort:
+                        </label>
+                        <select
+                          value={sortFilter}
+                          onChange={e => setSortFilter(e.target.value as SortFilter)}
+                          className="flex h-8 min-w-[130px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="newest">Newest First</option>
+                          <option value="oldest">Oldest First</option>
+                          <option value="rent_high">Rent: High→Low</option>
+                          <option value="rent_low">Rent: Low→High</option>
+                          <option value="name_az">Name: A-Z</option>
+                          <option value="name_za">Name: Z-A</option>
+                        </select>
+                      </div>
+
+                      {(searchQuery.trim() !== '' ||
+                        propertyTypeFilter !== 'all' ||
+                        statusFilter !== 'all' ||
+                        occupancyFilter !== 'all' ||
+                        rentRangeFilter !== 'all' ||
+                        sortFilter !== 'newest') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('')
+                            setPropertyTypeFilter('all')
+                            setStatusFilter('all')
+                            setOccupancyFilter('all')
+                            setRentRangeFilter('all')
+                            setSortFilter('newest')
+                          }}
+                          className="ml-auto h-8 text-xs"
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Clear
+                        </Button>
+                      )}
                     </div>
-                  )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                  {/* Status Filter */}
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">
-                      Status:
-                    </label>
+            <Drawer
+              isOpen={showMobileFilters}
+              onClose={() => setShowMobileFilters(false)}
+              title="Filters & Sort"
+              side="bottom"
+              className="max-w-none max-h-[85vh]"
+            >
+              <div className="flex flex-col gap-4 w-full">
+                {propertyTypes.length > 0 && (
+                  <div className="space-y-1.5 w-full">
+                    <label className="text-xs font-medium text-muted-foreground">Type</label>
                     <select
-                      value={statusFilter}
-                      onChange={e => setStatusFilter(e.target.value as StatusFilter)}
-                      className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={propertyTypeFilter}
+                      onChange={e => setPropertyTypeFilter(e.target.value)}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <option value="all">All</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
+                      <option value="all">All Types</option>
+                      {propertyTypes.map(type => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
                     </select>
                   </div>
-
-                  {/* Occupancy Filter */}
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">
-                      Occupancy:
-                    </label>
-                    <select
-                      value={occupancyFilter}
-                      onChange={e => setOccupancyFilter(e.target.value as OccupancyFilter)}
-                      className="flex h-8 min-w-[90px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">All</option>
-                      <option value="occupied">Occupied</option>
-                      <option value="vacant">Vacant</option>
-                    </select>
-                  </div>
-
-                  {/* Rent Range Filter */}
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">Rent:</label>
-                    <select
-                      value={rentRangeFilter}
-                      onChange={e => setRentRangeFilter(e.target.value as RentRangeFilter)}
-                      className="flex h-8 min-w-[110px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">All Ranges</option>
-                      <option value="low">Low (≤ ${rentRanges.low.toLocaleString()})</option>
-                      <option value="medium">
-                        Med (${rentRanges.low.toLocaleString()}-${rentRanges.high.toLocaleString()})
-                      </option>
-                      <option value="high">High (≥ ${rentRanges.medium.toLocaleString()})</option>
-                    </select>
-                  </div>
-
-                  {/* Sort Filter */}
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">Sort:</label>
-                    <select
-                      value={sortFilter}
-                      onChange={e => setSortFilter(e.target.value as SortFilter)}
-                      className="flex h-8 min-w-[130px] rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="newest">Newest First</option>
-                      <option value="oldest">Oldest First</option>
-                      <option value="rent_high">Rent: High→Low</option>
-                      <option value="rent_low">Rent: Low→High</option>
-                      <option value="name_az">Name: A-Z</option>
-                      <option value="name_za">Name: Z-A</option>
-                    </select>
-                  </div>
-
-                  {/* Clear All Filters */}
-                  {(searchQuery.trim() !== '' ||
-                    propertyTypeFilter !== 'all' ||
-                    statusFilter !== 'all' ||
-                    occupancyFilter !== 'all' ||
-                    rentRangeFilter !== 'all' ||
-                    sortFilter !== 'newest') && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery('')
-                        setPropertyTypeFilter('all')
-                        setStatusFilter('all')
-                        setOccupancyFilter('all')
-                        setRentRangeFilter('all')
-                        setSortFilter('newest')
-                      }}
-                      className="ml-auto h-8 text-xs"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Clear
-                    </Button>
-                  )}
+                )}
+                <div className="space-y-1.5 w-full">
+                  <label className="text-xs font-medium text-muted-foreground">Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5 w-full">
+                  <label className="text-xs font-medium text-muted-foreground">Occupancy</label>
+                  <select
+                    value={occupancyFilter}
+                    onChange={e => setOccupancyFilter(e.target.value as OccupancyFilter)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All</option>
+                    <option value="occupied">Occupied</option>
+                    <option value="vacant">Vacant</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5 w-full">
+                  <label className="text-xs font-medium text-muted-foreground">Rent range</label>
+                  <select
+                    value={rentRangeFilter}
+                    onChange={e => setRentRangeFilter(e.target.value as RentRangeFilter)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="all">All Ranges</option>
+                    <option value="low">Low (≤ ${rentRanges.low.toLocaleString()})</option>
+                    <option value="medium">
+                      Med (${rentRanges.low.toLocaleString()}-${rentRanges.high.toLocaleString()})
+                    </option>
+                    <option value="high">High (≥ ${rentRanges.medium.toLocaleString()})</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5 w-full">
+                  <label className="text-xs font-medium text-muted-foreground">Sort</label>
+                  <select
+                    value={sortFilter}
+                    onChange={e => setSortFilter(e.target.value as SortFilter)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="rent_high">Rent: High→Low</option>
+                    <option value="rent_low">Rent: Low→High</option>
+                    <option value="name_az">Name: A-Z</option>
+                    <option value="name_za">Name: Z-A</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    className="w-full"
+                    onClick={() => {
+                      setSearchQuery('')
+                      setPropertyTypeFilter('all')
+                      setStatusFilter('all')
+                      setOccupancyFilter('all')
+                      setRentRangeFilter('all')
+                      setSortFilter('newest')
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Clear filters
+                  </Button>
+                  <Button type="button" className="w-full" onClick={() => setShowMobileFilters(false)}>
+                    Done
+                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </Drawer>
+          </>
         )}
 
         {loading ? (

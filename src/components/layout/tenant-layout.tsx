@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+﻿import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useMemo, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Home, DollarSign, Wrench, MessageSquare } from 'lucide-react'
@@ -16,12 +16,13 @@ import { useIsMobile } from '@/hooks/use-is-mobile'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { mobilePageTitleForPath } from '@/lib/mobile-page-title'
 
 const ALL_NAV_ITEMS = [
   { path: '/tenant/dashboard', label: 'Dashboard', required: true },
-  { path: '/tenant/finances', label: 'Payment History', required: false },
+  { path: '/tenant/finances', label: 'Payments', required: false },
   { path: '/tenant/household', label: 'Household', required: false },
-  { path: '/tenant/maintenance', label: 'Maintenance', required: false },
+  { path: '/tenant/maintenance', label: 'Requests', required: false },
   { path: '/tenant/documents', label: 'Documents', required: false },
   { path: '/tenant/messages', label: 'Messages', required: false },
   { path: '/tenant/notifications', label: 'Notifications', required: false },
@@ -30,8 +31,8 @@ const ALL_NAV_ITEMS = [
 
 const MOBILE_PRIMARY_ITEMS = [
   { path: '/tenant/dashboard', label: 'Home', icon: Home },
-  { path: '/tenant/finances', label: 'Finances', icon: DollarSign },
-  { path: '/tenant/maintenance', label: 'Issues', icon: Wrench },
+  { path: '/tenant/finances', label: 'Payments', icon: DollarSign },
+  { path: '/tenant/maintenance', label: 'Requests', icon: Wrench },
   { path: '/tenant/messages', label: 'Messages', icon: MessageSquare },
 ] as const
 
@@ -61,6 +62,11 @@ export function TenantLayout() {
     return 'header'
   }, [settings.navLayout])
 
+  const mobilePageTitle = useMemo(
+    () => mobilePageTitleForPath(location.pathname, ALL_NAV_ITEMS),
+    [location.pathname]
+  )
+
   const visibleNavItems = useMemo(() => {
     let items = ALL_NAV_ITEMS.filter(
       item => !settings.hiddenNavItems.includes(item.path) || item.required
@@ -88,8 +94,8 @@ export function TenantLayout() {
     return (
       <>
         <AdminDemoToolbar />
-        <div className="min-h-screen bg-background">
-          <MobileTopBar homeTo="/tenant/dashboard" />
+        <div className="min-h-screen bg-background overflow-x-hidden">
+          <MobileTopBar homeTo="/tenant/dashboard" pageTitle={mobilePageTitle} />
           <main
             className="pb-20 overscroll-contain"
             style={{
@@ -130,14 +136,14 @@ export function TenantLayout() {
   return (
     <>
       <AdminDemoToolbar />
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-x-hidden">
         <nav className="glass-nav sticky top-0 z-50">
           <div className="container mx-auto px-4">
-            <div className="flex h-16 items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex h-16 min-w-0 items-center justify-between gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-4 overflow-hidden">
                 <Link
                   to="/tenant/dashboard"
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  className="flex shrink-0 items-center gap-3 hover:opacity-80 transition-opacity"
                 >
                   <img
                     src="/logo.png"
@@ -164,7 +170,7 @@ export function TenantLayout() {
                           isActive
                             ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
                             : 'bg-transparent hover:bg-muted',
-                          'px-4 py-2 rounded-md transition-all duration-200'
+                          'px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap'
                         )}
                       >
                         <Link to={item.path}>{item.label}</Link>
@@ -173,7 +179,7 @@ export function TenantLayout() {
                   })}
                 </nav>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex shrink-0 items-center gap-4">
                 <span className="text-sm text-muted-foreground">
                   {devBypass ? 'Dev Mode' : user?.email}
                 </span>
@@ -224,3 +230,4 @@ export function TenantLayout() {
     </>
   )
 }
+

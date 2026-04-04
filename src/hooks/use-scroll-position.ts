@@ -1,0 +1,17 @@
+import { useState, useEffect } from 'react'
+
+/**
+ * Tracks `window.scrollY` for scroll-linked UI (e.g. mobile top bar title).
+ */
+export function useScrollPosition() {
+  const [scrollY, setScrollY] = useState(0)
+
+  useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return scrollY
+}

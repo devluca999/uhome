@@ -58,6 +58,8 @@ import { useAuth } from '@/contexts/auth-context'
 import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import { FirstRunPrompt } from '@/components/landlord/first-run-prompt'
 import { useIsMobile } from '@/hooks/use-is-mobile'
+import { MobileScrollFadeHeading } from '@/components/layout/mobile-scroll-fade-heading'
+import { LandlordDashboardLoadingSkeleton } from '@/components/dashboard/dashboard-loading-skeleton'
 
 type LandlordDashboardRpcRow = {
   total_properties: unknown
@@ -331,6 +333,7 @@ export function LandlordDashboard() {
   const hasErrors = propertiesError || tenantsError || requestsError
 
   const isFirstRunEmpty = !propertiesLoading && properties.length === 0
+  const dashboardDataLoading = propertiesLoading || rentRecordsLoading || expensesLoading
 
   // Calculate occupancy rate using centralized calculation (consistent with Finances page)
   const occupancyRate = useMemo(() => {
@@ -675,13 +678,11 @@ export function LandlordDashboard() {
           </div>
         )}
 
-        {(propertiesLoading || rentRecordsLoading || expensesLoading) && (
-          <div className="mb-6 text-center py-8">
-            <p className="text-muted-foreground">Loading dashboard data...</p>
-          </div>
+        {dashboardDataLoading && (
+          <LandlordDashboardLoadingSkeleton isMobile={isMobile} />
         )}
 
-        {isFirstRunEmpty ? (
+        {!dashboardDataLoading && (isFirstRunEmpty ? (
           <div className="mb-8">
             <FirstRunPrompt />
           </div>
@@ -704,19 +705,21 @@ export function LandlordDashboard() {
                 <option value="yearly">Yearly</option>
               </select>
             </div>
-            <div className="text-center pt-1">
-              <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
-                {formatCurrency(periodRevenue)}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                collected{' '}
-                {dashboardTimeline === 'monthly'
-                  ? 'this month'
-                  : dashboardTimeline === 'quarterly'
-                    ? 'this quarter'
-                    : 'this year'}
-              </p>
-            </div>
+            <MobileScrollFadeHeading srTitle="Dashboard">
+              <div className="text-center pt-1">
+                <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+                  {formatCurrency(periodRevenue)}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  collected{' '}
+                  {dashboardTimeline === 'monthly'
+                    ? 'this month'
+                    : dashboardTimeline === 'quarterly'
+                      ? 'this quarter'
+                      : 'this year'}
+                </p>
+              </div>
+            </MobileScrollFadeHeading>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="glass-card rounded-xl p-3 border border-border/40">
                 <p className="text-base font-semibold tabular-nums">
@@ -906,7 +909,7 @@ export function LandlordDashboard() {
               </div>
             </div>
           </div>
-        )}
+        ))}
 
         {!isFirstRunEmpty && !isMobile && rpcStats && rpcStats.monthly_rent_due > 0 && (
           <div className="text-xs text-muted-foreground text-center mb-6 -mt-2">

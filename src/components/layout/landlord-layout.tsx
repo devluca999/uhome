@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useMemo, useContext } from 'react'
+import { useMemo, useContext, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Home, DollarSign, Grid3x3, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,10 +12,12 @@ import { AdminDemoToolbar } from '@/components/admin/admin-demo-toolbar'
 import { MobileTopBar } from './mobile-top-bar'
 import { MobileBottomNav } from './mobile-bottom-nav'
 import { useScrollReset } from '@/hooks/use-scroll-reset'
+import { useSwipeToGoBack } from '@/hooks/use-swipe-to-go-back'
 import { useIsMobile } from '@/hooks/use-is-mobile'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { mobilePageTitleForPath } from '@/lib/mobile-page-title'
 
 const ALL_NAV_ITEMS = [
   { path: '/landlord/dashboard', label: 'Dashboard', required: true },
@@ -56,12 +58,20 @@ export function LandlordLayout() {
 
   useScrollReset()
 
+  const mainRef = useRef<HTMLElement>(null)
+  useSwipeToGoBack(mainRef)
+
   const effectiveLayout = useMemo(() => {
     if (settings.navLayout === 'sidebar' || settings.navLayout === 'header') {
       return settings.navLayout
     }
     return 'header'
   }, [settings.navLayout])
+
+  const mobilePageTitle = useMemo(
+    () => mobilePageTitleForPath(location.pathname, ALL_NAV_ITEMS),
+    [location.pathname]
+  )
 
   const visibleNavItems = useMemo(() => {
     let items = ALL_NAV_ITEMS.filter(
@@ -90,9 +100,10 @@ export function LandlordLayout() {
     return (
       <>
         <AdminDemoToolbar />
-        <div className="min-h-screen bg-background">
-          <MobileTopBar homeTo="/landlord/dashboard" />
+        <div className="min-h-screen bg-background overflow-x-hidden">
+          <MobileTopBar homeTo="/landlord/dashboard" pageTitle={mobilePageTitle} />
           <main
+            ref={mainRef}
             className="pb-20 overscroll-contain"
             style={{
               overscrollBehavior: 'contain',
@@ -132,14 +143,14 @@ export function LandlordLayout() {
   return (
     <>
       <AdminDemoToolbar />
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-x-hidden">
         <nav className="glass-nav sticky top-0 z-50">
           <div className="container mx-auto px-4">
-            <div className="flex h-16 items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex h-16 min-w-0 items-center justify-between gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-4 overflow-hidden">
                 <Link
                   to="/landlord/dashboard"
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  className="flex shrink-0 items-center gap-3 hover:opacity-80 transition-opacity"
                 >
                   <img
                     src="/logo.png"
@@ -153,7 +164,10 @@ export function LandlordLayout() {
                   />
                   <span className="text-xl font-semibold text-foreground">uhome</span>
                 </Link>
-                <nav className="flex gap-1 ml-8 flex-shrink-0" aria-label="Main navigation">
+                <nav
+                  className="ml-8 flex min-w-0 flex-1 gap-1 overflow-hidden"
+                  aria-label="Main navigation"
+                >
                   {visibleNavItems.map((item, index) => {
                     const isActive = location.pathname === item.path
                     const isLast = index === visibleNavItems.length - 1
@@ -183,7 +197,7 @@ export function LandlordLayout() {
                   })}
                 </nav>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex shrink-0 items-center gap-4">
                 <span className="text-sm text-muted-foreground">
                   {devBypass ? 'Dev Mode' : user?.email}
                 </span>

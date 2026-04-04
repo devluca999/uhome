@@ -5,6 +5,7 @@ import { MoreHorizontal } from 'lucide-react'
 import { Drawer } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { haptic } from '@/lib/haptics'
 
 export type MobileBottomNavItem = { path: string; label: string; icon: LucideIcon }
 export type MobileBottomNavMoreItem = { path: string; label: string }
@@ -39,7 +40,10 @@ export function MobileBottomNav({
               <button
                 key={path}
                 type="button"
-                onClick={() => navigate(path)}
+                onClick={() => {
+                  haptic.light()
+                  navigate(path)
+                }}
                 className={cn(
                   'flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[44px] px-1 touch-manipulation',
                   active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
@@ -59,7 +63,10 @@ export function MobileBottomNav({
           })}
           <button
             type="button"
-            onClick={() => setMoreOpen(true)}
+            onClick={() => {
+              haptic.light()
+              setMoreOpen(true)
+            }}
             className={cn(
               'flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[44px] px-1 touch-manipulation',
               isMoreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
@@ -92,6 +99,7 @@ export function MobileBottomNav({
               variant="ghost"
               className="w-full justify-start h-12 text-base font-normal"
               onClick={() => {
+                haptic.light()
                 navigate(item.path)
                 setMoreOpen(false)
               }}

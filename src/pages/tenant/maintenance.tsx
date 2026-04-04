@@ -153,7 +153,7 @@ export function TenantMaintenance() {
       <div className="relative z-10">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-semibold text-foreground mb-2">Maintenance Requests</h1>
+            <h1 className="text-4xl font-semibold text-foreground mb-2">Requests</h1>
             <p className="text-muted-foreground">Submit and track maintenance requests</p>
           </div>
           <div className="flex gap-2">
