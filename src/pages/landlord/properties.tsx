@@ -17,6 +17,7 @@ import { Plus, Home, Filter, X, Search } from 'lucide-react'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 import { useAuth } from '@/contexts/auth-context'
 import { useSubscription } from '@/hooks/use-subscription'
+import { MobileFab } from '@/components/ui/mobile-fab'
 
 type PropertyTypeFilter = string | 'all'
 type OccupancyFilter = 'occupied' | 'vacant' | 'all'
@@ -467,7 +468,7 @@ export function LandlordProperties() {
             }}
           />
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence initial={false}>
               {filteredProperties.map(property => (
                 <PropertyCard key={property.id} property={property} onDelete={handleDelete} />
@@ -476,6 +477,20 @@ export function LandlordProperties() {
           </div>
         )}
       </div>
+      <MobileFab
+        label="Add property"
+        onClick={() => {
+          setPlanGateNotice(null)
+          if (subscriptionLoading) return
+          if (applyPlanGates && !canAddProperty(properties.length)) {
+            setPlanGateNotice(
+              'You have reached the property limit on your current plan. Upgrade to add more properties.'
+            )
+            return
+          }
+          setShowForm(true)
+        }}
+      />
     </div>
   )
 }

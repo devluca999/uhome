@@ -22,6 +22,7 @@ import {
   type WorkOrderStatus,
 } from '@/lib/work-order-status'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
+import { MobileFab } from '@/components/ui/mobile-fab'
 
 const HOUSEHOLD_REQUIRED_MESSAGE =
   'You need to be added to a household before submitting maintenance requests. Ask your landlord to invite you.'
@@ -270,6 +271,7 @@ export function TenantMaintenance() {
           </div>
         )}
       </div>
+      <MobileFab label="New request" onClick={() => setShowForm(true)} />
     </div>
   )
 }

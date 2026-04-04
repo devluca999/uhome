@@ -390,3 +390,4 @@ The following are **desktop and mobile identical** â€” no mobile-specific v
 
 Mobile is a **presentation layer decision**, not an architecture decision.
 
+

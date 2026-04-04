@@ -140,7 +140,7 @@ export function TenantFinances() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-8">
           <Card className="glass-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">

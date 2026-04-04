@@ -23,6 +23,7 @@ import {
   getStatusBadgeVariant,
   type WorkOrderStatus,
 } from '@/lib/work-order-status'
+import { MobileFab } from '@/components/ui/mobile-fab'
 import type { Database } from '@/types/database'
 
 // Use the type from the hook, but convert to database type when needed
@@ -655,7 +656,7 @@ export function LandlordOperations() {
               {statusFilter === 'resolved' && `Resolved Work Orders (${filteredRequests.length})`}
               {statusFilter === 'closed' && `Closed Work Orders (${filteredRequests.length})`}
             </h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
               <AnimatePresence initial={false}>
                 {filteredRequests.map(request => (
                   <WorkOrderCard key={request.id} request={request} />
@@ -671,7 +672,7 @@ export function LandlordOperations() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">
                   Submitted ({submittedRequests.length})
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   <AnimatePresence initial={false}>
                     {submittedRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
@@ -686,7 +687,7 @@ export function LandlordOperations() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">
                   Seen ({seenRequests.length})
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   <AnimatePresence initial={false}>
                     {seenRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
@@ -701,7 +702,7 @@ export function LandlordOperations() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">
                   Scheduled ({scheduledRequests.length})
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   <AnimatePresence initial={false}>
                     {scheduledRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
@@ -716,7 +717,7 @@ export function LandlordOperations() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">
                   In Progress ({inProgressRequests.length})
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   <AnimatePresence initial={false}>
                     {inProgressRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
@@ -731,7 +732,7 @@ export function LandlordOperations() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">
                   Resolved ({resolvedRequests.length})
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   <AnimatePresence initial={false}>
                     {resolvedRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
@@ -746,7 +747,7 @@ export function LandlordOperations() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">
                   Closed ({closedRequests.length})
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   <AnimatePresence initial={false}>
                     {closedRequests.map(request => (
                       <WorkOrderCard key={request.id} request={request} />
@@ -766,6 +767,7 @@ export function LandlordOperations() {
           onClose={() => setExpensePromptWorkOrder(null)}
         />
       )}
+      <MobileFab label="New work order" onClick={() => setShowWorkOrderForm(true)} />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { motion } from 'framer-motion'
 import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 
 interface DonutChartData {
   name: string
@@ -15,6 +16,7 @@ interface DonutChartProps {
 }
 
 export function DonutChart({ data, className }: DonutChartProps) {
+  const isMobile = useIsMobile()
   const prefersReducedMotion =
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -56,7 +58,11 @@ export function DonutChart({ data, className }: DonutChartProps) {
         ease: motionTokens.ease.standard,
       }}
     >
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer
+        width="100%"
+        aspect={isMobile ? 2 : undefined}
+        height={isMobile ? undefined : 300}
+      >
         <PieChart>
           <Pie
             data={formattedData}

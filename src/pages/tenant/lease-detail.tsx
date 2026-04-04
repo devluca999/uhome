@@ -99,7 +99,7 @@ export function TenantLeaseDetail() {
           </TabsList>
 
           <TabsContent value="overview">
-            <div className="grid gap-6 md:grid-cols-2 mt-4">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 mt-4">
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle>Lease Information</CardTitle>

@@ -225,7 +225,7 @@ export function LandlordDocuments() {
                     </div>
                   )}
                   <div className="space-y-4">
-                    <div className="grid gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                    <div className="grid gap-2 grid-cols-1 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-foreground">Visibility</p>
                         <select
@@ -309,7 +309,7 @@ export function LandlordDocuments() {
                 }
               />
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence initial={false}>
                   {displayDocuments.map(document => (
                     <motion.div

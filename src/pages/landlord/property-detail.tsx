@@ -412,7 +412,7 @@ export function PropertyDetail() {
                   <CardTitle>Work Order Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-2xl font-semibold text-foreground">
                         {workOrderCounts.submitted}

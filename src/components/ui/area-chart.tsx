@@ -11,6 +11,7 @@ import {
 import { useTheme } from '@/contexts/theme-context'
 import { motion } from 'framer-motion'
 import { motion as motionTokens, durationToSeconds } from '@/lib/motion'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 
 export interface AreaChartData {
   month: string
@@ -36,6 +37,7 @@ export function AreaChart({
   showNet = true,
   curveType = 'smooth',
 }: AreaChartProps) {
+  const isMobile = useIsMobile()
   const { theme } = useTheme()
   const prefersReducedMotion =
     typeof window !== 'undefined'
@@ -86,7 +88,11 @@ export function AreaChart({
         ease: motionTokens.ease.standard,
       }}
     >
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer
+        width="100%"
+        aspect={isMobile ? 2 : undefined}
+        height={isMobile ? undefined : 300}
+      >
         <RechartsAreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
           <XAxis dataKey="month" tick={{ fill: textColor, fontSize: 12 }} stroke={gridColor} />

@@ -20,6 +20,7 @@ import { Plus, Users, Mail, X, Search, Filter, LayoutGrid, List, Group } from 'l
 import { Badge } from '@/components/ui/badge'
 import { motionTokens } from '@/lib/motion'
 import type { Tenant } from '@/hooks/use-tenants'
+import { MobileFab } from '@/components/ui/mobile-fab'
 
 type StatusFilter = 'all' | 'active' | 'ended'
 type SortFilter = 'name_az' | 'name_za' | 'newest' | 'oldest' | 'rent_high' | 'rent_low'
@@ -455,7 +456,7 @@ export function LandlordTenants() {
                     </Badge>
                   </div>
                   {viewMode === 'card' ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                       <AnimatePresence initial={false}>
                         {propertyTenants.map(tenant => (
                           <TenantCard
@@ -497,7 +498,7 @@ export function LandlordTenants() {
           </div>
         ) : (
           // Card view (default)
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence initial={false}>
               {filteredAndSortedTenants.map(tenant => (
                 <TenantCard
@@ -524,6 +525,7 @@ export function LandlordTenants() {
           />
         )}
       </div>
+      <MobileFab label="Invite tenant" onClick={() => setShowInviteForm(true)} />
     </div>
   )
 }

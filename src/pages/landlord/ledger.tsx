@@ -219,7 +219,7 @@ export function LandlordLedger() {
         )}
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mb-6">
           <motion.div
             initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
             animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
@@ -309,7 +309,7 @@ export function LandlordLedger() {
             <CardDescription>Filter rent records by date and property</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Date Range</label>
                 <select
