@@ -1,9 +1,11 @@
 /**
- * Load .env.local before any other imports that depend on env vars.
- * Import this as the FIRST import in seed scripts so env-guard sees the correct values.
+ * Load env before any other imports that depend on env vars.
+ * Import this as the FIRST import in seed scripts.
+ * `.env.local` wins over `.env.test` (override) so staging keys in .env.local are not replaced.
  */
 import { config } from 'dotenv'
 import { resolve } from 'path'
 
-config({ path: resolve(process.cwd(), '.env.local') })
-config({ path: resolve(process.cwd(), '.env.test') }) // .env.test overrides for test context
+const root = resolve(process.cwd())
+config({ path: resolve(root, '.env.test') })
+config({ path: resolve(root, '.env.local'), override: true })

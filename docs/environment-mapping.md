@@ -17,15 +17,32 @@ This document describes how runtime and CI environments connect to Supabase. **A
 
 ## 2. Which environment uses which Supabase project
 
-| Logical environment | Typical `VITE_SUPABASE_URL` source | Supabase project |
-|---------------------|------------------------------------|------------------|
-| **Local** | `.env.local` or CLI output (`127.0.0.1:54321`) | **Local** Supabase (Docker via Supabase CLI) — not a cloud project |
-| **Staging** | Staging host env or `VITE_SUPABASE_STAGING_*` in CI | **Staging** cloud project (secret `VITE_SUPABASE_STAGING_URL`) |
-| **Production** | Production host env or `secrets.VITE_SUPABASE_URL` on `main` deploy build | **Production** cloud project (secret `VITE_SUPABASE_URL`) |
+| Logical environment | Typical `VITE_SUPABASE_URL` source | Supabase project (dashboard) |
+|---------------------|------------------------------------|------------------------------|
+| **Local** | `.env.local` or CLI output (`npx supabase status`) | **Local** Supabase (Docker via Supabase CLI) — not a cloud project |
+| **Staging** | Vercel **Preview** env for `develop`, or `VITE_SUPABASE_STAGING_*` in GitHub Actions | **uhome staging** (staging cloud project) |
+| **Production** | Vercel **Production** env for `main`, or `secrets.VITE_SUPABASE_URL` on `main` deploy | **uhome-app** (production cloud project) |
 
-**Documented product domains** (from `docs/staging-environment.md` and related docs): `staging.uhome.app` / preview URLs → staging stack; `uhome.app` → production stack. Wire these in your hosting dashboard to the branches below.
+**Domains / branches:** Vercel Preview deploys from `develop` → staging Supabase stack; Vercel Production from `main` → uhome-app. Example hostnames: preview URLs or `staging.uhome.app` for staging; `uhome.app` for production.
+
+### Vercel environment variables (checklist)
+
+Values are embedded at **build** time (`VITE_*`). Use the **staging** project for Preview, **uhome-app** for Production.
+
+| Variable | Vercel Preview (`develop`) | Vercel Production (`main`) |
+|----------|----------------------------|----------------------------|
+| `VITE_SUPABASE_URL` | uhome staging URL | uhome-app URL |
+| `VITE_SUPABASE_ANON_KEY` | uhome staging anon key | uhome-app anon key |
+| `VITE_ENVIRONMENT` | `staging` | `production` |
+| `VITE_SUPABASE_ENV` | `staging` (optional legacy) | `production` (optional) |
+| `VITE_HOSTING_ENV` | `preview` (optional; `VERCEL_ENV` is usually enough) | `production` |
+| `VITE_STAGING_SUPABASE_PROJECT_REF` | optional | **Set** to staging project ref (subdomain only) — `src/app-startup.ts` blocks production hosting from using the staging URL |
+
+Do **not** set `SUPABASE_SERVICE_ROLE_KEY` on the Vercel frontend project; service role stays in Supabase Edge Function secrets and local `.env.local` for scripts.
 
 ## 3. Git branch / workflow → Supabase
+
+In this repo the **staging** line is the branch `develop` (not `development`). Vercel Preview should track that branch for the uhome staging stack.
 
 | Git branch / workflow | Workflow file | `VITE_SUPABASE_URL` at build / test |
 |----------------------|---------------|-------------------------------------|
@@ -82,15 +99,15 @@ flowchart TB
   MAIN_BUILD -.->|artifact / deploy placeholder| PRD_SITE
 ```
 
-## 6. Mapping table (fill in your real URLs in runbooks)
+## 6. Mapping table (fill in real URLs in your runbooks; secrets stay in Vercel/GitHub)
 
 | Environment | Domain (example) | Git branch | Supabase project |
 |-------------|------------------|------------|------------------|
-| Local | `localhost:3000` (Vite) | any | Local CLI (`project_id` in `supabase/config.toml` is **not** the cloud ref) |
+| Local | `localhost:3000` (Vite; app may use port 1000 per `package.json`) | any | Local CLI — `project_id` in `supabase/config.toml` is **not** the cloud ref |
 | CI E2E | N/A (Playwright in Actions) | `develop` / PR | Local (ephemeral) |
-| CI visual | N/A | `main` / `develop` | Staging (secret) |
-| Staging | `staging.uhome.app` or preview URL | `develop` | Staging (secret) |
-| Production | `uhome.app` | `main` | Production (secret) |
+| CI visual | N/A | `main` / `develop` | uhome staging (GitHub secret) |
+| Staging | Vercel Preview URL or `staging.uhome.app` | `develop` | uhome staging |
+| Production | `uhome.app` | `main` | uhome-app |
 
 ## 7. Known in-repo references (not secrets)
 

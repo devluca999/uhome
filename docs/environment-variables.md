@@ -1,6 +1,8 @@
 # Environment Variables Reference
 
-Complete reference for every environment variable used in the Haume codebase.
+Complete reference for environment variables used in the uhome codebase.
+
+**How Local / Staging / Production map to Supabase and Vercel:** see [environment-mapping.md](./environment-mapping.md) (uhome staging + uhome-app, `develop` vs `main`, Preview vs Production).
 
 ---
 
@@ -14,7 +16,10 @@ These are embedded at build time by Vite and available via `import.meta.env.*`.
 |----------|---------|---------------|
 | `VITE_SUPABASE_URL` | Supabase project URL used to initialise the frontend client | `src/lib/supabase/client.ts`, `src/contexts/auth-context.tsx`, `src/pages/settings.tsx`, `src/pages/auth/login.tsx`, `src/lib/tenant-dev-mode.ts`, `src/lib/env-safety.ts`, `src/lib/data-health/data-health-checker.ts`, `src/hooks/admin/use-admin-audit-logs.ts`, `src/vite-env.d.ts`, `tests/helpers/auth-helpers.ts`, `tests/helpers/db-helpers.ts`, `tests/helpers/env-guard.ts`, `tests/helpers/prod-readonly-client.ts`, most `scripts/*`, `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`, `.github/workflows/staging-deploy.yml` |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anonymous/public API key paired with the URL above | Same files as `VITE_SUPABASE_URL` (they always appear together) |
-| `VITE_SUPABASE_ENV` | Explicit environment label (`local` / `staging` / `production`) for client-side safety checks | `src/lib/tenant-dev-mode.ts`, `src/lib/env-safety.ts`, `tests/helpers/env-guard.ts`, `scripts/validate-env.ts`, `.env.local` |
+| `VITE_ENVIRONMENT` | **Primary** app tier: `development` \| `staging` \| `production` (aliases: `dev`, `local`, `prod`) — parsed in `src/config/environment.ts` | `src/config/environment.ts`, `.github/workflows/staging-deploy.yml`, `.env.example` |
+| `VITE_HOSTING_ENV` | Hosting flavour: often `preview` or `production` on Vercel; falls back to `VERCEL_ENV` via `vite.config.ts` | `vite.config.ts`, `src/app-startup.ts`, `src/lib/supabase-hosting-guard.ts` |
+| `VITE_STAGING_SUPABASE_PROJECT_REF` | Staging Supabase ref (subdomain only); set on **production** builds so the client can detect prod wired to staging | `src/app-startup.ts`, `src/vite-env.d.ts`, `.github/workflows/deploy.yml` |
+| `VITE_SUPABASE_ENV` | **Deprecated:** use `VITE_ENVIRONMENT`; still read as fallback in `src/config/environment.ts` | `src/lib/tenant-dev-mode.ts`, `src/lib/env-safety.ts`, `tests/helpers/env-guard.ts`, `scripts/validate-env.ts`, `.env.local` |
 
 ### Debugging
 
@@ -160,13 +165,9 @@ Set as GitHub Actions secrets or workflow-level environment variables.
 
 ## TypeScript Declarations
 
-Only three variables are declared in `src/vite-env.d.ts`:
+Core declarations live in `src/vite-env.d.ts` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ENVIRONMENT`, `VITE_SUPABASE_ENV`, `VITE_HOSTING_ENV`, `VITE_STAGING_SUPABASE_PROJECT_REF`, `SUPABASE_SERVICE_ROLE_KEY`).
 
-- `VITE_SUPABASE_URL` (required)
-- `VITE_SUPABASE_ANON_KEY` (required)
-- `SUPABASE_SERVICE_ROLE_KEY` (optional)
-
-All other `VITE_*` variables work at runtime due to Vite's permissive `ImportMetaEnv` interface but lack type declarations.
+Other `VITE_*` variables work at runtime via Vite's `ImportMetaEnv` but may lack explicit typings.
 
 ---
 
@@ -174,7 +175,8 @@ All other `VITE_*` variables work at runtime due to Vite's permissive `ImportMet
 
 | File | Purpose |
 |------|---------|
-| `.env.example` | Template for developers — lists all required and optional variables with placeholder values |
-| `.env.local` | Active local config (git-ignored) — typically points to cloud staging |
-| `.env.test` | Test environment config pointing to local Supabase |
-| `.env.test.example` | Template for the test environment |
+| `.env.example` | Template: local vs staging vs production naming; copy to `.env.local` |
+| `.env.local` | Developer machine (git-ignored) — **local** Supabase CLI *or* **cloud staging** (`VITE_ENVIRONMENT`/ `SUPABASE_ENV` must match the URL) |
+| `.env.test` | Playwright / local E2E defaults (often `127.0.0.1` + CLI keys); merged in `tests/helpers/load-test-env.ts` so `.env.local` wins for shared keys |
+| `.env.test.example` | Template for `.env.test` |
+| `supabase/functions/.env` | Edge Function secrets (Stripe, etc.) for **local** CLI — see `.env.example` comment and Edge Function section above |

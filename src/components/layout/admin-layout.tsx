@@ -119,7 +119,7 @@ export function AdminLayout() {
   })
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+    <div className="min-h-screen bg-background [isolation:isolate] flex flex-col md:flex-row">
       <DraggableDemoSelector />
       <aside className="hidden md:flex md:flex-col w-64 border-r border-border bg-card/50 sticky top-0 h-screen overflow-y-auto shrink-0">
         <div className="flex flex-col h-full">

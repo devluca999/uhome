@@ -46,11 +46,7 @@ npm install --legacy-peer-deps
 cp .env.example .env.local
 ```
 
-4. Add your Supabase credentials to `.env.local`:
-```
-VITE_SUPABASE_URL=your-supabase-url
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
+4. Fill `.env.local` from [.env.example](.env.example): set `VITE_ENVIRONMENT` (e.g. `development` for local CLI), `SUPABASE_ENV`, and the Supabase **URL + anon key from the same project** (local: `npx supabase status`; staging: uhome staging). See [docs/environment-mapping.md](docs/environment-mapping.md).
 
 5. Set up the database:
    - Go to your Supabase project
@@ -147,11 +143,7 @@ See [Deployment Guide](docs/deployment.md) for detailed instructions.
 
 ## Environment Variables
 
-Required:
-- `VITE_SUPABASE_URL` - Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
-
-See [Environment Setup](docs/environment_setup.md) for details.
+Required for the app: `VITE_ENVIRONMENT`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (URL and anon must match one project). Local vs staging vs production (Vercel Preview/Production, uhome-app): [docs/environment-mapping.md](docs/environment-mapping.md). Full list: [docs/environment-variables.md](docs/environment-variables.md).
 
 ## 🚀 Launch Sprint Documentation
 
