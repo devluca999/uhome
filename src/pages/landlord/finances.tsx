@@ -449,7 +449,7 @@ export function LandlordFinances() {
   // const toggleLedgerRow = (id: string) => { ... }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen bg-background [isolation:isolate]">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 

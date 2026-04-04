@@ -108,7 +108,7 @@ export function AdminNewsletter() {
 
   if (!enabled) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-7xl mx-auto">
           <EmptyState
             icon={<Mail className="h-12 w-12" />}
@@ -121,7 +121,7 @@ export function AdminNewsletter() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background [isolation:isolate] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>

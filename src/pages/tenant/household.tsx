@@ -35,7 +35,7 @@ export function TenantHousehold() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -56,7 +56,7 @@ export function TenantHousehold() {
   if (error) {
     console.error('[TenantHousehold] Error loading lease:', error)
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -74,7 +74,7 @@ export function TenantHousehold() {
   if (!lease) {
     if (showJoinForm) {
       return (
-        <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+        <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
           <GrainOverlay />
           <MatteLayer intensity="subtle" />
           <div className="relative z-10">
@@ -85,7 +85,7 @@ export function TenantHousehold() {
     }
 
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -112,7 +112,7 @@ export function TenantHousehold() {
 
   // Case 2: Tenant IS in a household - Show Tabbed Household View
   return (
-    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

@@ -133,7 +133,7 @@ export function AdminAuditSecurity() {
   }, [alerts, severityFilter])
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background [isolation:isolate] relative">
       <GrainOverlay />
       <MatteLayer />
       <div className="relative z-10 p-6">

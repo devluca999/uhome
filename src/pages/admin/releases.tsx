@@ -144,7 +144,7 @@ export function AdminReleases() {
 
   if (!enabled) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-7xl mx-auto">
           <EmptyState
             icon={<Package className="h-12 w-12" />}
@@ -159,7 +159,7 @@ export function AdminReleases() {
   const activeRelease = releases.find(r => r.is_active && r.status === 'active')
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background [isolation:isolate] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>

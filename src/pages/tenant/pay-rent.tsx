@@ -37,7 +37,7 @@ export function TenantPayRent() {
 
   if (!isFeatureEnabled('ENABLE_STRIPE_CONNECT')) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -59,7 +59,7 @@ export function TenantPayRent() {
 
   if (paymentSuccess) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen max-w-2xl">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen max-w-2xl bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -91,7 +91,7 @@ export function TenantPayRent() {
 
   if (!recordId) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -115,7 +115,7 @@ export function TenantPayRent() {
 
   if (!rentRecord) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -140,7 +140,7 @@ export function TenantPayRent() {
   // Only allow payment for pending or overdue records
   if (rentRecord.status === 'paid') {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen max-w-2xl">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen max-w-2xl bg-background [isolation:isolate]">
         <GrainOverlay />
         <MatteLayer intensity="subtle" />
         <div className="relative z-10">
@@ -162,7 +162,7 @@ export function TenantPayRent() {
   const totalAmount = Number(rentRecord.amount) + (rentRecord.late_fee || 0)
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen max-w-2xl">
+    <div className="container mx-auto px-4 py-8 relative min-h-screen max-w-2xl bg-background [isolation:isolate]">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="relative z-10">

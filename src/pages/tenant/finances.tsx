@@ -98,7 +98,7 @@ export function TenantFinances() {
 
   if (tenantLoading || rentLoading) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <div className="text-center py-12 relative z-10">
           <p className="text-muted-foreground">Loading...</p>
@@ -109,7 +109,7 @@ export function TenantFinances() {
 
   if (!tenantData) {
     return (
-      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+      <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
         <GrainOverlay />
         <EmptyState
           icon={<DollarSign className="h-8 w-8" />}
@@ -129,7 +129,7 @@ export function TenantFinances() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 relative min-h-screen">
+    <div className="container mx-auto px-4 py-8 relative min-h-screen bg-background [isolation:isolate]">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 

@@ -1,5 +1,7 @@
 // Production-Realistic Demo Data Seeding Script for uhome
 // Run with: npm run seed:demo
+// Remote staging: set SEED_SUPABASE_URL=https://<ref>.supabase.co (optional if VITE_SUPABASE_URL is stable),
+// CONFIRM_STAGING_RESEED=yes, SUPABASE_SERVICE_ROLE_KEY, VITE_SUPABASE_ANON_KEY for that project.
 //
 // This script creates comprehensive, production-realistic demo data for staging only.
 // Hard-fails if run against production.
@@ -18,13 +20,17 @@ const __dirname = dirname(__filename)
 enforceNonProduction()
 assertEnvironmentCapabilities({ canSeed: true })
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL
+// SEED_SUPABASE_URL wins so remote targets are not clobbered by local dotenv stacks (e.g. dotenvx override).
+const supabaseUrl =
+  process.env.SEED_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  process.env.SUPABASE_URL
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase environment variables')
-  console.error('Required: VITE_SUPABASE_URL')
+  console.error('Required: VITE_SUPABASE_URL (or SEED_SUPABASE_URL / SUPABASE_URL)')
   console.error('Required: SUPABASE_SERVICE_ROLE_KEY (for staging seeding)')
   process.exit(1)
 }

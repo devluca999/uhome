@@ -31,7 +31,7 @@ export function AdminPayments() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen bg-background [isolation:isolate] relative">
         <GrainOverlay />
         <MatteLayer />
         <div className="relative z-10 p-6">
@@ -43,7 +43,7 @@ export function AdminPayments() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen bg-background [isolation:isolate] relative">
         <GrainOverlay />
         <MatteLayer />
         <div className="relative z-10 p-6">
@@ -57,7 +57,7 @@ export function AdminPayments() {
 
   if (!metrics) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen bg-background [isolation:isolate] relative">
         <GrainOverlay />
         <MatteLayer />
         <div className="relative z-10 p-6">
@@ -68,7 +68,7 @@ export function AdminPayments() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background [isolation:isolate] relative">
       <GrainOverlay />
       <MatteLayer />
       <div className="relative z-10 p-6">

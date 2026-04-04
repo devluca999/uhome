@@ -153,7 +153,7 @@ export function LeadUpload() {
 
   if (!enabled) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-4xl mx-auto">
           <EmptyState
             icon={<Upload className="h-12 w-12" />}
@@ -166,7 +166,7 @@ export function LeadUpload() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background [isolation:isolate] p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>

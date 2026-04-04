@@ -52,7 +52,7 @@ export function AdminSupport() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-muted-foreground">Loading support tickets...</div>
         </div>
@@ -62,7 +62,7 @@ export function AdminSupport() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-destructive">Error loading support tickets: {error.message}</div>
         </div>
@@ -71,7 +71,7 @@ export function AdminSupport() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background [isolation:isolate] relative">
       <GrainOverlay />
       <MatteLayer />
       <div className="relative z-10 p-6">

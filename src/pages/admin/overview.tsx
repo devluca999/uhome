@@ -26,7 +26,7 @@ export function AdminOverview() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-muted-foreground">Loading metrics...</div>
         </div>
@@ -36,7 +36,7 @@ export function AdminOverview() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-destructive">Error loading metrics: {error.message}</div>
         </div>
@@ -46,7 +46,7 @@ export function AdminOverview() {
 
   if (!stats) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-background [isolation:isolate] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-muted-foreground">No metrics available</div>
         </div>
@@ -55,7 +55,7 @@ export function AdminOverview() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background [isolation:isolate] relative">
       <GrainOverlay />
       <MatteLayer />
       <div className="relative z-10 p-6">

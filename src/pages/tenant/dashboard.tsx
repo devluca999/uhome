@@ -15,7 +15,7 @@ import { TaskCard } from '@/components/ui/task-card'
 import { TaskReminderToast } from '@/components/ui/task-reminder-toast'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Home, CheckSquare } from 'lucide-react'
+import { Home, CheckSquare, ChevronRight, Wrench, MessageSquare, FileText } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase/client'
 import { motionTokens, durationToSeconds, createSpring } from '@/lib/motion'
@@ -26,6 +26,7 @@ import { DataHealthCard } from '@/components/data-health/data-health-card'
 import { usePendingOnboarding } from '@/hooks/use-onboarding'
 import { OnboardingModal } from '@/components/tenant/onboarding-modal'
 import { OnboardingReminderBanner } from '@/components/tenant/onboarding-reminder-banner'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 
 type TenantDashboardRpcRow = {
   property_name: unknown
@@ -42,6 +43,7 @@ type TenantDashboardRpcRow = {
 export function TenantDashboard() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'TenantDashboard' })
+  const isMobile = useIsMobile()
   const { data: tenantData, loading: tenantLoading } = useTenantData()
   const { leases } = useLeases(undefined, tenantData?.tenant.id)
   const activeLease = leases?.find(
@@ -172,6 +174,9 @@ export function TenantDashboard() {
   ).length
   const nextRentRecord = rentRecords.find(r => r.status === 'pending')
   const overdueRent = rentRecords.filter(r => r.status === 'overdue').length
+  const openMaintenanceItems = requests
+    .filter(r => r.status !== 'closed' && r.status !== 'resolved')
+    .slice(0, 5)
 
   if (tenantLoading) {
     return (
@@ -217,8 +222,11 @@ export function TenantDashboard() {
     )
   }
 
+  const displayName =
+    viewMode === 'tenant-demo' ? 'Demo Tenant' : user?.email?.split('@')[0] || 'there'
+
   return (
-    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 
@@ -245,38 +253,187 @@ export function TenantDashboard() {
           />
         )}
 
-        {user && (
-          <HeroGreeting
-            name={viewMode === 'tenant-demo' ? 'Demo Tenant' : user.email?.split('@')[0] || 'User'}
-          />
-        )}
+        {isMobile ? (
+          <>
+            <p className="text-lg font-semibold text-foreground mb-1">Hey {displayName} 👋</p>
 
-        {tenantRpcStats?.days_until_end != null && (
-          <p className="text-sm text-muted-foreground mb-4">
-            {tenantRpcStats.days_until_end} day{tenantRpcStats.days_until_end === 1 ? '' : 's'}{' '}
-            remaining on your lease
-            {tenantRpcStats.lease_end_date && (
-              <span className="ml-1">
-                (ends {new Date(tenantRpcStats.lease_end_date).toLocaleDateString()})
-              </span>
+            {tenantRpcStats?.days_until_end != null && (
+              <p className="text-xs text-muted-foreground mb-4">
+                {tenantRpcStats.days_until_end} day{tenantRpcStats.days_until_end === 1 ? '' : 's'}{' '}
+                on your lease
+                {tenantRpcStats.lease_end_date && (
+                  <span className="ml-1">
+                    (ends {new Date(tenantRpcStats.lease_end_date).toLocaleDateString()})
+                  </span>
+                )}
+              </p>
             )}
-          </p>
-        )}
 
-        {nextRentRecord && (
-          <div className="mb-6">
-            <PaymentCard
-              amount={nextRentRecord.amount}
-              dueDate={new Date(nextRentRecord.due_date).toLocaleDateString()}
-              status={nextRentRecord.status === 'overdue' ? 'overdue' : 'pending'}
-            />
-          </div>
-        )}
+            <div className="mb-4">
+              {nextRentRecord ? (
+                <>
+                  <PaymentCard
+                    amount={nextRentRecord.amount}
+                    dueDate={new Date(nextRentRecord.due_date).toLocaleDateString()}
+                    status={nextRentRecord.status === 'overdue' ? 'overdue' : 'pending'}
+                  />
+                  <Button asChild className="w-full mt-3" size="lg">
+                    <Link to="/tenant/pay-rent">Pay now</Link>
+                  </Button>
+                </>
+              ) : tenantRpcStats ? (
+                <PaymentCard
+                  amount={
+                    tenantRpcStats.pending_rent > 0
+                      ? tenantRpcStats.pending_rent
+                      : tenantRpcStats.monthly_rent
+                  }
+                  dueDate={
+                    rentRecords[0]?.due_date
+                      ? new Date(rentRecords[0].due_date).toLocaleDateString()
+                      : undefined
+                  }
+                  status={overdueRent > 0 ? 'overdue' : 'pending'}
+                />
+              ) : null}
+            </div>
 
-        {/* Finance Summary */}
-        <FinanceSummaryCard rentRecords={rentRecords as any} />
+            <Link
+              to="/tenant/household"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm p-4 mb-4"
+            >
+              <div className="min-w-0 text-left">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                  Your place
+                </p>
+                <p className="font-medium text-foreground truncate">
+                  {tenantData.property.name}
+                  {tenantRpcStats?.unit_name && ` · ${tenantRpcStats.unit_name}`}
+                </p>
+                {'address' in tenantData.property &&
+                  Boolean((tenantData.property as { address?: string }).address) && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {(tenantData.property as { address?: string }).address}
+                    </p>
+                  )}
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+            </Link>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-6">
+            <div className="mb-4">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2">
+                Maintenance ({openMaintenanceItems.length} open)
+              </p>
+              <div className="rounded-xl border border-border/30 overflow-hidden bg-card/30">
+                {maintenanceLoading ? (
+                  <p className="p-3 text-sm text-muted-foreground">Loading...</p>
+                ) : openMaintenanceItems.length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground">No open requests</p>
+                ) : (
+                  <ul className="divide-y divide-border/30">
+                    {openMaintenanceItems.map(req => (
+                      <li
+                        key={req.id}
+                        className="p-3 flex items-center justify-between gap-2 text-sm"
+                      >
+                        <span className="truncate">{req.description || 'Request'}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground capitalize">
+                          {String(req.status).replace(/_/g, ' ')}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <Button variant="link" asChild className="px-0 h-auto mt-1 text-xs">
+                <Link to="/tenant/maintenance">View all</Link>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              <Button
+                variant="ghost"
+                asChild
+                className="h-auto flex-col gap-1 py-3 border border-border/50 px-1 text-[11px]"
+              >
+                <Link to="/tenant/maintenance">
+                  <Wrench className="h-4 w-4" />
+                  Request
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                asChild
+                className="h-auto flex-col gap-1 py-3 border border-border/50 px-1 text-[11px]"
+              >
+                <Link to="/tenant/messages">
+                  <MessageSquare className="h-4 w-4" />
+                  Message
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                asChild
+                className="h-auto flex-col gap-1 py-3 border border-border/50 px-1 text-[11px]"
+              >
+                <Link to="/tenant/documents">
+                  <FileText className="h-4 w-4" />
+                  Documents
+                </Link>
+              </Button>
+            </div>
+
+            {tenantData.property.rules && (
+              <Card className="glass-card relative overflow-hidden mb-4">
+                <GrainOverlay />
+                <MatteLayer intensity="subtle" />
+                <CardHeader className="py-3">
+                  <CardTitle className="text-base">House notes</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-6">
+                    {tenantData.property.rules}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        ) : (
+          <>
+            {user && (
+              <HeroGreeting
+                name={
+                  viewMode === 'tenant-demo' ? 'Demo Tenant' : user.email?.split('@')[0] || 'User'
+                }
+              />
+            )}
+
+            {tenantRpcStats?.days_until_end != null && (
+              <p className="text-sm text-muted-foreground mb-4">
+                {tenantRpcStats.days_until_end} day{tenantRpcStats.days_until_end === 1 ? '' : 's'}{' '}
+                remaining on your lease
+                {tenantRpcStats.lease_end_date && (
+                  <span className="ml-1">
+                    (ends {new Date(tenantRpcStats.lease_end_date).toLocaleDateString()})
+                  </span>
+                )}
+              </p>
+            )}
+
+            {nextRentRecord && (
+              <div className="mb-6">
+                <PaymentCard
+                  amount={nextRentRecord.amount}
+                  dueDate={new Date(nextRentRecord.due_date).toLocaleDateString()}
+                  status={nextRentRecord.status === 'overdue' ? 'overdue' : 'pending'}
+                />
+              </div>
+            )}
+
+            {/* Finance Summary */}
+            <FinanceSummaryCard rentRecords={rentRecords as any} />
+
+            <div className="grid gap-6 md:grid-cols-2 mb-6">
           <motion.div
             initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
             animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
@@ -419,26 +576,6 @@ export function TenantDashboard() {
           </motion.div>
         )}
 
-        {/* Task Reminder Toast */}
-        <AnimatePresence>
-          {showTaskReminder &&
-            (() => {
-              const task = tasks.find(t => t.id === showTaskReminder)
-              if (!task) return null
-              return (
-                <TaskReminderToast
-                  key={task.id}
-                  task={task}
-                  onDismiss={() => setShowTaskReminder(null)}
-                  onComplete={() => {
-                    // toggleTaskStatus not available - would need to implement
-                    setShowTaskReminder(null)
-                  }}
-                />
-              )
-            })()}
-        </AnimatePresence>
-
         <motion.div
           initial={{ opacity: motionTokens.opacity.hidden, y: 8 }}
           animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
@@ -484,6 +621,26 @@ export function TenantDashboard() {
             </Card>
           </motion.div>
         )}
+          </>
+        )}
+
+        <AnimatePresence>
+          {showTaskReminder &&
+            (() => {
+              const task = tasks.find(t => t.id === showTaskReminder)
+              if (!task) return null
+              return (
+                <TaskReminderToast
+                  key={task.id}
+                  task={task}
+                  onDismiss={() => setShowTaskReminder(null)}
+                  onComplete={() => {
+                    setShowTaskReminder(null)
+                  }}
+                />
+              )
+            })()}
+        </AnimatePresence>
       </div>
     </div>
   )

@@ -121,7 +121,7 @@ export function AdminMessagesSupport() {
 
   if (conversationsLoading || ticketsLoading) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen bg-background [isolation:isolate] relative">
         <GrainOverlay />
         <MatteLayer />
         <div className="relative z-10 p-6">
@@ -133,7 +133,7 @@ export function AdminMessagesSupport() {
 
   if (conversationsError || ticketsError) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen bg-background [isolation:isolate] relative">
         <GrainOverlay />
         <MatteLayer />
         <div className="relative z-10 p-6">
@@ -146,7 +146,7 @@ export function AdminMessagesSupport() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background [isolation:isolate] relative">
       <GrainOverlay />
       <MatteLayer />
       <div className="relative z-10 p-6">

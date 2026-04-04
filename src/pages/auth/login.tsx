@@ -215,7 +215,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-background [isolation:isolate] flex items-center justify-center p-4 relative">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
       <div className="w-full max-w-md relative z-10">

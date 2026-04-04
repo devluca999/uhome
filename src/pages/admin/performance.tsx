@@ -100,7 +100,7 @@ export function AdminPerformance() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen bg-background [isolation:isolate] relative">
         <GrainOverlay />
         <MatteLayer />
         <div className="relative z-10 p-6">
@@ -112,7 +112,7 @@ export function AdminPerformance() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen bg-background [isolation:isolate] relative">
         <GrainOverlay />
         <MatteLayer />
         <div className="relative z-10 p-6">
@@ -125,7 +125,7 @@ export function AdminPerformance() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background [isolation:isolate] relative">
       <GrainOverlay />
       <MatteLayer />
       <div className="relative z-10 p-6">

@@ -42,6 +42,8 @@ import {
   Users,
   FileText,
   Calendar,
+  ChevronRight,
+  UserPlus,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
@@ -55,6 +57,7 @@ import { supabase } from '@/lib/supabase/client' // used by child components via
 import { useAuth } from '@/contexts/auth-context'
 import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import { FirstRunPrompt } from '@/components/landlord/first-run-prompt'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 
 type LandlordDashboardRpcRow = {
   total_properties: unknown
@@ -70,6 +73,7 @@ type LandlordDashboardRpcRow = {
 export function LandlordDashboard() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'LandlordDashboard' })
+  const isMobile = useIsMobile()
 
   // P2: removed ad-hoc DB probe; connectivity verified via users table
   const navigate = useNavigate()
@@ -407,6 +411,28 @@ export function LandlordDashboard() {
     return result
   }, [periodRevenue, periodExpenses, rentRecordsForMetrics, expensesForMetrics, dateRange])
 
+  const mobilePeriodTitle = useMemo(() => {
+    const d = dateRange.start
+    if (dashboardTimeline === 'monthly') {
+      return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+    }
+    if (dashboardTimeline === 'quarterly') {
+      const q = Math.floor(d.getMonth() / 3) + 1
+      return `Q${q} ${d.getFullYear()}`
+    }
+    return String(d.getFullYear())
+  }, [dateRange.start, dashboardTimeline])
+
+  const periodCollectionRate = useMemo(() => {
+    if (dashboardTimeline === 'monthly' && rpcStats && rpcStats.monthly_rent_due > 0) {
+      return Math.min(100, Math.max(0, rpcStats.collection_rate))
+    }
+    const collected = periodRevenue
+    const out = kpiMetrics.rentOutstanding
+    const denom = collected + out
+    return denom > 0 ? (collected / denom) * 100 : 0
+  }, [dashboardTimeline, rpcStats, periodRevenue, kpiMetrics.rentOutstanding])
+
   // Generate comprehensive activity feed
   const recentActivity = useMemo(() => {
     // Tenant joins (last 7 days)
@@ -598,46 +624,48 @@ export function LandlordDashboard() {
   }, [rentRecordsForMetrics, expensesForMetrics, properties, profitByProperty])
 
   return (
-    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 
       <div className="relative z-10">
         <DataHealthCard className="mb-6" />
-        <motion.div
-          initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
-          animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
-          transition={{
-            duration: durationToSeconds(motionTokens.duration.base),
-            ease: motionTokens.ease.standard,
-          }}
-          layout={false}
-          className="mb-8"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-semibold text-foreground mb-2">Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, landlord</p>
+        {!isMobile && (
+          <motion.div
+            initial={{ opacity: motionTokens.opacity.hidden, y: motionTokens.translate.y }}
+            animate={{ opacity: motionTokens.opacity.visible, y: 0 }}
+            transition={{
+              duration: durationToSeconds(motionTokens.duration.base),
+              ease: motionTokens.ease.standard,
+            }}
+            layout={false}
+            className="mb-8"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h1 className="text-4xl font-semibold text-foreground mb-2">Dashboard</h1>
+                <p className="text-muted-foreground">Welcome back, landlord</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Summary:</span>
+                <select
+                  value={dashboardTimeline}
+                  onChange={e =>
+                    updateSettings({
+                      dashboardTimeline: e.target.value as DashboardTimeline,
+                    })
+                  }
+                  className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  data-testid="dashboard-timeline-select"
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Summary:</span>
-              <select
-                value={dashboardTimeline}
-                onChange={e =>
-                  updateSettings({
-                    dashboardTimeline: e.target.value as DashboardTimeline,
-                  })
-                }
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                data-testid="dashboard-timeline-select"
-              >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {hasErrors && (
           <div className="mb-6 space-y-3">
@@ -656,6 +684,147 @@ export function LandlordDashboard() {
         {isFirstRunEmpty ? (
           <div className="mb-8">
             <FirstRunPrompt />
+          </div>
+        ) : isMobile ? (
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-muted-foreground">{mobilePeriodTitle}</p>
+              <select
+                value={dashboardTimeline}
+                onChange={e =>
+                  updateSettings({
+                    dashboardTimeline: e.target.value as DashboardTimeline,
+                  })
+                }
+                className="h-8 rounded-md border border-input bg-background px-2 py-0.5 text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                data-testid="dashboard-timeline-select"
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div className="text-center pt-1">
+              <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+                {formatCurrency(periodRevenue)}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                collected{' '}
+                {dashboardTimeline === 'monthly'
+                  ? 'this month'
+                  : dashboardTimeline === 'quarterly'
+                    ? 'this quarter'
+                    : 'this year'}
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="glass-card rounded-xl p-3 border border-border/40">
+                <p className="text-base font-semibold tabular-nums">
+                  {periodCollectionRate.toFixed(0)}%
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                  Rate
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/landlord/ledger')}
+                className="glass-card rounded-xl p-3 border border-border/40 text-center min-h-[72px]"
+              >
+                <p className="text-base font-semibold tabular-nums">
+                  {formatCurrency(kpiMetrics.rentOutstanding)}
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                  Owed
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTasksModalOpen(true)}
+                className="glass-card rounded-xl p-3 border border-border/40 text-center min-h-[72px]"
+              >
+                <p className="text-base font-semibold tabular-nums">{pendingTasks}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                  Tasks
+                </p>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setProfitModalOpen(true)}
+              className="w-full glass-card rounded-xl p-4 flex items-center justify-between border border-border/40 text-left active:opacity-90"
+            >
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                  Net income
+                </p>
+                <p className="text-xl font-semibold tabular-nums mt-0.5">
+                  {formatCurrency(netIncome)}
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setWorkOrdersModalOpen(true)}
+                className="glass-card rounded-xl p-3 text-left border border-border/40"
+              >
+                <p className="text-[11px] text-muted-foreground">Work orders</p>
+                <p className="text-xl font-semibold tabular-nums">
+                  {requestsLoading ? '…' : openWorkOrders}
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOccupancyModalOpen(true)}
+                className="glass-card rounded-xl p-3 text-left border border-border/40"
+              >
+                <p className="text-[11px] text-muted-foreground">Occupancy</p>
+                <p className="text-xl font-semibold tabular-nums">
+                  {tenantsLoading || propertiesLoading
+                    ? '…'
+                    : `${occupancyCount}/${properties.length}`}
+                </p>
+              </button>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2">
+                Quick actions
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant="ghost"
+                  asChild
+                  className="h-auto flex-col gap-1 py-3 border border-border/50 text-xs"
+                >
+                  <Link to="/landlord/ledger">
+                    <DollarSign className="h-4 w-4" />
+                    Log rent
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  asChild
+                  className="h-auto flex-col gap-1 py-3 border border-border/50 text-xs"
+                >
+                  <Link to="/landlord/operations">
+                    <Wrench className="h-4 w-4" />
+                    Work order
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  asChild
+                  className="h-auto flex-col gap-1 py-3 border border-border/50 text-xs"
+                >
+                  <Link to="/landlord/tenants">
+                    <UserPlus className="h-4 w-4" />
+                    Invite
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
@@ -739,7 +908,7 @@ export function LandlordDashboard() {
           </div>
         )}
 
-        {!isFirstRunEmpty && rpcStats && rpcStats.monthly_rent_due > 0 && (
+        {!isFirstRunEmpty && !isMobile && rpcStats && rpcStats.monthly_rent_due > 0 && (
           <div className="text-xs text-muted-foreground text-center mb-6 -mt-2">
             This month: {formatCurrency(rpcStats.monthly_rent_collected)} collected of{' '}
             {formatCurrency(rpcStats.monthly_rent_due)} due ({rpcStats.collection_rate.toFixed(1)}%
@@ -752,7 +921,7 @@ export function LandlordDashboard() {
           </div>
         )}
 
-        {!isFirstRunEmpty && (
+        {!isFirstRunEmpty && !isMobile && (
           <>
             {/* Financial Summary Section */}
             <motion.div
