@@ -43,8 +43,10 @@ interface AuthContextType {
   organizationId: string | null
   role: UserRole
   loading: boolean
+  /** Admin UI lens only: does not change `user` / session. See `resolveLandlordDataOwnerId` for demo landlord queries. */
   viewMode: ViewMode
   setViewMode: (mode: ViewMode) => void
+  /** Empty vs populated demo dataset; does not alter `user.id` for Supabase auth. */
   demoState: DemoState
   setDemoState: (state: DemoState) => void
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>

@@ -53,6 +53,7 @@ import { useSettings } from '@/contexts/settings-context'
 import type { DashboardTimeline } from '@/contexts/settings-context'
 import { supabase } from '@/lib/supabase/client' // used by child components via context
 import { useAuth } from '@/contexts/auth-context'
+import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import { FirstRunPrompt } from '@/components/landlord/first-run-prompt'
 
 type LandlordDashboardRpcRow = {
@@ -82,7 +83,7 @@ export function LandlordDashboard() {
   const { tasks } = useTasks()
   const { documents } = useDocuments() // Get all documents for activity feed
   const { format: formatCurrency } = useCurrencyFormatter()
-  const { user } = useAuth()
+  const { user, role, viewMode, demoState } = useAuth()
   const [rpcStats, setRpcStats] = useState<{
     total_properties: number
     active_leases: number
@@ -95,33 +96,43 @@ export function LandlordDashboard() {
   } | null>(null)
 
   useEffect(() => {
-    if (!user?.id) return
     let cancelled = false
-    void supabase
-      .rpc('get_landlord_dashboard_stats', { p_owner_id: user.id })
-      .then(({ data, error }) => {
-        if (cancelled) return
-        if (error) {
-          console.warn('[Dashboard RPC] get_landlord_dashboard_stats failed:', error)
-          return
-        }
-        const row = data?.[0] as LandlordDashboardRpcRow | undefined
-        if (!row) return
-        setRpcStats({
-          total_properties: Number(row.total_properties),
-          active_leases: Number(row.active_leases),
-          total_tenants: Number(row.total_tenants),
-          open_work_orders: Number(row.open_work_orders),
-          monthly_rent_due: Number(row.monthly_rent_due),
-          monthly_rent_collected: Number(row.monthly_rent_collected),
-          collection_rate: Number(row.collection_rate),
-          overdue_amount: Number(row.overdue_amount),
-        })
+    void (async () => {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      const ownerId = await resolveLandlordDataOwnerId({
+        role,
+        viewMode,
+        demoState,
+        sessionUserId: authUser?.id,
       })
+      if (!ownerId || cancelled) return
+      const { data, error } = await supabase.rpc('get_landlord_dashboard_stats', {
+        p_owner_id: ownerId,
+      })
+      if (cancelled) return
+      if (error) {
+        console.warn('[Dashboard RPC] get_landlord_dashboard_stats failed:', error)
+        return
+      }
+      const row = data?.[0] as LandlordDashboardRpcRow | undefined
+      if (!row) return
+      setRpcStats({
+        total_properties: Number(row.total_properties),
+        active_leases: Number(row.active_leases),
+        total_tenants: Number(row.total_tenants),
+        open_work_orders: Number(row.open_work_orders),
+        monthly_rent_due: Number(row.monthly_rent_due),
+        monthly_rent_collected: Number(row.monthly_rent_collected),
+        collection_rate: Number(row.collection_rate),
+        overdue_amount: Number(row.overdue_amount),
+      })
+    })()
     return () => {
       cancelled = true
     }
-  }, [user?.id])
+  }, [user?.id, role, viewMode, demoState])
 
   // Date range and chart config based on dashboard timeline setting
   const { dateRange, timeRange, chartMonths, kpiMonths, timelineLabel } = useMemo(() => {

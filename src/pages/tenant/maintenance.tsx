@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTenantData } from '@/hooks/use-tenant-data'
 import { useMaintenanceRequests } from '@/hooks/use-maintenance-requests'
@@ -23,6 +23,9 @@ import {
 } from '@/lib/work-order-status'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
 
+const HOUSEHOLD_REQUIRED_MESSAGE =
+  'You need to be added to a household before submitting maintenance requests. Ask your landlord to invite you.'
+
 export function TenantMaintenance() {
   // Track performance metrics
   usePerformanceTracker({ componentName: 'TenantMaintenance' })
@@ -33,13 +36,23 @@ export function TenantMaintenance() {
   const activeLease = leases?.find(
     l => !l.lease_end_date || new Date(l.lease_end_date) > new Date()
   )
+  const hasHouseholdProperty = Boolean(tenantData?.tenant?.property_id)
+  const maintenanceRequestsEnabled = !tenantLoading && hasHouseholdProperty
   const {
     requests,
     loading: requestsLoading,
     confirmResolution,
     refetch,
-  } = useMaintenanceRequests(tenantData?.property.id, true, true) // Property-scoped, tenant-visible only
+  } = useMaintenanceRequests(tenantData?.tenant?.property_id, true, true, {
+    enabled: maintenanceRequestsEnabled,
+  })
   const [showForm, setShowForm] = useState(false)
+
+  useEffect(() => {
+    if (!hasHouseholdProperty) {
+      setShowForm(false)
+    }
+  }, [hasHouseholdProperty])
 
   async function handleSubmit() {
     await refetch()
@@ -91,7 +104,7 @@ export function TenantMaintenance() {
     }
   }
 
-  if (tenantLoading || requestsLoading) {
+  if (tenantLoading || (maintenanceRequestsEnabled && requestsLoading)) {
     return (
       <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
@@ -102,16 +115,13 @@ export function TenantMaintenance() {
     )
   }
 
-  if (!tenantData) {
+  if (!tenantData || !hasHouseholdProperty) {
     return (
       <div className="container mx-auto px-4 pt-0.5 pb-8 relative">
         <GrainOverlay />
         <Card className="relative z-10">
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">
-              You&apos;ll be able to submit maintenance requests once your landlord adds you to a
-              lease.
-            </p>
+            <p className="text-muted-foreground">{HOUSEHOLD_REQUIRED_MESSAGE}</p>
           </CardContent>
         </Card>
       </div>
@@ -125,7 +135,7 @@ export function TenantMaintenance() {
         <div className="relative z-10">
           <MaintenanceRequestForm
             leaseId={activeLease?.id}
-            propertyId={tenantData.property.id}
+            propertyId={tenantData.tenant.property_id}
             tenantId={tenantData.tenant.id}
             onSubmit={handleSubmit}
             onCancel={() => setShowForm(false)}

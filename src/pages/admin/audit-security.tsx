@@ -165,10 +165,25 @@ export function AdminAuditSecurity() {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-              <TabsTrigger value="security">Security Alerts</TabsTrigger>
-              <TabsTrigger value="behavior">System Behavior</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 bg-muted/60 rounded-lg p-1">
+              <TabsTrigger
+                value="audit"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                Audit Logs
+              </TabsTrigger>
+              <TabsTrigger
+                value="security"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                Security Alerts
+              </TabsTrigger>
+              <TabsTrigger
+                value="behavior"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                System Behavior
+              </TabsTrigger>
             </TabsList>
 
             {/* Audit Logs Tab */}
@@ -206,101 +221,103 @@ export function AdminAuditSecurity() {
               </Card>
 
               {/* Audit Logs Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Admin Audit Logs</CardTitle>
-                  <CardDescription>
-                    Complete history of all admin actions ({pagination?.total || 0} total)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {auditLoading ? (
-                    <div className="space-y-2 animate-pulse">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="h-14 rounded-lg bg-muted" />
-                      ))}
-                    </div>
-                  ) : auditError ? (
-                    <div className="text-center py-8 text-destructive text-sm">
-                      {auditError.message}
-                    </div>
-                  ) : filteredAuditLogs.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No audit logs found in this time range
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-2">
-                        {filteredAuditLogs.map(log => (
-                          <div
-                            key={log.id}
-                            className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50"
-                          >
-                            <div className="mt-1 text-muted-foreground">
-                              {getActionIcon(log.action_type)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="secondary" className="capitalize">
-                                  {log.action_type.replace(/_/g, ' ')}
-                                </Badge>
-                                <span className="text-sm font-medium">
-                                  {log.admin_email || 'Unknown Admin'}
-                                </span>
-                                <span className="text-sm text-muted-foreground">→</span>
-                                <span className="text-sm">
-                                  {log.target_user_email || 'Unknown User'}
-                                </span>
-                                {log.target_user_role && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {log.target_user_role}
-                                  </Badge>
-                                )}
-                              </div>
-                              {log.reason && (
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  Reason: {log.reason}
-                                </div>
-                              )}
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {formatDateTime(log.created_at)}
-                              </div>
-                            </div>
-                          </div>
+              <div className="min-h-[28rem]">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Admin Audit Logs</CardTitle>
+                    <CardDescription>
+                      Complete history of all admin actions ({pagination?.total || 0} total)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {auditLoading ? (
+                      <div className="space-y-2 animate-pulse">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="h-14 rounded-lg bg-muted" />
                         ))}
                       </div>
-
-                      {/* Pagination */}
-                      {pagination && pagination.totalPages > 1 && (
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                          <div className="text-sm text-muted-foreground">
-                            Page {pagination.page} of {pagination.totalPages} ({pagination.total}{' '}
-                            total)
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                              disabled={!pagination.hasPreviousPage}
+                    ) : auditError ? (
+                      <div className="text-center py-8 text-destructive text-sm">
+                        {auditError.message}
+                      </div>
+                    ) : filteredAuditLogs.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No audit logs found in this time range
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          {filteredAuditLogs.map((log, index) => (
+                            <div
+                              key={log.id ?? `log-${index}`}
+                              className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50"
                             >
-                              Previous
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentPage(p => p + 1)}
-                              disabled={!pagination.hasNextPage}
-                            >
-                              Next
-                            </Button>
-                          </div>
+                              <div className="mt-1 text-muted-foreground">
+                                {getActionIcon(log.action_type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge variant="secondary" className="capitalize">
+                                    {log.action_type.replace(/_/g, ' ')}
+                                  </Badge>
+                                  <span className="text-sm font-medium">
+                                    {log.admin_email || 'Unknown Admin'}
+                                  </span>
+                                  <span className="text-sm text-muted-foreground">→</span>
+                                  <span className="text-sm">
+                                    {log.target_user_email || 'Unknown User'}
+                                  </span>
+                                  {log.target_user_role && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {log.target_user_role}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {log.reason && (
+                                  <div className="text-sm text-muted-foreground mt-1">
+                                    Reason: {log.reason}
+                                  </div>
+                                )}
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {formatDateTime(log.created_at)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+
+                        {/* Pagination */}
+                        {pagination && pagination.totalPages > 1 && (
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                            <div className="text-sm text-muted-foreground">
+                              Page {pagination.page} of {pagination.totalPages} ({pagination.total}{' '}
+                              total)
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={!pagination.hasPreviousPage}
+                              >
+                                Previous
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => p + 1)}
+                                disabled={!pagination.hasNextPage}
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* Security Alerts Tab */}

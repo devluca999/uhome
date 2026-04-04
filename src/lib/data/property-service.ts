@@ -10,7 +10,11 @@ import type { Database } from '@/types/database'
 
 type Property = Database['public']['Tables']['properties']['Row']
 
-export async function getProperties(viewMode: ViewMode, demoState: DemoState): Promise<Property[]> {
+export async function getProperties(
+  viewMode: ViewMode,
+  demoState: DemoState,
+  landlordOwnerId: string | null
+): Promise<Property[]> {
   // In demo modes, always fetch real data from DB so property IDs are valid.
   // landlordDemoProperties has fake IDs that break property-detail navigation.
   if (viewMode === 'tenant-demo') {
@@ -20,17 +24,14 @@ export async function getProperties(viewMode: ViewMode, demoState: DemoState): P
   if (viewMode === 'landlord-demo' && demoState === 'empty') {
     return []
   }
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
+  if (!landlordOwnerId) {
     return []
   }
   const { data, error } = await withRetry(async () => {
     const res = await supabase
       .from('properties')
       .select('*')
-      .eq('owner_id', user.id)
+      .eq('owner_id', landlordOwnerId)
       .order('created_at', { ascending: false })
     return res
   })

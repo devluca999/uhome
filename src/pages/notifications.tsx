@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MessageSquare, Info, CheckCheck } from 'lucide-react'
+import { MessageSquare, Info, CheckCheck, Wrench } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useNotifications } from '@/hooks/use-notifications'
 import { usePerformanceTracker } from '@/hooks/use-performance-tracker'
@@ -23,7 +23,26 @@ function formatNotificationTime(createdAt: string): string {
 }
 
 function notificationLabel(type: string): string {
-  return type === 'message' ? 'New message' : 'System notification'
+  if (type === 'message') return 'New message'
+  if (type === 'work_order') return 'Maintenance update'
+  return 'System notification'
+}
+
+function notificationHref(
+  type: string,
+  leaseId: string | null,
+  role: 'tenant' | 'landlord' | 'admin' | null | undefined
+): string {
+  const messagesPath = role === 'landlord' ? '/landlord/messages' : '/tenant/messages'
+  const defaultNonMessagePath =
+    role === 'landlord' ? '/landlord/leases' : '/tenant/lease?tab=messages'
+  if (type === 'message') {
+    return leaseId ? `${messagesPath}/${leaseId}` : messagesPath
+  }
+  if (type === 'work_order') {
+    return role === 'landlord' ? '/landlord/maintenance' : '/tenant/maintenance'
+  }
+  return defaultNonMessagePath
 }
 
 export function NotificationsPage() {
@@ -35,11 +54,11 @@ export function NotificationsPage() {
     loading,
     error: notificationsError,
     markNotificationAsRead,
+    markNotificationDismissed,
     markAllAsRead,
   } = useNotifications()
 
   const messagesPath = role === 'landlord' ? '/landlord/messages' : '/tenant/messages'
-  const linkPath = role === 'landlord' ? '/landlord/leases' : '/tenant/lease?tab=messages'
 
   return (
     <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
@@ -70,43 +89,59 @@ export function NotificationsPage() {
             <div className="p-6 text-sm text-muted-foreground">No notifications yet.</div>
           ) : (
             <ul className="divide-y divide-border">
-              {notifications.map(n => (
-                <li key={n.id}>
-                  <Link
-                    to={
-                      n.type === 'message'
-                        ? n.lease_id
-                          ? `${messagesPath}/${n.lease_id}`
-                          : messagesPath
-                        : linkPath
-                    }
-                    className={cn(
-                      'flex items-start gap-3 p-4 text-left hover:bg-muted/50 transition-colors',
-                      !n.read && 'bg-primary/5'
-                    )}
-                    onClick={() => {
-                      if (!n.read) void markNotificationAsRead(n.id)
-                    }}
-                  >
-                    <span className="flex-shrink-0 mt-0.5">
-                      {n.type === 'message' ? (
-                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Info className="h-4 w-4 text-muted-foreground" />
+              {notifications.map(n => {
+                const href = notificationHref(n.type, n.lease_id, role)
+                const isWorkOrder = n.type === 'work_order'
+                return (
+                  <li key={n.id} className="flex items-stretch">
+                    <Link
+                      to={href}
+                      className={cn(
+                        'flex flex-1 items-start gap-3 p-4 text-left hover:bg-muted/50 transition-colors min-w-0',
+                        !n.read && 'bg-primary/5'
                       )}
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="text-sm text-foreground">{notificationLabel(n.type)}</span>
-                      <span className="block text-xs text-muted-foreground mt-0.5">
-                        {formatNotificationTime(n.created_at)}
+                      onClick={() => {
+                        if (!n.read) void markNotificationAsRead(n.id)
+                      }}
+                    >
+                      <span className="flex-shrink-0 mt-0.5">
+                        {n.type === 'message' ? (
+                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                        ) : n.type === 'work_order' ? (
+                          <Wrench className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        )}
                       </span>
-                    </span>
-                    {!n.read && (
-                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" aria-hidden />
+                      <span className="flex-1 min-w-0">
+                        <span className="text-sm text-foreground">{notificationLabel(n.type)}</span>
+                        <span className="block text-xs text-muted-foreground mt-0.5">
+                          {formatNotificationTime(n.created_at)}
+                        </span>
+                      </span>
+                      {!n.read && (
+                        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-1" aria-hidden />
+                      )}
+                    </Link>
+                    {isWorkOrder && (
+                      <div className="flex items-center pr-3 shrink-0 border-l border-border">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={e => {
+                            e.preventDefault()
+                            markNotificationDismissed(n.id)
+                          }}
+                        >
+                          Mark as seen
+                        </Button>
+                      </div>
                     )}
-                  </Link>
-                </li>
-              ))}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

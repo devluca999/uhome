@@ -10,7 +10,7 @@ interface PropertyDocumentsProps {
 }
 
 export function PropertyDocuments({ propertyId }: PropertyDocumentsProps) {
-  const { documents } = useDocuments(undefined, propertyId)
+  const { documents } = useDocuments(undefined, propertyId, { viewer: 'landlord' })
   // leases removed - not used (leaseDocuments filtered from documents)
 
   // Filter documents by type

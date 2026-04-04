@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { fetchTenantsForOwner } from '@/lib/data/tenant-service'
+import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 
 export type Tenant = {
   id: string
@@ -48,12 +49,18 @@ export function useTenants() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) {
+      const ownerId = await resolveLandlordDataOwnerId({
+        role,
+        viewMode,
+        demoState,
+        sessionUserId: user?.id,
+      })
+      if (!ownerId) {
         setTenants([])
         return
       }
 
-      const mappedData = await fetchTenantsForOwner(user.id)
+      const mappedData = await fetchTenantsForOwner(ownerId)
       setTenants(mappedData as Tenant[])
     } catch (err) {
       setError(err as Error)

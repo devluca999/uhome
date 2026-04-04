@@ -38,11 +38,18 @@ type MaintenanceRequest = {
   }
 }
 
+export type UseMaintenanceRequestsOptions = {
+  /** When false, clears requests and skips fetch (avoids unscoped queries when no property/lease id). */
+  enabled?: boolean
+}
+
 export function useMaintenanceRequests(
   leaseIdOrPropertyId?: string,
   isPropertyId = false,
-  filterTenantVisible = false
+  filterTenantVisible = false,
+  options?: UseMaintenanceRequestsOptions
 ) {
+  const enabled = options?.enabled !== false
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -50,10 +57,19 @@ export function useMaintenanceRequests(
   const devMode = useTenantDevMode()
 
   useEffect(() => {
+    if (!enabled) {
+      setRequests([])
+      setLoading(false)
+      return
+    }
     fetchRequests()
-  }, [leaseIdOrPropertyId, isPropertyId, devMode?.isActive, devMode?.state])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaseIdOrPropertyId, isPropertyId, devMode?.isActive, devMode?.state, enabled])
 
   async function fetchRequests() {
+    if (!enabled) {
+      return
+    }
     try {
       setLoading(true)
 
@@ -293,6 +309,7 @@ export function useMaintenanceRequests(
 
   useRealtimeSubscription({
     table: 'maintenance_requests',
+    enabled,
     filter: propertyIdForRealtime ? { property_id: propertyIdForRealtime } : undefined,
     events: ['INSERT', 'UPDATE', 'DELETE'],
     onInsert: payload => {

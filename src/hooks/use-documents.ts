@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 import { isDevModeActive } from '@/lib/tenant-dev-mode'
 import { trackUpload } from '@/hooks/admin/use-upload-monitoring'
+import type { DocumentVisibility } from '@/types/document-visibility'
+import { parseDocumentVisibility } from '@/types/document-visibility'
 
-type Document = {
+export type Document = {
   id: string
   property_id: string
   lease_id: string | null
@@ -13,15 +15,81 @@ type Document = {
   file_name: string
   file_type?: string
   created_at: string
+  visibility: DocumentVisibility
+  folder_id: string | null
 }
 
-export function useDocuments(leaseId?: string, propertyId?: string) {
-  const [documents, setDocuments] = useState<Document[]>([])
+export type DocumentFolder = {
+  id: string
+  property_id: string
+  lease_id: string | null
+  name: string
+  created_by: string
+  created_at: string
+}
+
+export type DocumentsViewerRole = 'tenant' | 'landlord'
+
+export type UseDocumentsOptions = {
+  viewer?: DocumentsViewerRole
+}
+
+/** Non-owners only see documents with visibility landlord or household. Uploader always sees their own. */
+function filterVisibleDocuments(docs: Document[], userId: string): Document[] {
+  return docs.filter(d => {
+    if (d.uploaded_by === userId) return true
+    const v = parseDocumentVisibility(d.visibility)
+    return v === 'landlord' || v === 'household'
+  })
+}
+
+function normalizeRow(row: Record<string, unknown>): Document {
+  const r = row as Document
+  return {
+    ...r,
+    visibility: parseDocumentVisibility(r.visibility as string | undefined),
+    folder_id: (r.folder_id as string | null) ?? null,
+  }
+}
+
+export function useDocuments(
+  leaseId?: string,
+  propertyId?: string,
+  options?: UseDocumentsOptions
+) {
+  const [allDocuments, setAllDocuments] = useState<Document[]>([])
+  const [folders, setFolders] = useState<DocumentFolder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [viewerUserId, setViewerUserId] = useState<string | null | undefined>(undefined)
+
+  useEffect(() => {
+    if (!options?.viewer) {
+      setViewerUserId(undefined)
+      return
+    }
+    let cancelled = false
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!cancelled) setViewerUserId(user?.id ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [options?.viewer])
+
+  const documents = useMemo(() => {
+    if (!options?.viewer) return allDocuments
+    if (viewerUserId === undefined) return []
+    if (viewerUserId === null) return []
+    return filterVisibleDocuments(allDocuments, viewerUserId)
+  }, [allDocuments, options?.viewer, viewerUserId])
 
   useEffect(() => {
     fetchDocuments()
+  }, [leaseId, propertyId])
+
+  useEffect(() => {
+    fetchFolders()
   }, [leaseId, propertyId])
 
   async function fetchDocuments() {
@@ -29,19 +97,16 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
       setLoading(true)
       let query = supabase.from('documents').select('*').order('created_at', { ascending: false })
 
-      // If leaseId is provided, filter by it
       if (leaseId) {
         query = query.eq('lease_id', leaseId)
       } else if (propertyId) {
-        // If propertyId is provided, get all documents for this property (including lease-scoped ones)
         query = query.eq('property_id', propertyId)
       }
-      // Otherwise fetch all (RLS will handle access)
 
-      const { data, error } = await query
+      const { data, error: qError } = await query
 
-      if (error) throw error
-      setDocuments(data || [])
+      if (qError) throw qError
+      setAllDocuments((data || []).map(row => normalizeRow(row as Record<string, unknown>)))
     } catch (err) {
       setError(err as Error)
     } finally {
@@ -49,35 +114,54 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
     }
   }
 
-  // Set up realtime subscription for multi-tab sync (dev mode only)
-  // Note: Documents table changes, not storage bucket changes
+  async function fetchFolders() {
+    try {
+      if (!propertyId) {
+        setFolders([])
+        return
+      }
+      let query = supabase
+        .from('document_folders')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('name', { ascending: true })
+
+      if (leaseId) {
+        query = query.eq('lease_id', leaseId)
+      }
+
+      const { data, error: qError } = await query
+      if (qError) throw qError
+      setFolders((data || []) as DocumentFolder[])
+    } catch {
+      setFolders([])
+    }
+  }
+
   useRealtimeSubscription({
     table: 'documents',
     filter: leaseId ? { lease_id: leaseId } : propertyId ? { property_id: propertyId } : undefined,
     events: ['INSERT', 'UPDATE', 'DELETE'],
     onInsert: payload => {
       if (payload.new) {
-        setDocuments(prev => {
-          // Check if already exists
-          if (prev.some(d => d.id === payload.new.id)) {
-            return prev
-          }
-          return [payload.new as Document, ...prev]
+        const doc = normalizeRow(payload.new as Record<string, unknown>)
+        setAllDocuments(prev => {
+          if (prev.some(d => d.id === doc.id)) return prev
+          return [doc, ...prev]
         })
       }
     },
     onUpdate: payload => {
       if (payload.new) {
-        setDocuments(prev =>
-          prev.map(d => (d.id === payload.new.id ? (payload.new as Document) : d))
-        )
+        const doc = normalizeRow(payload.new as Record<string, unknown>)
+        setAllDocuments(prev => prev.map(d => (d.id === doc.id ? doc : d)))
       }
     },
     onDelete: payload => {
       if (payload.old) {
         const oldId = (payload.old as { id?: string }).id
         if (oldId) {
-          setDocuments(prev => prev.filter(d => d.id !== oldId))
+          setAllDocuments(prev => prev.filter(d => d.id !== oldId))
         }
       }
     },
@@ -85,36 +169,34 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
 
   async function uploadDocument(
     file: File,
-    leaseId?: string,
-    propertyId?: string,
-    categoryLabel?: string
+    leaseIdArg?: string,
+    propertyIdArg?: string,
+    categoryLabel?: string,
+    uploadOpts?: { visibility?: DocumentVisibility; folderId?: string | null }
   ) {
-    // Property ID is required for all uploads
-    if (!propertyId) {
+    const pid = propertyIdArg
+    if (!pid) {
       throw new Error('Property ID is required for document uploads')
     }
 
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-    const pathPrefix = leaseId || propertyId
+    const pathPrefix = leaseIdArg || pid
     const filePath = `${pathPrefix}/${fileName}`
     const displayName = categoryLabel ? `[${categoryLabel}] ${file.name}` : file.name
 
-    // Add dev mode metadata if in dev mode
     const devModeActive = isDevModeActive()
     const metadata = devModeActive
       ? {
           dev_mode: 'true',
           role: devModeActive,
-          entity_type: leaseId ? 'lease' : 'property',
-          entity_id: leaseId || propertyId,
+          entity_type: leaseIdArg ? 'lease' : 'property',
+          entity_id: leaseIdArg || pid,
         }
       : undefined
 
-    // Track upload with monitoring
     const { result: publicUrl, error: uploadError } = await trackUpload(
       async () => {
-        // Upload to Supabase Storage (assuming a bucket named 'documents')
         const { error: uploadErr } = await supabase.storage
           .from('documents')
           .upload(filePath, file, {
@@ -125,7 +207,6 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
 
         if (uploadErr) throw uploadErr
 
-        // Get public URL
         const {
           data: { publicUrl: url },
         } = supabase.storage.from('documents').getPublicUrl(filePath)
@@ -142,56 +223,110 @@ export function useDocuments(leaseId?: string, propertyId?: string) {
 
     if (uploadError) throw uploadError
 
-    // Create document record
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    const { data, error } = await supabase
+    const visibility = uploadOpts?.visibility ?? 'household'
+    const folderId = uploadOpts?.folderId ?? null
+
+    const { data, error: insertError } = await supabase
       .from('documents')
       .insert({
-        lease_id: leaseId || null,
-        property_id: propertyId, // Required
+        lease_id: leaseIdArg || null,
+        property_id: pid,
         uploaded_by: user.id,
         file_url: publicUrl,
         file_name: displayName,
         file_type: file.type,
+        visibility,
+        folder_id: folderId,
       })
       .select('*')
       .single()
 
-    if (error) throw error
+    if (insertError) throw insertError
 
-    setDocuments([data, ...documents])
-    return data
+    const doc = normalizeRow(data as Record<string, unknown>)
+    setAllDocuments(prev => [doc, ...prev])
+    return doc
+  }
+
+  async function updateDocumentVisibility(documentId: string, visibility: DocumentVisibility) {
+    const { data, error: upError } = await supabase
+      .from('documents')
+      .update({ visibility })
+      .eq('id', documentId)
+      .select('*')
+      .single()
+
+    if (upError) throw upError
+    const doc = normalizeRow(data as Record<string, unknown>)
+    setAllDocuments(prev => prev.map(d => (d.id === documentId ? doc : d)))
+    return doc
+  }
+
+  async function createFolder(name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) {
+      throw new Error('Folder name is required')
+    }
+    if (!propertyId) {
+      throw new Error('Property ID is required')
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error: insError } = await supabase
+      .from('document_folders')
+      .insert({
+        property_id: propertyId,
+        lease_id: leaseId ?? null,
+        name: trimmed,
+        created_by: user.id,
+      })
+      .select('*')
+      .single()
+
+    if (insError) throw insError
+    const folder = data as DocumentFolder
+    setFolders(prev => [...prev, folder].sort((a, b) => a.name.localeCompare(b.name)))
+    return folder
   }
 
   async function deleteDocument(id: string, fileUrl: string) {
-    // Extract file path from URL
     const urlParts = fileUrl.split('/')
     const filePath = urlParts.slice(-2).join('/')
 
-    // Delete from storage
     const { error: storageError } = await supabase.storage.from('documents').remove([filePath])
 
     if (storageError && storageError.message !== 'Object not found') {
       console.warn('Error deleting from storage:', storageError)
     }
 
-    // Delete document record
-    const { error } = await supabase.from('documents').delete().eq('id', id)
+    const { error: delError } = await supabase.from('documents').delete().eq('id', id)
 
-    if (error) throw error
-    setDocuments(documents.filter(d => d.id !== id))
+    if (delError) throw delError
+    setAllDocuments(prev => prev.filter(d => d.id !== id))
   }
+
+  const viewerAuthLoading = Boolean(options?.viewer && viewerUserId === undefined)
 
   return {
     documents,
-    loading,
+    allDocuments,
+    folders,
+    loading: loading || viewerAuthLoading,
     error,
     uploadDocument,
+    updateDocumentVisibility,
+    createFolder,
     deleteDocument,
     refetch: fetchDocuments,
+    refetchFolders: fetchFolders,
   }
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
+import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import { withRetry } from '@/lib/retry'
 import { calculateProjectedExpenses, getExpenseDate } from '@/lib/finance-calculations'
 import type { Database } from '@/types/database'
@@ -10,7 +11,7 @@ type ExpenseInsert = Database['public']['Tables']['expenses']['Insert']
 type ExpenseUpdate = Database['public']['Tables']['expenses']['Update']
 
 export function useExpenses(propertyId?: string) {
-  const { user } = useAuth()
+  const { user, role, viewMode, demoState } = useAuth()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -39,7 +40,7 @@ export function useExpenses(propertyId?: string) {
   useEffect(() => {
     fetchExpenses()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propertyId, user?.id])
+  }, [propertyId, user?.id, role, viewMode, demoState])
 
   async function fetchExpenses() {
     try {
@@ -48,14 +49,23 @@ export function useExpenses(propertyId?: string) {
       if (propertyId) {
         query = query.eq('property_id', propertyId)
       } else {
-        if (!user?.id) {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser()
+        const ownerId = await resolveLandlordDataOwnerId({
+          role,
+          viewMode,
+          demoState,
+          sessionUserId: authUser?.id,
+        })
+        if (!ownerId) {
           setExpenses([])
           return
         }
         const { data: ownedProperties, error: propError } = await supabase
           .from('properties')
           .select('id')
-          .eq('owner_id', user.id)
+          .eq('owner_id', ownerId)
         if (propError) throw propError
         const ownerPropertyIds = (ownedProperties ?? []).map(p => p.id)
         if (ownerPropertyIds.length === 0) {

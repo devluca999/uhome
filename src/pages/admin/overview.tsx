@@ -68,10 +68,25 @@ export function AdminOverview() {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="metrics">Metrics</TabsTrigger>
-              <TabsTrigger value="transactions">Transactions</TabsTrigger>
-              <TabsTrigger value="system-load">System Load</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 bg-muted/60 rounded-lg p-1">
+              <TabsTrigger
+                value="metrics"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                Metrics
+              </TabsTrigger>
+              <TabsTrigger
+                value="transactions"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                Transactions
+              </TabsTrigger>
+              <TabsTrigger
+                value="system-load"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                System Load
+              </TabsTrigger>
             </TabsList>
 
             {/* Metrics Tab */}

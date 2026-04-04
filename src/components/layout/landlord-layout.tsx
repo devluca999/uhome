@@ -122,23 +122,31 @@ export function LandlordLayout() {
                   <span className="text-xl font-semibold text-foreground">uhome</span>
                 </Link>
                 <nav className="flex gap-1 ml-8 flex-shrink-0" aria-label="Main navigation">
-                  {visibleNavItems.map(item => {
+                  {visibleNavItems.map((item, index) => {
                     const isActive = location.pathname === item.path
+                    const isLast = index === visibleNavItems.length - 1
                     return (
-                      <Button
+                      <div
                         key={item.path}
-                        variant={isActive ? 'default' : 'ghost'}
-                        asChild
-                        aria-current={isActive ? 'page' : undefined}
                         className={cn(
-                          isActive
-                            ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
-                            : 'bg-transparent hover:bg-muted',
-                          'px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap'
+                          'overflow-hidden rounded-md [&>*]:overflow-hidden',
+                          isLast && 'mr-2'
                         )}
                       >
-                        <Link to={item.path}>{item.label}</Link>
-                      </Button>
+                        <Button
+                          variant={isActive ? 'default' : 'ghost'}
+                          asChild
+                          aria-current={isActive ? 'page' : undefined}
+                          className={cn(
+                            isActive
+                              ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/20 scale-[1.02] font-medium'
+                              : 'bg-transparent hover:bg-muted',
+                            'px-4 py-2 rounded-md transition-all duration-200 whitespace-nowrap'
+                          )}
+                        >
+                          <Link to={item.path}>{item.label}</Link>
+                        </Button>
+                      </div>
                     )
                   })}
                 </nav>

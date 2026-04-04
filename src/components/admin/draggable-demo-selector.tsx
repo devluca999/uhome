@@ -128,7 +128,7 @@ export function DraggableDemoSelector() {
 
   // Sidebar content
   const sidebarContent = (
-    <div className="w-80 bg-card border border-border rounded-lg shadow-xl">
+    <div className="w-80">
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -245,7 +245,7 @@ export function DraggableDemoSelector() {
               duration: prefersReducedMotion ? 0 : durationToSeconds(motionTokens.duration.base),
               ease: motionTokens.ease.standard,
             }}
-            className="fixed top-4 right-4 z-[9999]"
+            className="fixed top-4 right-4 z-[9999] bg-background/95 backdrop-blur-md border-l border-border shadow-xl"
           >
             {sidebarContent}
           </motion.div>

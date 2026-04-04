@@ -30,7 +30,7 @@ export function TenantDetailModal({
   const messagingEnabled = isFeatureEnabled('ENABLE_MESSAGING_ENTRY_POINTS')
   const [activeLease, setActiveLease] = useState<any>(null)
   const { leases } = useLeases(tenant?.property_id, tenant?.id)
-  const { documents } = useDocuments(activeLease?.id, tenant?.property_id)
+  const { documents } = useDocuments(activeLease?.id, tenant?.property_id, { viewer: 'landlord' })
 
   const handleMessage = async (intent?: 'general' | 'maintenance' | 'billing' | 'notice') => {
     if (!tenant?.property_id) return

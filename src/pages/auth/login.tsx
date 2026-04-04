@@ -335,7 +335,7 @@ export function LoginPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="w-full text-sm"
+                    className="w-full text-sm hover:ring-1 hover:ring-primary/40 transition-all"
                     onClick={() => {
                       setUseMagicLink(!useMagicLink)
                       setError(null)
@@ -455,6 +455,27 @@ export function LoginPage() {
               </motion.span>
             </Link>
           </p>
+          {!useMagicLink && (
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              By signing up, you agree to our{' '}
+              <Link to="/terms" target="_blank" className="underline hover:text-foreground">
+                Terms
+              </Link>
+              {', '}
+              <Link
+                to="/terms#acceptable-use"
+                target="_blank"
+                className="underline hover:text-foreground"
+              >
+                Acceptable Use
+              </Link>
+              {', and '}
+              <Link to="/privacy" target="_blank" className="underline hover:text-foreground">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          )}
         </div>
       </div>
     </div>

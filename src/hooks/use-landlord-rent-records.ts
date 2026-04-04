@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
+import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 
 export type RentRecordWithRelations = {
   id: string
@@ -42,7 +43,7 @@ export type RentRecordFilter = {
 }
 
 export function useLandlordRentRecords(filter?: RentRecordFilter) {
-  const { user } = useAuth()
+  const { user, role, viewMode, demoState } = useAuth()
   const [records, setRecords] = useState<RentRecordWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -54,6 +55,9 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     user,
+    role,
+    viewMode,
+    demoState,
     filter?.leaseId,
     filter?.propertyId,
     filter?.status,
@@ -67,11 +71,26 @@ export function useLandlordRentRecords(filter?: RentRecordFilter) {
     try {
       setLoading(true)
 
-      // First, get all active properties owned by the landlord
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      const ownerId = await resolveLandlordDataOwnerId({
+        role,
+        viewMode,
+        demoState,
+        sessionUserId: authUser?.id,
+      })
+      if (!ownerId) {
+        setRecords([])
+        setLoading(false)
+        return
+      }
+
+      // First, get all active properties owned by the landlord (or demo landlord in admin lens)
       const { data: properties, error: propertiesError } = await supabase
         .from('properties')
         .select('id, is_active')
-        .eq('owner_id', user.id)
+        .eq('owner_id', ownerId)
 
       if (propertiesError) throw propertiesError
       if (!properties || properties.length === 0) {

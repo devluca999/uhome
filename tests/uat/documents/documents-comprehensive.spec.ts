@@ -35,7 +35,7 @@ test.describe('Documents Comprehensive UAT', () => {
   })
 
   test('upload files as landlord', async ({ page }) => {
-    const seeded = await setupMultiTabScenario(page.context(), {
+    const { seeded } = await setupMultiTabScenario(page.context(), {
       propertyName: 'Documents Test Property',
     })
 
@@ -43,10 +43,18 @@ test.describe('Documents Comprehensive UAT', () => {
     await waitForPageReady(page)
 
     try {
-      const fileInput = page.locator('input[type="file"]').first()
-      const isVisible = await fileInput.isVisible({ timeout: 3000 }).catch(() => false)
+      if (seeded.property) {
+        await page
+          .locator('select')
+          .first()
+          .selectOption({ value: seeded.property.id })
+        await page.waitForTimeout(300)
+      }
 
-      if (isVisible) {
+      const fileInput = page.locator('input[type="file"]').first()
+      const fileInputCount = await fileInput.count()
+
+      if (fileInputCount > 0) {
         const testFile = createTestFile('uat-document.pdf', 1024 * 50, 'application/pdf')
         await uploadFileViaUI(page, 'input[type="file"]', testFile)
         await page.waitForTimeout(2000)
@@ -88,7 +96,7 @@ test.describe('Documents Comprehensive UAT', () => {
   })
 
   test('download files', async ({ page }) => {
-    const seeded = await setupMultiTabScenario(page.context(), {
+    const { seeded } = await setupMultiTabScenario(page.context(), {
       propertyName: 'Documents Test Property',
     })
 
@@ -96,8 +104,20 @@ test.describe('Documents Comprehensive UAT', () => {
     await waitForPageReady(page)
 
     try {
-      // Find download button
-      const downloadButton = page.locator('button:has-text("Download"), a[download]').first()
+      if (seeded.property) {
+        await page
+          .locator('select')
+          .first()
+          .selectOption({ value: seeded.property.id })
+        await page.waitForTimeout(300)
+      }
+
+      // View/Download (landlord) or Download (tenant)
+      const downloadButton = page
+        .locator(
+          'button:has-text("View/Download"), button:has-text("Download"), a[download]'
+        )
+        .first()
       const isVisible = await downloadButton.isVisible({ timeout: 3000 }).catch(() => false)
 
       if (isVisible) {
@@ -145,24 +165,38 @@ test.describe('Documents Comprehensive UAT', () => {
     })
 
     try {
-      // Landlord uploads document
       await landlordPage.goto(`${baseUrl}/landlord/documents`)
       await waitForPageReady(landlordPage)
 
-      // Tenant views documents
+      if (seeded.property) {
+        await landlordPage
+          .locator('select')
+          .first()
+          .selectOption({ value: seeded.property.id })
+        await landlordPage.waitForTimeout(300)
+      }
+
+      const uploadVisible = await landlordPage
+        .getByRole('button', { name: /upload/i })
+        .first()
+        .isVisible()
+        .catch(() => false)
+      const visibilitySelect = landlordPage.getByLabel('Visibility for new upload')
+      const hasVisibilityUi = (await visibilitySelect.count()) > 0
+
       await tenantPage.goto(`${baseUrl}/tenant/documents`)
       await waitForPageReady(tenantPage)
-
-      // Verify tenant can see documents (if they have access)
-      const documentsList = tenantPage.locator('[class*="document"], [class*="file"]')
-      const hasDocuments = (await documentsList.count()) > 0
 
       await logTestResult(tenantPage, {
         page: 'documents',
         feature: 'visibility',
         role: 'tenant',
         action: 'verify_document_access',
-        status: 'passed',
+        status: uploadVisible && hasVisibilityUi ? 'passed' : 'skipped',
+        error:
+          uploadVisible && hasVisibilityUi
+            ? undefined
+            : 'New documents UI (upload / visibility) not detected',
       })
     } catch (error) {
       await logTestResult(landlordPage, {
@@ -181,7 +215,7 @@ test.describe('Documents Comprehensive UAT', () => {
   })
 
   test('file type validation', async ({ page }) => {
-    const seeded = await setupMultiTabScenario(page.context(), {
+    const { seeded } = await setupMultiTabScenario(page.context(), {
       propertyName: 'Documents Test Property',
     })
 
@@ -189,8 +223,16 @@ test.describe('Documents Comprehensive UAT', () => {
     await waitForPageReady(page)
 
     try {
+      if (seeded.property) {
+        await page
+          .locator('select')
+          .first()
+          .selectOption({ value: seeded.property.id })
+        await page.waitForTimeout(300)
+      }
+
       const fileInput = page.locator('input[type="file"]').first()
-      if (await fileInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+      if ((await fileInput.count()) > 0) {
         // Try to upload unsupported file
         const unsupportedFile = createTestFile('test.exe', 1024, 'application/x-msdownload')
         await uploadFileViaUI(page, 'input[type="file"]', unsupportedFile)

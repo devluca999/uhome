@@ -18,6 +18,8 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 interface RealtimeSubscriptionOptions {
   table: string
   filter?: Record<string, any>
+  /** When false, no channel is created (e.g. skip subscription while list fetch is disabled). */
+  enabled?: boolean
   events?: ('INSERT' | 'UPDATE' | 'DELETE')[]
   onInsert?: (payload: RealtimePostgresChangesPayload<any>) => void
   onUpdate?: (payload: RealtimePostgresChangesPayload<any>) => void
@@ -55,6 +57,7 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
   const {
     table,
     filter = {},
+    enabled = true,
     events = ['INSERT', 'UPDATE', 'DELETE'],
     onInsert,
     onUpdate,
@@ -63,6 +66,9 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
   const channelRef = useRef<any>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      return
+    }
     // Only subscribe in dev mode
     const devModeActive = isDevModeActive()
     if (!devModeActive) {
@@ -134,7 +140,7 @@ export function useRealtimeSubscription(options: RealtimeSubscriptionOptions) {
         // Silently unsubscribe (no logging needed)
       }
     }
-  }, [table, JSON.stringify(filter), JSON.stringify(events), onInsert, onUpdate, onDelete])
+  }, [table, enabled, JSON.stringify(filter), JSON.stringify(events), onInsert, onUpdate, onDelete])
 }
 
 /**

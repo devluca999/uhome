@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import type { Database } from '@/types/database'
 import { useAuth } from '@/contexts/auth-context'
@@ -7,12 +7,45 @@ import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 type Notification = Database['public']['Tables']['notifications']['Row']
 
+const DISMISSED_NOTIFICATION_PREFIX = 'dismissed_notification_'
+
+function readDismissedNotificationIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  const ids = new Set<string>()
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k?.startsWith(DISMISSED_NOTIFICATION_PREFIX)) {
+        ids.add(k.slice(DISMISSED_NOTIFICATION_PREFIX.length))
+      }
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  return ids
+}
+
+function dismissNotificationStorageKey(id: string): string {
+  return `${DISMISSED_NOTIFICATION_PREFIX}${id}`
+}
+
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(readDismissedNotificationIds)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const { user } = useAuth()
   const devMode = useTenantDevMode()
+
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key?.startsWith(DISMISSED_NOTIFICATION_PREFIX) || e.key === null) {
+        setDismissedIds(readDismissedNotificationIds())
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -47,6 +80,20 @@ export function useNotifications() {
       setLoading(false)
     }
   }
+
+  const markNotificationDismissed = useCallback((notificationId: string) => {
+    try {
+      localStorage.setItem(dismissNotificationStorageKey(notificationId), '1')
+    } catch {
+      // ignore quota / private mode
+    }
+    setDismissedIds(prev => new Set(prev).add(notificationId))
+  }, [])
+
+  const visibleNotifications = useMemo(
+    () => notifications.filter(n => !dismissedIds.has(n.id)),
+    [notifications, dismissedIds]
+  )
 
   // Set up realtime subscription for multi-tab sync (dev mode only)
   useRealtimeSubscription({
@@ -131,16 +178,17 @@ export function useNotifications() {
     }
   }
 
-  const unreadCount = notifications.filter(n => !n.read).length
-  const unreadNotifications = notifications.filter(n => !n.read)
+  const unreadCount = visibleNotifications.filter(n => !n.read).length
+  const unreadNotifications = visibleNotifications.filter(n => !n.read)
 
   return {
-    notifications,
+    notifications: visibleNotifications,
     unreadNotifications,
     unreadCount,
     loading,
     error,
     markNotificationAsRead,
+    markNotificationDismissed,
     markAllAsRead,
     refetch: fetchNotifications,
   }

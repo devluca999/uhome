@@ -234,7 +234,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen">
+    <div className="container mx-auto px-4 pt-0.5 pb-8 relative min-h-screen bg-background [isolation:isolate]">
       <GrainOverlay />
       <MatteLayer intensity="subtle" />
 

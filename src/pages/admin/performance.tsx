@@ -149,10 +149,25 @@ export function AdminPerformance() {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
-              <TabsTrigger value="quotas">Quotas & Limits</TabsTrigger>
-              <TabsTrigger value="errors">Error Logs</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 bg-muted/60 rounded-lg p-1">
+              <TabsTrigger
+                value="performance"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                Performance Metrics
+              </TabsTrigger>
+              <TabsTrigger
+                value="quotas"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                Quotas & Limits
+              </TabsTrigger>
+              <TabsTrigger
+                value="errors"
+                className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground font-medium transition-all cursor-pointer"
+              >
+                Error Logs
+              </TabsTrigger>
             </TabsList>
 
             {/* Performance Metrics Tab */}

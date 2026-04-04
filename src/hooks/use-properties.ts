@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { getProperties } from '@/lib/data/property-service'
+import { resolveLandlordDataOwnerId } from '@/lib/landlord-data-owner-id'
 import type { Database } from '@/types/database'
 
 type Property = Database['public']['Tables']['properties']['Row']
@@ -19,14 +20,23 @@ export function useProperties() {
   const fetchProperties = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getProperties(viewMode, demoState)
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      const landlordOwnerId = await resolveLandlordDataOwnerId({
+        role,
+        viewMode,
+        demoState,
+        sessionUserId: authUser?.id,
+      })
+      const data = await getProperties(viewMode, demoState, landlordOwnerId)
       setProperties(data)
     } catch (err) {
       setError(err as Error)
     } finally {
       setLoading(false)
     }
-  }, [viewMode, demoState])
+  }, [viewMode, demoState, role])
 
   useEffect(() => {
     const timer = setTimeout(() => {

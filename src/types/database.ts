@@ -455,26 +455,32 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          lease_id: string
-          type: 'message' | 'system'
+          lease_id: string | null
+          type: 'message' | 'system' | 'work_order'
           read: boolean
           created_at: string
+          property_id?: string | null
+          work_order_id?: string | null
         }
         Insert: {
           id?: string
           user_id: string
-          lease_id: string
-          type?: 'message' | 'system'
+          lease_id?: string | null
+          type?: 'message' | 'system' | 'work_order'
           read?: boolean
           created_at?: string
+          property_id?: string | null
+          work_order_id?: string | null
         }
         Update: {
           id?: string
           user_id?: string
-          lease_id?: string
-          type?: 'message' | 'system'
+          lease_id?: string | null
+          type?: 'message' | 'system' | 'work_order'
           read?: boolean
           created_at?: string
+          property_id?: string | null
+          work_order_id?: string | null
         }
       }
       receipt_settings: {
@@ -734,6 +740,32 @@ export type Database = {
           updated_at?: string
         }
       }
+      document_folders: {
+        Row: {
+          id: string
+          property_id: string
+          lease_id: string | null
+          name: string
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          lease_id?: string | null
+          name: string
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          lease_id?: string | null
+          name?: string
+          created_by?: string
+          created_at?: string
+        }
+      }
       documents: {
         Row: {
           id: string
@@ -743,6 +775,8 @@ export type Database = {
           file_url: string
           file_name: string
           file_type: string | null
+          visibility: 'private' | 'landlord' | 'household'
+          folder_id: string | null
           created_at: string
         }
         Insert: {
@@ -753,6 +787,8 @@ export type Database = {
           file_url: string
           file_name: string
           file_type?: string | null
+          visibility?: 'private' | 'landlord' | 'household'
+          folder_id?: string | null
           created_at?: string
         }
         Update: {
@@ -763,6 +799,8 @@ export type Database = {
           file_url?: string
           file_name?: string
           file_type?: string | null
+          visibility?: 'private' | 'landlord' | 'household'
+          folder_id?: string | null
           created_at?: string
         }
       }
