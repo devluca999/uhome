@@ -94,7 +94,7 @@ export function AdminOverview() {
               {/* User Metrics */}
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">Users</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -140,7 +140,7 @@ export function AdminOverview() {
               {/* Subscription Metrics */}
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">Subscriptions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Free Plan</CardTitle>
@@ -186,7 +186,7 @@ export function AdminOverview() {
               {/* Growth & Churn Metrics */}
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">Growth & Churn</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">New Users (7 days)</CardTitle>
@@ -236,7 +236,7 @@ export function AdminOverview() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">
                   Platform Revenue & Transactions
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Platform Revenue</CardTitle>

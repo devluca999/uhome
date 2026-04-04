@@ -374,3 +374,12 @@ option {
   background-color: hsl(var(--popover));
   color: hsl(var(--popover-foreground));
 }
+
+button,
+[role='button'],
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}

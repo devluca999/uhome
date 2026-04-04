@@ -173,7 +173,7 @@ export function AdminPerformance() {
             {/* Performance Metrics Tab */}
             <TabsContent value="performance" className="space-y-6 mt-6">
               {/* Overview Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Avg Page Load</CardTitle>
@@ -481,7 +481,7 @@ export function AdminPerformance() {
                         <h3 className="font-semibold">Tenant Quotas</h3>
                         <Badge>Active</Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                         <div>
                           <p className="text-sm text-muted-foreground">API Calls</p>
                           <p className="text-2xl font-bold">1000/day</p>
@@ -502,7 +502,7 @@ export function AdminPerformance() {
                         <h3 className="font-semibold">Landlord Quotas</h3>
                         <Badge>Active</Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                         <div>
                           <p className="text-sm text-muted-foreground">API Calls</p>
                           <p className="text-2xl font-bold">5000/day</p>
@@ -523,7 +523,7 @@ export function AdminPerformance() {
                         <h3 className="font-semibold">Admin Quotas</h3>
                         <Badge>Active</Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                         <div>
                           <p className="text-sm text-muted-foreground">API Calls</p>
                           <p className="text-2xl font-bold">Unlimited</p>

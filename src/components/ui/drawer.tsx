@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import { motionTokens, createSpring, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { useModalScrollLock } from '@/hooks/use-modal-scroll-lock'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 import { cn } from '@/lib/utils'
 
 interface DrawerProps {
@@ -29,8 +30,9 @@ export function Drawer({
 }: DrawerProps) {
   const cardSpring = createSpring('card')
   const prefersReducedMotion = useReducedMotion()
+  const isMobile = useIsMobile()
+  const effectiveSide = isMobile ? 'bottom' : (side ?? 'right')
 
-  // Lock body scroll when drawer is open
   useModalScrollLock(isOpen)
 
   if (!isOpen) return null
@@ -59,7 +61,6 @@ export function Drawer({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[100]">
-        {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -72,11 +73,10 @@ export function Drawer({
           onClick={onClose}
         />
 
-        {/* Drawer */}
         <motion.div
-          initial={initialPosition[side]}
-          animate={animatePosition[side]}
-          exit={initialPosition[side]}
+          initial={initialPosition[effectiveSide]}
+          animate={animatePosition[effectiveSide]}
+          exit={initialPosition[effectiveSide]}
           transition={
             prefersReducedMotion
               ? { duration: 0 }
@@ -87,10 +87,14 @@ export function Drawer({
           }
           className={cn(
             'absolute z-10 w-full max-w-md',
-            side === 'left' || side === 'right'
+            effectiveSide === 'left' || effectiveSide === 'right'
               ? 'h-[90vh] max-h-[90vh] top-1/2 -translate-y-1/2'
-              : 'max-h-[90vh]',
-            side === 'left' ? 'left-0' : side === 'right' ? 'right-0' : sideClasses[side],
+              : 'max-h-[90vh] overflow-y-auto',
+            effectiveSide === 'left'
+              ? 'left-0'
+              : effectiveSide === 'right'
+                ? 'right-0'
+                : sideClasses[effectiveSide],
             className
           )}
         >

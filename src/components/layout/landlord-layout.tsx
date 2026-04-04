@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect, useMemo, useContext } from 'react'
+import { useMemo, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Home, DollarSign, Grid3x3, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { AuthContext } from '@/contexts/auth-context'
@@ -8,7 +9,10 @@ import { useSettings } from '@/contexts/settings-context'
 import { SidebarLayout } from './sidebar-layout'
 import { NotificationDropdown } from '@/components/ui/notification-dropdown'
 import { AdminDemoToolbar } from '@/components/admin/admin-demo-toolbar'
+import { MobileTopBar } from './mobile-top-bar'
+import { MobileBottomNav } from './mobile-bottom-nav'
 import { useScrollReset } from '@/hooks/use-scroll-reset'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 import { motionTokens, durationToSeconds } from '@/lib/motion'
 import { useReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
@@ -25,47 +29,45 @@ const ALL_NAV_ITEMS = [
   { path: '/landlord/settings', label: 'Settings', required: false },
 ]
 
+const MOBILE_PRIMARY_ITEMS = [
+  { path: '/landlord/dashboard', label: 'Home', icon: Home },
+  { path: '/landlord/finances', label: 'Finances', icon: DollarSign },
+  { path: '/landlord/properties', label: 'Properties', icon: Grid3x3 },
+  { path: '/landlord/operations', label: 'Operations', icon: Wrench },
+] as const
+
+const MOBILE_MORE_ITEMS = [
+  { path: '/landlord/documents', label: 'Documents' },
+  { path: '/landlord/messages', label: 'Messages' },
+  { path: '/landlord/notifications', label: 'Notifications' },
+  { path: '/landlord/settings', label: 'Settings' },
+] as const
+
 export function LandlordLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const authContext = useContext(AuthContext)
   const { settings } = useSettings()
-  const [isMobile, setIsMobile] = useState(false)
+  const isMobile = useIsMobile()
   const prefersReducedMotion = useReducedMotion()
 
   const devBypass = import.meta.env.DEV && sessionStorage.getItem('dev_bypass') === 'true'
   const { user, signOut, role, setViewMode } = authContext || {}
 
-  // Reset scroll on route changes
   useScrollReset()
 
-  // Detect mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
-
-  // Determine layout: mobile defaults to sidebar, desktop defaults to header, user override persists
   const effectiveLayout = useMemo(() => {
-    // If user has explicitly set a preference, use it
     if (settings.navLayout === 'sidebar' || settings.navLayout === 'header') {
       return settings.navLayout
     }
-    // Otherwise, use defaults: mobile = sidebar, desktop = header
-    return isMobile ? 'sidebar' : 'header'
-  }, [settings.navLayout, isMobile])
+    return 'header'
+  }, [settings.navLayout])
 
-  // Filter and order nav items based on settings
   const visibleNavItems = useMemo(() => {
     let items = ALL_NAV_ITEMS.filter(
       item => !settings.hiddenNavItems.includes(item.path) || item.required
     )
 
-    // Apply custom order if available
     if (settings.navItemOrder.length > 0) {
       const ordered = settings.navItemOrder
         .map(path => items.find(item => item.path === path))
@@ -78,14 +80,46 @@ export function LandlordLayout() {
   }, [settings.hiddenNavItems, settings.navItemOrder])
 
   async function handleSignOut() {
-    // Clear dev bypass if active
     sessionStorage.removeItem('dev_bypass')
     sessionStorage.removeItem('dev_role')
     if (signOut) await signOut()
     navigate('/login')
   }
 
-  // Render sidebar layout
+  if (isMobile) {
+    return (
+      <>
+        <AdminDemoToolbar />
+        <div className="min-h-screen bg-background">
+          <MobileTopBar homeTo="/landlord/dashboard" />
+          <main
+            className="pb-20 overscroll-contain"
+            style={{
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{
+                  duration: prefersReducedMotion ? 0 : 0.15,
+                  ease: [0.4, 0, 0.2, 1],
+                }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          </main>
+          <MobileBottomNav items={[...MOBILE_PRIMARY_ITEMS]} moreItems={[...MOBILE_MORE_ITEMS]} />
+        </div>
+      </>
+    )
+  }
+
   if (effectiveLayout === 'sidebar') {
     return (
       <>
@@ -95,7 +129,6 @@ export function LandlordLayout() {
     )
   }
 
-  // Render header layout (default)
   return (
     <>
       <AdminDemoToolbar />
@@ -115,7 +148,6 @@ export function LandlordLayout() {
                     style={{ imageRendering: 'auto' }}
                     onError={e => {
                       console.error('Failed to load logo image from /logo.png')
-                      // Hide image if it fails to load
                       e.currentTarget.style.display = 'none'
                     }}
                   />
